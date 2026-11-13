@@ -7,7 +7,6 @@ import { BillingPanel } from "@/components/billing-panel"
 import { ConsoleFrame } from "@/components/console-frame"
 import { ConnectDialog, downloadPem } from "@/components/connect-dialog"
 import { StateBadge } from "@/components/state-badge"
-import { StudyView } from "@/components/study-view"
 import { Terminal } from "@/components/terminal"
 import { useNow } from "@/components/use-now"
 import { Button } from "@/components/ui/button"
@@ -20,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { AZURE_IMAGES, AZURE_LOCATIONS, AZURE_SIZES, STUDENT, STUDIES } from "@/lib/catalog"
+import { AZURE_IMAGES, AZURE_LOCATIONS, AZURE_SIZES, STUDENT } from "@/lib/catalog"
 import { hourlyLabel, usd } from "@/lib/format"
 import { platformCost } from "@/lib/simulator"
 import { dispatch, useLabState } from "@/lib/store"
@@ -73,7 +72,6 @@ export function AzureConsole() {
         { id: "groups", label: "Resource groups" },
         { id: "shell", label: "Cloud Shell" },
         { id: "billing", label: "Cost Management" },
-        { id: "study", label: "Products and pricing" },
       ]}
       active={stage}
       onNavigate={setView}
@@ -83,10 +81,8 @@ export function AzureConsole() {
       {stage === "study" && !azure.reviewedSite ? (
         <AzureHome account={azure.email || STUDENT.email} vms={azure.vms} onOpen={() => undefined} continueLabel="Start free" onContinue={() => dispatch({ type: "azure/review" })} />
       ) : null}
-      {stage === "study" && azure.reviewedSite ? (
-        <div className="p-6"><StudyView study={STUDIES.azure} continueLabel="Back to virtual machines" onContinue={() => setView("vms")} /></div>
-      ) : null}
       {stage === "portal" ? <AzureHome account={azure.email} vms={azure.vms} onOpen={setView} /> : null}
+      {SERVICE_BLADES[stage] ? <ServiceBlade title={SERVICE_BLADES[stage]} /> : null}
       {stage === "vms" ? (
         <VmList
           vms={azure.vms}
@@ -142,15 +138,26 @@ function tell(outcome: { error?: string; message?: string }) {
 const SERVICES = [
   { label: "Create a resource", id: "create", glyph: "plus" },
   { label: "Virtual machines", id: "vms", glyph: "vm" },
-  { label: "App Services", id: "study", glyph: "app" },
-  { label: "Function App", id: "study", glyph: "fn" },
-  { label: "SQL databases", id: "study", glyph: "sql" },
-  { label: "Azure Cosmos DB", id: "study", glyph: "cosmos" },
-  { label: "Storage accounts", id: "groups", glyph: "disk" },
-  { label: "Kubernetes services", id: "study", glyph: "k8s" },
-  { label: "Virtual networks", id: "study", glyph: "net" },
-  { label: "More services", id: "study", glyph: "more" },
+  { label: "App Services", id: "appservice", glyph: "app" },
+  { label: "Function App", id: "functions", glyph: "fn" },
+  { label: "SQL databases", id: "sql", glyph: "sql" },
+  { label: "Azure Cosmos DB", id: "cosmos", glyph: "cosmos" },
+  { label: "Storage accounts", id: "storage", glyph: "disk" },
+  { label: "Kubernetes services", id: "aks", glyph: "k8s" },
+  { label: "Virtual networks", id: "vnet", glyph: "net" },
+  { label: "More services", id: "more", glyph: "more" },
 ] as const
+
+const SERVICE_BLADES: Record<string, string> = {
+  appservice: "App Services",
+  functions: "Function App",
+  sql: "SQL databases",
+  cosmos: "Azure Cosmos DB",
+  storage: "Storage accounts",
+  aks: "Kubernetes services",
+  vnet: "Virtual networks",
+  more: "All services",
+}
 
 function AzureHome({
   account,
@@ -303,17 +310,16 @@ const TABS = ["Basics", "Disks", "Networking", "Management", "Monitoring", "Adva
 function CreateVm({ onDone }: { onDone: () => void }) {
   const azure = useLabState().azure
   const [tab, setTab] = useState("Basics")
-  const [group, setGroup] = useState(azure.resourceGroups[0]?.name ?? "lab-rg")
+  const [group, setGroup] = useState(azure.resourceGroups[0]?.name ?? "")
   const [location, setLocation] = useState(azure.location)
   const [makingGroup, setMakingGroup] = useState(azure.resourceGroups.length === 0)
-  const [name, setName] = useState("vm-lab")
+  const [name, setName] = useState("")
   const [imageId, setImageId] = useState(AZURE_IMAGES[0].id)
   const [sizeId, setSizeId] = useState(AZURE_SIZES[0].id)
   const [username, setUsername] = useState("azureuser")
-  const [keyName, setKeyName] = useState(azure.keyPairs[0]?.name ?? "vm-lab-key")
+  const [keyName, setKeyName] = useState(azure.keyPairs[0]?.name ?? "")
   const [ports, setPorts] = useState("SSH (22)")
   const [error, setError] = useState<string | null>(null)
-  const size = AZURE_SIZES.find((item) => item.id === sizeId)
   const image = AZURE_IMAGES.find((item) => item.id === imageId)
 
   function createGroup() {
@@ -389,7 +395,6 @@ function CreateVm({ onDone }: { onDone: () => void }) {
               <select id="az-size" value={sizeId} onChange={(event) => setSizeId(event.target.value)} className="h-8 max-w-lg rounded-sm border border-[#8a8886] bg-white px-2">
                 {AZURE_SIZES.map((item) => <option key={item.id} value={item.id}>{item.id} - {item.vcpu} vcpu, {item.ram} memory ({hourlyLabel(item.hourlyUsd)})</option>)}
               </select>
-              {size ? <p className="text-[12px] text-[#605e5c]">{size.note}</p> : null}
             </BladeField>
             <div className="border-t border-[#edebe9] pt-3">
               <h2 className="text-[16px] font-semibold">Administrator account</h2>
@@ -433,15 +438,14 @@ function CreateVm({ onDone }: { onDone: () => void }) {
           </div>
         ) : null}
         {tab === "Disks" ? <StaticBlade title="Disks" rows={[["OS disk type", "Premium SSD (locally redundant)"], ["Delete with VM", "Yes"], ["Encryption", "Platform-managed key"]]} /> : null}
-        {tab === "Networking" ? <StaticBlade title="Networking" rows={[["Virtual network", "(new) vm-lab-vnet"], ["Subnet", "default (10.0.0.0/24)"], ["Public IP", "(new) vm-lab-ip"], ["NIC network security group", "Basic"], ["Public inbound ports", ports]]} /> : null}
+        {tab === "Networking" ? <StaticBlade title="Networking" rows={[["Virtual network", `(new) ${name || "vm"}-vnet`], ["Subnet", "default (10.0.0.0/24)"], ["Public IP", `(new) ${name || "vm"}-ip`], ["NIC network security group", "Basic"], ["Public inbound ports", ports]]} /> : null}
         {tab === "Management" ? <StaticBlade title="Management" rows={[["Boot diagnostics", "Enable with managed storage"], ["Identity", "Off"], ["Auto-shutdown", "Off"]]} /> : null}
         {tab === "Monitoring" ? <StaticBlade title="Monitoring" rows={[["Alerts", "Off"], ["Boot diagnostics", "Enabled"]]} /> : null}
         {tab === "Advanced" ? <StaticBlade title="Advanced" rows={[["Extensions", "None"], ["VM generation", "Gen 2"], ["Custom data", "Empty"]]} /> : null}
-        {tab === "Tags" ? <StaticBlade title="Tags" rows={[["Name", name], ["Course", "Cloud Computing"]]} /> : null}
+        {tab === "Tags" ? <StaticBlade title="Tags" rows={[]} /> : null}
         {tab === "Review + create" ? (
           <div className="max-w-3xl bg-white p-4">
             <h2 className="text-[16px] font-semibold">Validation passed</h2>
-            <p className="mt-1 text-[13px] text-[#605e5c]">Basics look ready. Create the SSH key and the resource group before you submit if either is missing.</p>
             <dl className="mt-4 grid gap-2 text-[13px] sm:grid-cols-2">
               {[
                 ["Subscription", "Azure subscription 1"],
@@ -470,9 +474,24 @@ function CreateVm({ onDone }: { onDone: () => void }) {
   )
 }
 
+function ServiceBlade({ title }: { title: string }) {
+  const noun = title === "All services" ? "services" : title.toLowerCase()
+  return (
+    <div>
+      <div className="border-b border-[#edebe9] px-6 py-3 text-[12px] text-[#605e5c]">Home <span className="px-1">›</span> <span className="text-[#323130]">{title}</span></div>
+      <h1 className="px-6 pt-4 text-[28px] font-semibold">{title}</h1>
+      <div className="mt-3 flex border-y border-[#edebe9] bg-[#faf9f8] px-4 py-1">
+        <button type="button" className={COMMAND}><span className="text-[#0078d4]">+</span> Create</button>
+        <button type="button" className={COMMAND}>Refresh</button>
+      </div>
+      <p className="px-6 py-16 text-center text-[#605e5c]">No {noun} to display</p>
+    </div>
+  )
+}
+
 function Groups({ onDelete }: { onDelete: (name: string) => void }) {
   const azure = useLabState().azure
-  const [name, setName] = useState("lab-rg")
+  const [name, setName] = useState("")
   const [location, setLocation] = useState(azure.location)
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -549,11 +568,17 @@ function StaticBlade({ title, rows }: { title: string; rows: string[][] }) {
   return (
     <div className="max-w-3xl bg-white p-4">
       <h2 className="text-[16px] font-semibold">{title}</h2>
+      {rows.length === 0 ? (
+        <table className="mt-3 w-full text-left text-[13px]">
+          <thead><tr><th className="py-2 font-semibold text-[#605e5c]">Name</th><th className="py-2 font-semibold text-[#605e5c]">Value</th></tr></thead>
+        </table>
+      ) : (
       <dl className="mt-3 grid gap-2 text-[13px]">
         {rows.map(([label, value]) => (
           <div key={label} className="grid border-b border-[#f3f2f1] py-1 sm:grid-cols-[220px_1fr]"><dt className="text-[#605e5c]">{label}</dt><dd>{value}</dd></div>
         ))}
       </dl>
+      )}
     </div>
   )
 }

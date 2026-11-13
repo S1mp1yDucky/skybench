@@ -4,7 +4,6 @@ import { useEffect, useId, useRef, useState } from "react"
 import { runCommand, runRemote, redact } from "@/lib/shell"
 import { findVm } from "@/lib/simulator"
 import { dispatch, useLabState } from "@/lib/store"
-import { shellHint } from "@/lib/steps"
 import type { Action, PlatformId, ShellLine } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -51,7 +50,7 @@ export function Terminal({
   const inputId = useId()
   const scroller = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const [lines, setLines] = useState<Row[]>(() => welcome().map((text) => row("info", text)))
+  const [lines, setLines] = useState<Row[]>(() => welcome(platform, Boolean(lockedVmId)).map((text) => row("info", text)))
   const [mode, setMode] = useState<Mode>(lockedVmId ? { kind: "remote", vmId: lockedVmId } : { kind: "local" })
   const [value, setValue] = useState("")
   const [history, setHistory] = useState<string[]>([])
@@ -61,9 +60,8 @@ export function Terminal({
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight })
   }, [lines, mode])
 
-  const prompt = promptFor(mode, lab)
+  const prompt = promptFor(mode, lab, platform)
   const secret = mode.kind === "aws-secret" || mode.kind === "do-token" || mode.kind === "aws-key"
-  const hint = mode.kind === "local" && !lockedVmId ? shellHint(lab, platform) : null
 
   function push(items: Row[]) {
     setLines((current) => [...current, ...items].slice(-220))
@@ -216,8 +214,7 @@ export function Terminal({
 
   return (
     <div className={cn("grid gap-2", className)}>
-      {hint ? <p className="font-mono text-[12px] text-[#9db0a2]">{hint}</p> : null}
-      <div className="overflow-hidden rounded-xl border border-[#1c2420] bg-[#121816] text-[#d7e4d8] shadow-sm">
+      <div className="overflow-hidden border border-[#1c2420] bg-[#121816] text-[#d7e4d8]">
         <div className="flex items-center gap-2 border-b border-white/10 px-3 py-2 font-mono text-[12px] text-[#9db0a2]">
           <span className="size-2 rounded-full bg-[#3dd68c]" aria-hidden />
           {prompt}
@@ -269,7 +266,10 @@ export function Terminal({
   )
 }
 
-function welcome(): string[] {
+function welcome(platform: PlatformId, locked: boolean): string[] {
+  if (locked) return []
+  if (platform === "aws") return ["Welcome to AWS CloudShell.", ""]
+  if (platform === "azure") return ["Welcome to Azure Cloud Shell", ""]
   return [
     "Welcome to Ubuntu 24.04.3 LTS (GNU/Linux 6.8.0-45-generic x86_64)",
     "",
@@ -278,7 +278,7 @@ function welcome(): string[] {
   ]
 }
 
-function promptFor(mode: Mode, lab: ReturnType<typeof useLabState>): string {
+function promptFor(mode: Mode, lab: ReturnType<typeof useLabState>, platform: PlatformId): string {
   if (mode.kind === "remote") {
     const found = findVm(lab, mode.vmId)
     if (!found?.vm.publicIp) return "guest:~$"
@@ -289,5 +289,7 @@ function promptFor(mode: Mode, lab: ReturnType<typeof useLabState>): string {
   if (mode.kind === "aws-region") return `Default region name [${lab.aws.region}]:`
   if (mode.kind === "aws-format") return "Default output format [json]:"
   if (mode.kind === "do-token") return "DigitalOcean access token:"
-  return "ubuntu@ubuntu:~$"
+  if (platform === "aws") return "[cloudshell-user@ip-172-31-16-12 ~]$"
+  if (platform === "azure") return "talal@Azure:~$"
+  return "talal@ubuntu:~$"
 }

@@ -17,7 +17,6 @@ export function BillingPanel({
   budget,
   vms,
   now,
-  fastForward,
   onBudget,
 }: {
   title: string
@@ -35,10 +34,10 @@ export function BillingPanel({
   return (
     <div className="grid gap-4">
       <div>
-        <h1 className="font-heading text-3xl">{title}</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#4d463c]">{note}</p>
+        <h1 className="text-[28px] font-semibold">{title}</h1>
+        <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#545b64]">{note}</p>
       </div>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <figure className="rounded-xl border border-black/10 bg-white p-4">
           <figcaption className="text-xs tracking-wide text-[#6d6256] uppercase">Month-to-date</figcaption>
           <p className="mt-2 font-mono text-2xl">{spend == null ? "—" : usd(spend)}</p>
@@ -46,10 +45,6 @@ export function BillingPanel({
         <figure className="rounded-xl border border-black/10 bg-white p-4">
           <figcaption className="text-xs tracking-wide text-[#6d6256] uppercase">Budget</figcaption>
           <p className="mt-2 font-mono text-2xl">{usd(budget)}</p>
-        </figure>
-        <figure className="rounded-xl border border-black/10 bg-white p-4">
-          <figcaption className="text-xs tracking-wide text-[#6d6256] uppercase">Machines</figcaption>
-          <p className="mt-2 font-mono text-2xl">{vms.filter((vm) => vm.state !== "terminated").length}</p>
         </figure>
       </div>
       <form
@@ -66,7 +61,7 @@ export function BillingPanel({
         }}
       >
         <div className="grid gap-1.5">
-          <Label htmlFor="budget">Budget amount</Label>
+          <Label htmlFor="budget">Monthly budget</Label>
           <Input
             id="budget"
             inputMode="decimal"
@@ -76,17 +71,7 @@ export function BillingPanel({
           />
         </div>
         <Button type="submit" variant="outline">
-          Save alert
-        </Button>
-        <Button
-          type="button"
-          onClick={() => {
-            const outcome = dispatch(fastForward)
-            if (outcome.error) toast.error(outcome.error)
-            else toast.success(outcome.message ?? "Fast-forwarded.")
-          }}
-        >
-          Include the next 24 hours
+          Save
         </Button>
       </form>
       {error ? (
@@ -94,10 +79,7 @@ export function BillingPanel({
           {error}
         </p>
       ) : null}
-      <p className="text-xs leading-5 text-[#6d6256]">
-        Month-to-date cost includes running resources. Stopped EC2 instances stop compute charges. Azure virtual machines that are stopped (deallocated) stop compute charges. Droplets are billed until they are destroyed.
-      </p>
-      <div className="overflow-x-auto rounded-xl border border-black/10 bg-white">
+      <div className="overflow-x-auto border border-black/10 bg-white">
         <table className="w-full min-w-[640px] text-left text-sm">
           <caption className="sr-only">Charges by resource</caption>
           <thead className="border-b text-xs tracking-wide text-[#6d6256] uppercase">
@@ -112,7 +94,7 @@ export function BillingPanel({
             {vms.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-3 py-6 text-[#6d6256]">
-                  Nothing has been launched, so the meter is at zero.
+                  No charges this month.
                 </td>
               </tr>
             ) : (

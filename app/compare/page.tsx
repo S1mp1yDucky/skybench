@@ -53,21 +53,21 @@ export default function ComparePage() {
             <p className="mt-2 text-sm leading-6 text-[#4d463c]">
               When the next assignment needs more than a VM: functions, object storage, a managed database, or a private network. Budget time to learn the console, and terminate what you launch.
             </p>
-            <Link href="/aws" className="mt-3 inline-block text-sm font-medium underline underline-offset-4">Open the AWS lab</Link>
+            <Link href="/aws" className="mt-3 inline-block text-sm font-medium underline underline-offset-4">Open AWS</Link>
           </article>
           <article className="rounded-2xl border border-[#e2d6c4] border-l-4 border-l-[#0078d4] bg-[#f7f1e6] p-4">
             <h2 className="font-heading text-2xl">Choose Azure</h2>
             <p className="mt-2 text-sm leading-6 text-[#4d463c]">
               When the stack is already Microsoft, or when Azure for Students is the account that does not need a card. Delete the resource group, not just the VM.
             </p>
-            <Link href="/azure" className="mt-3 inline-block text-sm font-medium underline underline-offset-4">Open the Azure lab</Link>
+            <Link href="/azure" className="mt-3 inline-block text-sm font-medium underline underline-offset-4">Open Azure</Link>
           </article>
           <article className="rounded-2xl border border-[#e2d6c4] border-l-4 border-l-[#0069ff] bg-[#f7f1e6] p-4">
             <h2 className="font-heading text-2xl">Choose DigitalOcean</h2>
             <p className="mt-2 text-sm leading-6 text-[#4d463c]">
-              When the job is one Linux server and a clear monthly price. Destroy the Droplet. Power off still bills on a real account, and in this lab too.
+              When the job is one Linux server and a clear monthly price. Destroy the Droplet. Powering it off does not stop the bill.
             </p>
-            <Link href="/digitalocean" className="mt-3 inline-block text-sm font-medium underline underline-offset-4">Open the DigitalOcean lab</Link>
+            <Link href="/digitalocean" className="mt-3 inline-block text-sm font-medium underline underline-offset-4">Open DigitalOcean</Link>
           </article>
         </section>
       </div>

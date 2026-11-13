@@ -7,7 +7,6 @@ import { BillingPanel } from "@/components/billing-panel"
 import { ConsoleFrame } from "@/components/console-frame"
 import { ConnectDialog, downloadPem } from "@/components/connect-dialog"
 import { StateBadge } from "@/components/state-badge"
-import { StudyView } from "@/components/study-view"
 import { Terminal } from "@/components/terminal"
 import { useNow } from "@/components/use-now"
 import { Button } from "@/components/ui/button"
@@ -20,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { DO_IMAGES, DO_REGIONS, DO_SIZES, STUDENT, STUDIES } from "@/lib/catalog"
+import { DO_IMAGES, DO_REGIONS, DO_SIZES, STUDENT } from "@/lib/catalog"
 import { usd } from "@/lib/format"
 import { isMetering, platformCost } from "@/lib/simulator"
 import { dispatch, useLabState } from "@/lib/store"
@@ -78,7 +77,6 @@ export function DoConsole() {
         { id: "spaces", label: "Spaces Object Storage" },
         { id: "shell", label: "Console" },
         { id: "billing", label: "Billing" },
-        { id: "study", label: "Products and pricing" },
       ]}
       active={stage}
       onNavigate={setView}
@@ -87,9 +85,6 @@ export function DoConsole() {
     >
       {stage === "study" && !ocean.reviewedSite ? (
         <DoWelcome onCreate={() => undefined} continueLabel="Sign up" onContinue={() => dispatch({ type: "do/review" })} />
-      ) : null}
-      {stage === "study" && ocean.reviewedSite ? (
-        <div className="p-6"><StudyView study={STUDIES.do} continueLabel="Back to Droplets" onContinue={() => setView("droplets")} /></div>
       ) : null}
       {stage === "home" ? <DoWelcome onCreate={() => setView("create")} droplets={ocean.droplets} onOpen={() => setView("droplets")} /> : null}
       {stage === "droplets" ? (
@@ -170,13 +165,6 @@ function DoWelcome({
           <p className="mt-1 text-[13px] text-[#5b6785]">My Team</p>
         </div>
         {continueLabel && onContinue ? <button type="button" className={BLUE} onClick={onContinue}>{continueLabel}</button> : null}
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-[#0069ff] px-5 py-4 text-white">
-        <div>
-          <p className="text-[16px] font-semibold">You have $5.00 in promotional credit</p>
-          <p className="mt-1 text-[13px] text-white/90">Credit applies to Droplets, bandwidth, and Spaces until it runs out. A powered-off Droplet still uses it.</p>
-        </div>
-        <button type="button" onClick={onCreate} className="h-9 rounded-md bg-white px-4 text-[13px] font-medium text-[#0069ff]">Create a Droplet</button>
       </div>
       <div>
         <h2 className="text-[16px] font-semibold">Start building</h2>
@@ -379,7 +367,6 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
             </tbody>
           </table>
         </div>
-        {size ? <p className="text-[12px] text-[#5b6785]">{size.note}</p> : null}
       </Section>
 
       <Section title="Choose Authentication Method">

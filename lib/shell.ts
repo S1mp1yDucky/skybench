@@ -41,14 +41,13 @@ export function runRemote(platform: PlatformId, vm: Vm, raw: string): { lines: S
   }
   if (command === "echo") return { lines: [out(rest.join(" "))], verified: false }
   if (command === "exit" || command === "logout") {
-    return { lines: [info("Connection to the guest closed.")], verified: false }
+    return { lines: [out(`Connection to ${vm.publicIp ?? vm.name} closed.`)], verified: false }
   }
   if (command === "help") {
     return {
       lines: [
         out("Guest commands: uname -a, whoami, hostname, pwd, ls, free -h, df -h,"),
         out("cat /etc/os-release, uptime, echo, exit"),
-        info("The assignment check is uname -a."),
       ],
       verified: false,
     }
@@ -179,7 +178,7 @@ function ssh(platform: PlatformId, state: LabState, argv: string[]): ShellResult
   }
   const vm = found.vm
   if (vm.state === "pending") {
-    return { lines: [err(`ssh: connect to host ${parsed.host} port 22: Connection timed out`), info("The machine is still pending.")], actions: [] }
+    return { lines: [err(`ssh: connect to host ${parsed.host} port 22: Connection timed out`)], actions: [] }
   }
   if (vm.state !== "running") {
     return { lines: [err(`ssh: connect to host ${parsed.host} port 22: Connection refused`)], actions: [] }
@@ -207,7 +206,7 @@ function ssh(platform: PlatformId, state: LabState, argv: string[]): ShellResult
 
 function awsCommand(platform: PlatformId, state: LabState, argv: string[]): ShellResult {
   if (platform !== "aws") return wrongGuest(platform, "aws")
-  if (!state.aws.cliInstalled) return missing("aws", "sudo apt install -y awscli")
+  if (!state.aws.cliInstalled) return missing("aws")
   const sub = argv[1] ?? ""
   if (!sub || sub === "help" || sub === "--help") return { lines: help("aws"), actions: [] }
   if (sub === "--version" || sub === "version") {
@@ -277,7 +276,7 @@ function awsCommand(platform: PlatformId, state: LabState, argv: string[]): Shel
 
 function azureCommand(platform: PlatformId, state: LabState, argv: string[]): ShellResult {
   if (platform !== "azure") return wrongGuest(platform, "az")
-  if (!state.azure.cliInstalled) return missing("az", "sudo apt install -y azure-cli")
+  if (!state.azure.cliInstalled) return missing("az")
   const sub = argv[1] ?? ""
   if (!sub || sub === "help" || sub === "--help") return { lines: help("azure"), actions: [] }
   if (sub === "version" || sub === "--version") {
@@ -327,7 +326,7 @@ function azureCommand(platform: PlatformId, state: LabState, argv: string[]): Sh
 
 function doCommand(platform: PlatformId, state: LabState, argv: string[]): ShellResult {
   if (platform !== "do") return wrongGuest(platform, "doctl")
-  if (!state.do.cliInstalled) return missing("doctl", "sudo snap install doctl")
+  if (!state.do.cliInstalled) return missing("doctl")
   const sub = argv[1] ?? ""
   if (!sub || sub === "help") return { lines: help("do"), actions: [] }
   if (sub === "version") return { lines: [out("doctl version 1.120.0-release")], actions: [] }
@@ -528,7 +527,6 @@ function help(platform: PlatformId): ShellLine[] {
     out("doctl compute droplet delete ID --force"),
     out("ssh root@192.0.2.x"),
     info(`Regions: ${DO_REGIONS.map((region) => region.id).join(", ")}`),
-    info("A powered-off Droplet is still billed. Destroy it to stop charges."),
   ]
 }
 
@@ -544,8 +542,8 @@ function wrongGuest(_platform: PlatformId, tool: string): ShellResult {
   return { lines: [err(`bash: ${bin}: command not found`)], actions: [] }
 }
 
-function missing(bin: string, hint: string): ShellResult {
-  return { lines: [err(`bash: ${bin}: command not found`), info(`Install it with: ${hint}`)], actions: [] }
+function missing(bin: string): ShellResult {
+  return { lines: [err(`bash: ${bin}: command not found`)], actions: [] }
 }
 
 function keyAction(platform: PlatformId, name: string): Action {

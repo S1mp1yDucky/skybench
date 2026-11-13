@@ -134,7 +134,7 @@ try {
   if (shellClick !== "clicked") throw new Error(`CloudShell button ${shellClick}`)
   await new Promise((resolve) => setTimeout(resolve, 400))
   const afterShell = await bodyText()
-  if (!afterShell.includes("sudo apt install -y awscli")) {
+  if (!afterShell.includes("Welcome to AWS CloudShell")) {
     throw new Error(`CloudShell did not open. Page starts: ${afterShell.slice(0, 400).replaceAll("\n", " | ")}`)
   }
   await page.evaluate(() => {

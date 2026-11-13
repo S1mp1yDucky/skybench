@@ -7,7 +7,6 @@ import { BillingPanel } from "@/components/billing-panel"
 import { AwsRegionMenu, ConsoleFrame } from "@/components/console-frame"
 import { ConnectDialog, downloadPem } from "@/components/connect-dialog"
 import { StateBadge } from "@/components/state-badge"
-import { StudyView } from "@/components/study-view"
 import { Terminal } from "@/components/terminal"
 import { useNow } from "@/components/use-now"
 import { Button } from "@/components/ui/button"
@@ -20,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { AWS_IMAGES, AWS_REGIONS, AWS_SIZES, STUDENT, STUDIES } from "@/lib/catalog"
+import { AWS_IMAGES, AWS_REGIONS, AWS_SIZES, STUDENT } from "@/lib/catalog"
 import { hourlyLabel, usd } from "@/lib/format"
 import { platformCost } from "@/lib/simulator"
 import { dispatch, useLabState } from "@/lib/store"
@@ -84,7 +83,6 @@ export function AwsConsole() {
         { id: "s3", label: "S3" },
         { id: "shell", label: "CloudShell" },
         { id: "billing", label: "Billing and Cost Management" },
-        { id: "study", label: "Products and pricing" },
       ]}
       active={stage}
       onNavigate={setView}
@@ -99,15 +97,11 @@ export function AwsConsole() {
           onOpenInstances={() => undefined}
           continueLabel="Create an AWS account"
           onContinue={() => dispatch({ type: "aws/review" })}
+          keys={aws.keyPairs.length}
         />
       ) : null}
-      {stage === "study" && aws.reviewedSite ? (
-        <div className="p-6">
-          <StudyView study={STUDIES.aws} continueLabel="Back to instances" onContinue={() => setView("ec2")} />
-        </div>
-      ) : null}
       {stage === "home" ? (
-        <Ec2Home region={aws.region} instances={aws.instances} onLaunch={() => setView("launch")} onOpenInstances={() => setView("ec2")} />
+        <Ec2Home region={aws.region} instances={aws.instances} keys={aws.keyPairs.length} onLaunch={() => setView("launch")} onOpenInstances={() => setView("ec2")} />
       ) : null}
       {stage === "ec2" ? (
         <InstanceTable
@@ -188,6 +182,7 @@ function Ec2Home({
   onOpenInstances,
   continueLabel,
   onContinue,
+  keys = 0,
 }: {
   region: string
   instances: Vm[]
@@ -195,6 +190,7 @@ function Ec2Home({
   onOpenInstances: () => void
   continueLabel?: string
   onContinue?: () => void
+  keys?: number
 }) {
   const visible = instances.filter((vm) => vm.state !== "terminated")
   const running = visible.filter((vm) => vm.state === "running").length
@@ -204,7 +200,7 @@ function Ec2Home({
     ["Instances", String(visible.length), onOpenInstances],
     ["Capacity Reservations", "0", undefined],
     ["Elastic IPs", "0", undefined],
-    ["Key pairs", "0", undefined],
+    ["Key pairs", String(keys), undefined],
     ["Load balancers", "0", undefined],
     ["Placement groups", "0", undefined],
     ["Security groups", "1", undefined],
@@ -273,7 +269,7 @@ function Ec2Home({
             </ul>
             <dl className="mt-4 grid gap-2 text-[13px]">
               <div className="flex justify-between gap-3"><dt className="text-[#545b64]">Supported platforms</dt><dd>VPC</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-[#545b64]">Default VPC</dt><dd className="font-mono text-[12px]">vpc-0a438202</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-[#545b64]">Default VPC</dt><dd className="font-mono text-[12px]">vpc-08f2c1a04b7e93d21</dd></div>
               <div className="flex justify-between gap-3"><dt className="text-[#545b64]">Resource ID length</dt><dd>Long IDs</dd></div>
             </dl>
           </div>
@@ -487,7 +483,6 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
                 </table>
               </div>
             ) : null}
-            {size ? <p className="text-[12px] text-[#545b64]">{size.note}</p> : null}
           </Card>
           <Card title="Key pair (login)">
             <p className="text-[13px] leading-5 text-[#545b64]">You can use an existing key pair, or create a new key pair. EC2 uses the public key to encrypt the login password, and you use the private key to decrypt it.</p>

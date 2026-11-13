@@ -43,9 +43,9 @@ export function ConnectDialog({
     >
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Connect</DialogTitle>
+          <DialogTitle>{platform === "aws" ? "Connect to instance" : "Connect"}</DialogTitle>
           <DialogDescription>
-            {vm ? sshCommand(platform, vm) : "Choose a running machine."}
+            {vm && vm.publicIp ? sshCommand(platform, vm) : vm?.state === "pending" ? "Pending" : ""}
           </DialogDescription>
         </DialogHeader>
         {vm?.state === "running" ? (
@@ -57,22 +57,16 @@ export function ConnectDialog({
                 const command = sshCommand(platform, vm)
                 navigator.clipboard?.writeText(command).then(
                   () => toast.success("Command copied."),
-                  () => toast.error("Copy it from the dialog title instead.")
+                  () => toast.error("Could not copy.")
                 )
               }}
             >
-              Copy SSH command
+              Copy
             </Button>
             <Terminal key={session} platform={platform} lockedVmId={vm.id} onExit={() => onOpenChange(false)} />
           </div>
         ) : (
-          <p className="text-sm text-[#4d463c]">
-            {vm?.state === "pending"
-              ? "This machine is still pending. The address and SSH session appear when it is running."
-              : vm?.state === "stopped"
-                ? "Start the machine before opening SSH."
-                : "This machine is gone. Launch another one."}
-          </p>
+          <p className="text-sm text-[#4d463c]">{vm?.state === "stopped" ? "Stopped" : "Pending"}</p>
         )}
       </DialogContent>
     </Dialog>
@@ -81,10 +75,9 @@ export function ConnectDialog({
 
 export function downloadPem(name: string) {
   const body = [
-    "-----BEGIN PUBLIC KEY-----",
-    "MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBALabPlaceholderKeyMaterialOnly",
-    `${name}`,
-    "-----END PUBLIC KEY-----",
+    "-----BEGIN OPENSSH PRIVATE KEY-----",
+    "b3BlbnNzaC1rZXkAAAAEbm9uZQAAAAAAAAABAAAAaAAAAC",
+    "-----END OPENSSH PRIVATE KEY-----",
     "",
   ].join("\n")
   const blob = new Blob([body], { type: "text/plain" })
