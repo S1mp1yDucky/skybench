@@ -365,8 +365,9 @@ function launchAws(
   if (!image) return err(`Unknown image ${action.imageId}. Use ami-al2023 or ami-ubuntu2204.`)
   if (!size) return err(`Unknown instance type ${action.sizeId}.`)
   const requested = action.name.trim()
-  const name = requested ? cleanName(requested, false) : "lab-vm"
-  if (!name) return err("Instance name may use letters, numbers, dots, and hyphens.")
+  const cleaned = requested ? cleanName(requested, false) : ""
+  if (requested && !cleaned) return err("Instance name may use letters, numbers, dots, and hyphens.")
+  const name = cleaned || ""
   const key = state.aws.keyPairs.find((item) => item.name === action.keyName)
   if (!key) return err(`Key pair ${action.keyName || "(missing)"} does not exist. Create one first.`)
   const vm = makeVm({

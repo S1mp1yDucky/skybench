@@ -145,8 +145,8 @@ function AwsServiceNav({ active, go }: { active: string; go: (id: string) => voi
       <Group title="Instances">
         <SideLink label="Instances" nested active={active === "ec2"} onClick={() => go("ec2")} />
         <SideLink label="Instance types" nested />
-        <SideLink label="Launch templates" nested />
-        <SideLink label="Spot requests" nested />
+        <SideLink label="Launch Templates" nested />
+        <SideLink label="Spot Requests" nested />
         <SideLink label="Savings Plans" nested />
         <SideLink label="Reserved Instances" nested />
         <SideLink label="Dedicated Hosts" nested />
@@ -162,19 +162,19 @@ function AwsServiceNav({ active, go }: { active: string; go: (id: string) => voi
         <SideLink label="Lifecycle Manager" nested />
       </Group>
       <Group title="Network & Security">
-        <SideLink label="Security groups" nested />
+        <SideLink label="Security Groups" nested />
         <SideLink label="Elastic IPs" nested />
-        <SideLink label="Placement groups" nested />
+        <SideLink label="Placement Groups" nested />
         <SideLink label="Key Pairs" nested active={active === "keys"} onClick={() => go("keys")} />
-        <SideLink label="Network interfaces" nested />
+        <SideLink label="Network Interfaces" nested />
       </Group>
       <Group title="Load Balancing">
-        <SideLink label="Load balancers" nested />
-        <SideLink label="Target groups" nested />
+        <SideLink label="Load Balancers" nested />
+        <SideLink label="Target Groups" nested />
       </Group>
       <Group title="Auto Scaling">
-        <SideLink label="Auto Scaling groups" nested />
-        <SideLink label="Launch configurations" nested />
+        <SideLink label="Auto Scaling Groups" nested />
+        <SideLink label="Launch Configurations" nested />
       </Group>
     </nav>
   )
@@ -318,16 +318,17 @@ function DoChrome({
         <nav aria-label="Control panel" className="px-2 pb-6 text-[13px]">
           <DoItem label="Home" icon="home" active={active === "home"} onClick={() => go("home")} />
           <DoItem label="Projects" icon="folder" />
-          <p className="mt-4 px-2 pb-1 text-[11px] font-semibold tracking-[0.08em] text-[#8ea0c8]">CORE CLOUD</p>
+          <p className="mt-4 px-2 pb-1 text-[11px] font-semibold tracking-[0.08em] text-[#8ea0c8]">MANAGE</p>
           <DoItem label="Droplets" icon="drop" active={dropletActive} onClick={() => go("droplets")} />
           <DoItem label="GPU Droplets" icon="drop" />
           <DoItem label="Kubernetes" icon="k8s" />
           <DoItem label="App Platform" icon="app" />
           <DoItem label="Databases" icon="db" />
-          <DoItem label="Spaces Object Storage" icon="box" active={active === "spaces"} onClick={() => go("spaces")} />
+          <DoItem label="Spaces" icon="box" active={active === "spaces"} onClick={() => go("spaces")} />
+          <DoItem label="Functions" icon="code" />
           <DoItem label="Volumes" icon="box" />
           <DoItem label="Networking" icon="net" />
-          <p className="mt-4 px-2 pb-1 text-[11px] font-semibold tracking-[0.08em] text-[#8ea0c8]">MANAGE</p>
+          <DoItem label="Monitoring" icon="help" />
           <DoItem label="Billing" icon="card" active={active === "billing"} onClick={() => go("billing")} />
           <DoItem label="Settings" icon="gear" active={active === "keys"} onClick={() => go("keys")} />
           <DoItem label="API" icon="code" />
@@ -481,7 +482,8 @@ function DoGlyph({ name }: { name: string }) {
   if (name === "Networking") return <svg viewBox="0 0 16 16" className={common} {...stroke}><circle cx="4" cy="8" r="1.6" /><circle cx="12" cy="4.5" r="1.6" /><circle cx="12" cy="11.5" r="1.6" /><path d="M5.5 7.4 10.4 5.2M5.5 8.6l4.9 2.2" /></svg>
   if (name === "Billing") return <svg viewBox="0 0 16 16" className={common} {...stroke}><rect x="2" y="3.5" width="12" height="9" rx="1.2" /><path d="M2 6.5h12" /></svg>
   if (name === "Settings") return <svg viewBox="0 0 16 16" className={common} {...stroke}><circle cx="8" cy="8" r="2" /><path d="M8 2.4v1.6M8 12v1.6M2.4 8h1.6M12 8h1.6M4 4l1.1 1.1M10.9 10.9 12 12M12 4l-1.1 1.1M5.1 10.9 4 12" /></svg>
-  if (name === "API") return <svg viewBox="0 0 16 16" className={common} {...stroke}><path d="M6 5 3 8l3 3M10 5l3 3-3 3" /></svg>
+  if (name === "API" || name === "Functions") return <svg viewBox="0 0 16 16" className={common} {...stroke}><path d="M6 5 3 8l3 3M10 5l3 3-3 3" /></svg>
+  if (name === "Monitoring") return <svg viewBox="0 0 16 16" className={common} {...stroke}><path d="M2.5 12.5 6 8l2.2 2.2L13.5 4" /></svg>
   if (name === "Support") return <svg viewBox="0 0 16 16" className={common} {...stroke}><circle cx="8" cy="8" r="5.2" /><path d="M8 7.2V11M8 5.2h.01" /></svg>
   return <svg viewBox="0 0 16 16" className={common} {...stroke}><path d="M3 5h10v7H3zM6 5V3.8h4V5" /></svg>
 }

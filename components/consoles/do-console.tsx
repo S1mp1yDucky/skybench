@@ -154,27 +154,23 @@ function DoWelcome({
   continueLabel?: string
   onContinue?: () => void
 }) {
-  const now = useNow(true)
-  const today = now == null ? "\u00a0" : new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "Asia/Karachi" }).format(now)
   const visible = droplets.filter((vm) => vm.state !== "terminated")
   return (
     <div className="grid gap-5 p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[13px] text-[#5b6785]">{today}</p>
-          <h1 className="mt-1 text-[28px] font-semibold tracking-tight text-[#031b4e]">Welcome, Talal</h1>
-          <p className="mt-1 text-[13px] text-[#5b6785]">My Team</p>
+          <h1 className="mt-1 text-[28px] font-semibold tracking-tight text-[#031b4e]">Welcome to DigitalOcean</h1>
         </div>
         {continueLabel && onContinue ? <button type="button" className={BLUE} onClick={onContinue}>{continueLabel}</button> : null}
       </div>
       <div>
-        <h2 className="text-[16px] font-semibold">Start building</h2>
+        <h2 className="text-[16px] font-semibold">Quick actions</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {([
-            ["Droplets", "Linux virtual machines", onCreate],
-            ["Kubernetes", "Managed clusters", undefined],
-            ["App Platform", "Deploy from a repo", undefined],
-            ["Databases", "Managed Postgres and MySQL", undefined],
+            ["Create Droplet", "Droplets", onCreate],
+            ["Create App", "App Platform", undefined],
+            ["Create Database", "Databases", undefined],
+            ["Kubernetes", "Kubernetes", undefined],
           ] as [string, string, (() => void) | undefined][]).map(([title, detail, action]) => (
             <button key={title} type="button" onClick={action} className="rounded-md border border-[#e1e7f0] bg-white p-4 text-left hover:border-[#0069ff]">
               <p className="font-semibold text-[#031b4e]">{title}</p>
@@ -234,7 +230,6 @@ function DropletList({
         {visible.length === 0 ? (
           <div className="px-4 py-16 text-center">
             <p className="text-[16px] font-semibold text-[#031b4e]">You don’t have any Droplets.</p>
-            <p className="mx-auto mt-1 max-w-md text-[13px] text-[#5b6785]">Create a Droplet to get a Linux virtual machine. Add an SSH key, pick a region, an image, and a plan.</p>
             <button type="button" className={cn(BLUE, "mt-4")} onClick={onCreate}>Create Droplet</button>
           </div>
         ) : (
@@ -291,7 +286,7 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
   const [region, setRegion] = useState(ocean.region)
   const [imageId, setImageId] = useState("ubuntu-26-04-x64")
   const [sizeId, setSizeId] = useState(DO_SIZES[1].id)
-  const [keyName, setKeyName] = useState(ocean.keys[0]?.name ?? "MyKeyPair")
+  const [keyName, setKeyName] = useState(ocean.keys[0]?.name ?? "")
   const [auth, setAuth] = useState<"ssh" | "password">("ssh")
   const [error, setError] = useState<string | null>(null)
   const size = DO_SIZES.find((item) => item.id === sizeId)
@@ -321,7 +316,10 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
             </button>
           ))}
         </div>
-        <p className="text-[12px] text-[#5b6785]">VPC network: default-{region}</p>
+      </Section>
+
+      <Section title="VPC Network">
+        <p className="text-[13px] text-[#031b4e]">default-{region}</p>
       </Section>
 
       <Section title="Choose an image">
@@ -439,7 +437,7 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
 
 function Keys() {
   const keys = useLabState().do.keys
-  const [name, setName] = useState("web")
+  const [name, setName] = useState("")
   const [error, setError] = useState<string | null>(null)
   return (
     <div className="p-6">

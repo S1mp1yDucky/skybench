@@ -129,7 +129,7 @@ export function AwsConsole() {
         <div className="p-6">
           <BillingPanel
             title="Billing and Cost Management"
-            note="EC2 On-Demand usage is billed per second while an instance is running. EBS volumes can continue to incur charges after an instance is stopped. Terminate the instance to delete it."
+            note="On-Demand Linux instances are billed by the second, with a one-minute minimum. EBS volumes continue to incur charges after an instance is stopped."
             budget={aws.budgetUsd}
             vms={aws.instances}
             now={now}
@@ -246,7 +246,7 @@ function Ec2Home({
           <div className="grid gap-4 md:grid-cols-2">
             <section className="border border-[#d5dbdb] bg-white p-4">
               <h2 className="text-[18px] font-bold">Launch instance</h2>
-              <p className="mt-2 text-[13px] leading-5 text-[#545b64]">To get started, launch an Amazon EC2 instance, which is a virtual server in the cloud.</p>
+              <p className="mt-2 text-[13px] leading-5 text-[#545b64]">Amazon Elastic Compute Cloud (Amazon EC2) provides on-demand, scalable computing capacity in the Amazon Web Services (AWS) Cloud.</p>
               {onContinue ? null : <button type="button" className={cn(ORANGE, "mt-3")} onClick={onLaunch}>Launch instance</button>}
             </section>
             <section className="border border-[#d5dbdb] bg-white p-4">
@@ -264,7 +264,7 @@ function Ec2Home({
           <div className="px-4 py-3">
             <p className="text-[12px] font-bold text-[#545b64]">Settings</p>
             <ul className="mt-2 grid gap-1.5 text-[13px] text-[#0073bb]">
-              {["Data protection and security", "Allowed AMIs", "Zones", "EC2 Serial Console", "Default credit specification", "Managed resources", "EC2 console preferences"].map((item) => (
+              {["Allowed AMIs", "EC2 Serial Console", "Default credit specification"].map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
@@ -303,6 +303,7 @@ function InstanceTable({
     const blob = `${vm.name} ${vm.id} ${vm.publicIp ?? ""} ${vm.sizeId}`.toLowerCase()
     return blob.includes(query.trim().toLowerCase())
   })
+  const active = visible.find((vm) => vm.id === selected) ?? visible.find((vm) => vm.state === "running") ?? null
   return (
     <div className="px-5 py-4">
       <p className="text-[12px] text-[#545b64]">EC2 <span className="px-1">›</span> Instances</p>
@@ -312,16 +313,18 @@ function InstanceTable({
       <div className="mt-3 border border-[#d5dbdb] bg-white">
         <div className="flex flex-wrap items-center gap-2 border-b border-[#eaeded] px-3 py-2">
           <button type="button" className={ORANGE} onClick={onLaunch}>Launch instances</button>
-          <button type="button" className={GHOST} disabled>Instance state</button>
-          <button type="button" className={GHOST} disabled>Actions</button>
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find instance by attribute or tag (case-sensitive)" className="ml-auto h-8 w-full max-w-sm rounded-sm border border-[#aab7b8] px-2 text-[13px] outline-none focus:border-[#0073bb]" />
+          <button type="button" className={GHOST} disabled={active?.state !== "running"} onClick={() => active && onConnect(active.id)}>Connect</button>
+          <button type="button" className={GHOST} disabled={active?.state !== "running"} onClick={() => active && onStop(active.id)}>Stop instance</button>
+          <button type="button" className={GHOST} disabled={active?.state !== "stopped"} onClick={() => active && onStart(active.id)}>Start instance</button>
+          <button type="button" className={GHOST} disabled={!active} onClick={() => active && onTerminate(active.id)}>Terminate instance</button>
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Add filter" className="ml-auto h-8 w-full max-w-sm rounded-sm border border-[#aab7b8] px-2 text-[13px] outline-none focus:border-[#0073bb]" />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[980px] border-collapse text-left text-[13px]">
             <caption className="sr-only">EC2 instances</caption>
             <thead className="bg-[#fafafa] text-[12px] text-[#16191f]">
               <tr className="border-b border-[#eaeded]">
-                {["", "Name", "Instance ID", "Instance state", "Instance type", "Status check", "Availability Zone", "Public IPv4 address", "Security group name", "Key name", ""].map((heading, index) => (
+                {["", "Name", "Instance ID", "Instance state", "Instance type", "Status check", "Availability Zone", "Public IPv4 address", "Security group name", "Key name"].map((heading, index) => (
                   <th key={`${heading}-${index}`} className="px-3 py-2 font-bold">{heading}</th>
                 ))}
               </tr>
@@ -329,7 +332,7 @@ function InstanceTable({
             <tbody>
               {visible.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-3 py-10 text-center text-[#545b64]">No instances to display</td>
+                  <td colSpan={10} className="px-3 py-10 text-center text-[#545b64]">No instances</td>
                 </tr>
               ) : (
                 visible.map((vm) => (
@@ -344,14 +347,6 @@ function InstanceTable({
                     <td className="px-3 py-2 font-mono text-[12px]">{vm.publicIp ?? "—"}</td>
                     <td className="px-3 py-2 text-[#0073bb]">{vm.allowHttp ? "launch-wizard-http" : "launch-wizard-1"}</td>
                     <td className="px-3 py-2">{vm.keyName}</td>
-                    <td className="px-3 py-2">
-                      <div className="flex gap-2 whitespace-nowrap">
-                        <button type="button" className="text-[#0073bb] hover:underline disabled:text-[#aab7b8]" disabled={vm.state !== "running"} onClick={() => onConnect(vm.id)}>Connect</button>
-                        <button type="button" className="text-[#0073bb] hover:underline disabled:text-[#aab7b8]" disabled={vm.state !== "running"} onClick={() => onStop(vm.id)}>Stop</button>
-                        <button type="button" className="text-[#0073bb] hover:underline disabled:text-[#aab7b8]" disabled={vm.state !== "stopped"} onClick={() => onStart(vm.id)}>Start</button>
-                        <button type="button" className="text-[#0073bb] hover:underline" onClick={() => onTerminate(vm.id)}>Terminate</button>
-                      </div>
-                    </td>
                   </tr>
                 ))
               )}
@@ -374,7 +369,7 @@ const QUICK = [
 
 function LaunchInstance({ onDone }: { onDone: () => void }) {
   const aws = useLabState().aws
-  const [name, setName] = useState("web-1")
+  const [name, setName] = useState("")
   const [imageId, setImageId] = useState(AWS_IMAGES[0].id)
   const [sizeId, setSizeId] = useState(AWS_SIZES[0].id)
   const [keyName, setKeyName] = useState(aws.keyPairs[0]?.name ?? "")
@@ -385,13 +380,12 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
   const size = AWS_SIZES.find((item) => item.id === sizeId)
   const image = AWS_IMAGES.find((item) => item.id === imageId)
   const summary = useMemo(() => [
-    ["Name", name || "—"],
-    ["AMI", image?.amiTitle ?? image?.label ?? "—"],
+    ["Software Image (AMI)", image?.amiTitle ?? image?.label ?? "—"],
     ["Instance type", sizeId],
-    ["Key pair", keyName || "—"],
-    ["Security group", http ? "launch-wizard-http" : "launch-wizard-1"],
-    ["Storage", "1 volume, 8 GiB gp3"],
-  ], [name, image, sizeId, keyName, http])
+    ["Key pair name", keyName || "—"],
+    ["Firewall (security groups)", http ? "launch-wizard-http" : "launch-wizard-1"],
+    ["Storage (volumes)", "1 volume(s) - 8 GiB"],
+  ], [image, sizeId, keyName, http])
 
   return (
     <form
@@ -502,7 +496,7 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
             ) : null}
           </Card>
           <Card title="Key pair (login)">
-            <p className="text-[13px] leading-5 text-[#545b64]">You can use an existing key pair, or create a new key pair. EC2 uses the public key to encrypt the login password, and you use the private key to decrypt it.</p>
+            <p className="text-[13px] leading-5 text-[#545b64]">Amazon EC2 uses public-key cryptography to encrypt and decrypt login information. You must specify a key pair when you launch the instance, and then provide the private key when you connect to it.</p>
             <Field id="aws-key-label" label="Key pair name">
               <select id="aws-key" value={keyName} onChange={(event) => setKeyName(event.target.value)} className="h-8 w-full max-w-md rounded-sm border border-[#aab7b8] bg-white px-2">
                 <option value="">Select a key pair</option>
@@ -533,37 +527,42 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
           </Card>
           <Card title="Network settings">
             <dl className="grid gap-2 text-[13px] sm:grid-cols-2">
-              <div><dt className="text-[#545b64]">VPC</dt><dd>vpc-08f2c1a04b7e93d21 (default)</dd></div>
-              <div><dt className="text-[#545b64]">Subnet</dt><dd>No preference (default subnet in any AZ)</dd></div>
+              <div><dt className="text-[#545b64]">Network</dt><dd>vpc-08f2c1a04b7e93d21 (default)</dd></div>
+              <div><dt className="text-[#545b64]">Subnet</dt><dd>No preference (default subnet in any availability zone)</dd></div>
               <div><dt className="text-[#545b64]">Auto-assign public IP</dt><dd>Enable</dd></div>
-              <div><dt className="text-[#545b64]">Firewall</dt><dd>Create security group</dd></div>
+              <div><dt className="text-[#545b64]">Firewall (security groups)</dt><dd>Create security group</dd></div>
             </dl>
-            <p className="text-[13px] font-bold">Inbound security group rules</p>
-            <div className="overflow-x-auto border border-[#eaeded]">
-              <table className="w-full text-left text-[13px]">
-                <thead className="bg-[#fafafa]"><tr>{["Type", "Protocol", "Port range", "Source"].map((heading) => <th key={heading} className="px-3 py-2 font-bold">{heading}</th>)}</tr></thead>
-                <tbody>
-                  <tr className="border-t border-[#eaeded]"><td className="px-3 py-2">ssh</td><td className="px-3 py-2">TCP</td><td className="px-3 py-2">22</td><td className="px-3 py-2">0.0.0.0/0</td></tr>
-                  {http ? <tr className="border-t border-[#eaeded]"><td className="px-3 py-2">http</td><td className="px-3 py-2">TCP</td><td className="px-3 py-2">80</td><td className="px-3 py-2">0.0.0.0/0</td></tr> : null}
-                </tbody>
-              </table>
-            </div>
+            <label className="flex flex-wrap items-center gap-2 text-[13px]">
+              <input type="checkbox" checked readOnly />
+              Allow SSH traffic from
+              <span className="rounded-sm border border-[#aab7b8] bg-white px-2 py-1">Anywhere 0.0.0.0/0</span>
+            </label>
+            <label className="flex items-center gap-2 text-[13px]">
+              <input type="checkbox" readOnly />
+              Allow HTTPS traffic from the internet
+            </label>
             <label className="flex items-center gap-2 text-[13px]">
               <input type="checkbox" checked={http} onChange={(event) => setHttp(event.target.checked)} />
               Allow HTTP traffic from the internet
             </label>
           </Card>
           <Card title="Configure storage">
-            <div className="overflow-x-auto border border-[#eaeded]">
-              <table className="w-full min-w-[560px] text-left text-[13px]">
-                <thead className="bg-[#fafafa]"><tr>{["Volume", "Size (GiB)", "Type", "IOPS", "Delete on termination"].map((heading) => <th key={heading} className="px-3 py-2 font-bold">{heading}</th>)}</tr></thead>
-                <tbody><tr><td className="px-3 py-2">Root</td><td className="px-3 py-2">8</td><td className="px-3 py-2">gp3</td><td className="px-3 py-2">3000</td><td className="px-3 py-2">Yes</td></tr></tbody>
-              </table>
+            <div className="flex flex-wrap items-center gap-2 text-[13px]">
+              <span className="rounded-sm border border-[#aab7b8] bg-white px-2 py-1">1x</span>
+              <span className="rounded-sm border border-[#aab7b8] bg-white px-2 py-1">8</span>
+              <span>GiB</span>
+              <span className="rounded-sm border border-[#aab7b8] bg-white px-2 py-1">gp3</span>
+              <span>Root volume (Encrypted)</span>
             </div>
           </Card>
           <details className="border border-[#d5dbdb] bg-white px-4 py-3">
             <summary className="cursor-pointer text-[18px] font-bold">Advanced details</summary>
-            <p className="mt-2 text-[13px] text-[#545b64]">Tenancy: Shared. IAM instance profile: None. Metadata version: V2 only. Credit specification: standard.</p>
+            <dl className="mt-3 grid gap-2 text-[13px] sm:grid-cols-2">
+              <div><dt className="text-[#545b64]">Tenancy</dt><dd>Shared - run a shared hardware instance</dd></div>
+              <div><dt className="text-[#545b64]">IAM instance profile</dt><dd>None</dd></div>
+              <div><dt className="text-[#545b64]">Metadata version</dt><dd>V2 only (token required)</dd></div>
+              <div><dt className="text-[#545b64]">Credit specification</dt><dd>Standard</dd></div>
+            </dl>
           </details>
           {error ? <p role="alert" className="border border-[#d13212] bg-[#fdf3f1] px-3 py-2 text-[13px] text-[#d13212]">{error}</p> : null}
         </div>
@@ -615,7 +614,7 @@ function KeyPairs({ keys }: { keys: KeyMaterial[] }) {
 }
 
 function Buckets({ region, buckets }: { region: string; buckets: { name: string; region: string }[] }) {
-  const [name, setName] = useState("talal-notes")
+  const [name, setName] = useState("")
   const [error, setError] = useState<string | null>(null)
   return (
     <div className="px-5 py-4">

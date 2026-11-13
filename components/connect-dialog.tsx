@@ -45,7 +45,8 @@ export function ConnectDialog({
         <DialogHeader>
           <DialogTitle>{platform === "aws" ? "Connect to instance" : "Connect"}</DialogTitle>
           <DialogDescription>
-            {vm && vm.publicIp ? sshCommand(platform, vm) : vm?.state === "pending" ? "Pending" : ""}
+            {platform === "aws" ? "SSH client" : platform === "azure" ? "SSH" : "Console"}
+            {vm && vm.publicIp ? ` — ${sshCommand(platform, vm)}` : ""}
           </DialogDescription>
         </DialogHeader>
         {vm?.state === "running" ? (

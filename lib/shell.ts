@@ -389,13 +389,13 @@ function runInstances(state: LabState, argv: string[]): ShellResult {
   const imageId = stringFlag(flags, ["image-id"]) || "ami-al2023"
   const sizeId = stringFlag(flags, ["instance-type"]) || "t2.micro"
   const keyName = stringFlag(flags, ["key-name"])
-  const name = stringFlag(flags, ["name"]) || "lab-vm"
+  const name = stringFlag(flags, ["name"]) || ""
   if (!keyName) return { lines: [err("--key-name is required. Create a key pair first.")], actions: [] }
   if (flags.count && flags.count !== "1" && flags.count !== true) {
     return { lines: [err("An error occurred (InstanceLimitExceeded) when calling the RunInstances operation: Your quota allows for 0 more running instance(s).")], actions: [] }
   }
   return {
-    lines: [out(`Pending ${name} (${imageId}, ${sizeId}) in ${state.aws.region}.`)],
+    lines: [out(`Pending ${name || "instance"} (${imageId}, ${sizeId}) in ${state.aws.region}.`)],
     actions: [{ type: "aws/launch", name, imageId, sizeId, keyName, allowHttp: flags.http === true }],
   }
 }
@@ -403,7 +403,8 @@ function runInstances(state: LabState, argv: string[]): ShellResult {
 function createAzureVm(state: LabState, argv: string[]): ShellResult {
   const flags = flagMap(argv)
   const group = stringFlag(flags, ["resource-group", "g"])
-  const name = stringFlag(flags, ["name", "n"]) || "vm-lab"
+  const name = stringFlag(flags, ["name", "n"])
+  if (!name) return { lines: [err("--name is required.")], actions: [] }
   const imageId = stringFlag(flags, ["image"]) || "Ubuntu2204"
   const sizeId = stringFlag(flags, ["size"]) || "Standard_B1s"
   const username = stringFlag(flags, ["admin-username"]) || "azureuser"
@@ -417,8 +418,10 @@ function createAzureVm(state: LabState, argv: string[]): ShellResult {
 }
 
 function createDroplet(state: LabState, argv: string[]): ShellResult {
-  const name = argv[0] && !argv[0].startsWith("--") ? argv[0] : "droplet-lab"
-  const flags = flagMap(argv[0]?.startsWith("--") ? argv : argv.slice(1))
+  const named = Boolean(argv[0] && !argv[0].startsWith("--"))
+  if (!named) return { lines: [err("A Droplet name is required.")], actions: [] }
+  const name = argv[0]
+  const flags = flagMap(argv.slice(1))
   const imageId = stringFlag(flags, ["image"]) || "ubuntu-22-04-x64"
   const sizeId = stringFlag(flags, ["size"]) || "s-1vcpu-1gb"
   const region = stringFlag(flags, ["region"]) || state.do.region

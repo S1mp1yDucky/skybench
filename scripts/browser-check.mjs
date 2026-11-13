@@ -114,7 +114,7 @@ try {
   })
   await page.waitForFunction(() => !document.querySelector("[data-slot='dialog-content']"))
 
-  await clickText("Terminate")
+  await clickText("Terminate instance")
   await page.waitForFunction(() => document.body.innerText.includes("On termination"))
   await page.evaluate(() => {
     const dialogs = [...document.querySelectorAll("[data-slot='dialog-content']")]

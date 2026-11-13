@@ -10,7 +10,7 @@ const COLOR: Record<VmState, string> = {
 
 const LABEL: Record<"aws" | "azure" | "do", Record<VmState, string>> = {
   aws: { pending: "Pending", running: "Running", stopped: "Stopped", terminated: "Terminated" },
-  azure: { pending: "Starting", running: "Running", stopped: "Stopped (deallocated)", terminated: "Deleted" },
+  azure: { pending: "Creating", running: "Running", stopped: "Stopped (deallocated)", terminated: "Deleted" },
   do: { pending: "New", running: "Active", stopped: "Off", terminated: "Destroyed" },
 }
 

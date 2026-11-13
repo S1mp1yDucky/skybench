@@ -104,7 +104,7 @@ export function AzureConsole() {
         <div className="bg-[#faf9f8] p-6">
           <BillingPanel
             title="Cost Management"
-            note="Compute charges stop when a virtual machine is stopped and deallocated. Managed disks can continue to incur charges. Deleting the resource group deletes the virtual machine and the other resources in that group."
+            note="Compute is billed while the virtual machine is running. Stopped (deallocated) virtual machines are not billed for compute. Managed disks continue to incur charges."
             budget={azure.budgetUsd}
             vms={azure.vms}
             now={now}
@@ -138,7 +138,7 @@ function tell(outcome: { error?: string; message?: string }) {
 const SERVICES = [
   { label: "Create a resource", id: "create", glyph: "plus" },
   { label: "Virtual machines", id: "vms", glyph: "vm" },
-  { label: "App Services", id: "appservice", glyph: "app" },
+  { label: "App Service", id: "appservice", glyph: "app" },
   { label: "Function App", id: "functions", glyph: "fn" },
   { label: "SQL databases", id: "sql", glyph: "sql" },
   { label: "Azure Cosmos DB", id: "cosmos", glyph: "cosmos" },
@@ -149,7 +149,7 @@ const SERVICES = [
 ] as const
 
 const SERVICE_BLADES: Record<string, string> = {
-  appservice: "App Services",
+  appservice: "App Service",
   functions: "Function App",
   sql: "SQL databases",
   cosmos: "Azure Cosmos DB",
@@ -214,7 +214,7 @@ function AzureHome({
                   <span className="mx-auto mb-3 grid size-16 place-items-center rounded-sm border border-[#edebe9] text-[#c8c6c4]">
                     <ServiceGlyph kind="vm" />
                   </span>
-                  No resources have been viewed recently
+                  No resources to display
                 </td>
               </tr>
             ) : (
@@ -471,11 +471,11 @@ function CreateVm({ onDone }: { onDone: () => void }) {
             </div>
           </div>
         ) : null}
-        {tab === "Disks" ? <StaticBlade title="Disks" rows={[["OS disk type", "Premium SSD (locally redundant)"], ["Delete with VM", "Yes"], ["Encryption", "Platform-managed key"]]} /> : null}
-        {tab === "Networking" ? <StaticBlade title="Networking" rows={[["Virtual network", `(new) ${name || "vm"}-vnet`], ["Subnet", "default (10.0.0.0/24)"], ["Public IP", `(new) ${name || "vm"}-ip`], ["NIC network security group", "Basic"], ["Public inbound ports", ports]]} /> : null}
-        {tab === "Management" ? <StaticBlade title="Management" rows={[["Boot diagnostics", "Enable with managed storage"], ["Identity", "Off"], ["Auto-shutdown", "Off"]]} /> : null}
-        {tab === "Monitoring" ? <StaticBlade title="Monitoring" rows={[["Alerts", "Off"], ["Boot diagnostics", "Enabled"]]} /> : null}
-        {tab === "Advanced" ? <StaticBlade title="Advanced" rows={[["Extensions", "None"], ["VM generation", "Gen 2"], ["Custom data", "Empty"]]} /> : null}
+        {tab === "Disks" ? <StaticBlade title="Disks" rows={[["OS disk type", "Premium SSD (locally-redundant storage)"], ["Delete with VM", "Yes"], ["Encryption type", "(Default) Encryption at-rest with a platform-managed key"], ["Ultra disk compatibility", "No"], ["Data disks", "None"]]} /> : null}
+        {tab === "Networking" ? <StaticBlade title="Networking" rows={[["Virtual network", `(new) ${name || "vm"}-vnet`], ["Subnet", "default (10.0.0.0/24)"], ["Public IP", `(new) ${name || "vm"}-ip`], ["NIC network security group", "Basic"], ["Public inbound ports", ports], ["Accelerated networking", "Off"], ["Load balancing", "None"], ["Delete public IP and NIC when VM is deleted", "Yes"]]} /> : null}
+        {tab === "Management" ? <StaticBlade title="Management" rows={[["Boot diagnostics", "Enable with managed storage account (recommended)"], ["System assigned managed identity", "Off"], ["Auto-shutdown", "Off"], ["Patch orchestration options", "Image Default"]]} /> : null}
+        {tab === "Monitoring" ? <StaticBlade title="Monitoring" rows={[["Recommended alert rules", "Disabled"], ["Boot diagnostics", "Enabled"]]} /> : null}
+        {tab === "Advanced" ? <StaticBlade title="Advanced" rows={[["Extensions", "None"], ["VM generation", "Gen 2"], ["Custom data and cloud init", ""], ["Proximity placement group", "None"], ["Capacity reservation", "None"]]} /> : null}
         {tab === "Tags" ? <StaticBlade title="Tags" rows={[]} /> : null}
         {tab === "Review + create" ? (
           <div className="max-w-3xl bg-white p-4">

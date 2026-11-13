@@ -38,12 +38,12 @@ export function BillingPanel({
         <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#545b64]">{note}</p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <figure className="rounded-xl border border-black/10 bg-white p-4">
-          <figcaption className="text-xs tracking-wide text-[#6d6256] uppercase">Month-to-date</figcaption>
+        <figure className="border border-[#d5dbdb] bg-white p-4">
+          <figcaption className="text-[13px] text-[#545b64]">Month-to-date</figcaption>
           <p className="mt-2 font-mono text-2xl">{spend == null ? "—" : usd(spend)}</p>
         </figure>
-        <figure className="rounded-xl border border-black/10 bg-white p-4">
-          <figcaption className="text-xs tracking-wide text-[#6d6256] uppercase">Budget</figcaption>
+        <figure className="border border-[#d5dbdb] bg-white p-4">
+          <figcaption className="text-[13px] text-[#545b64]">Monthly budget</figcaption>
           <p className="mt-2 font-mono text-2xl">{usd(budget)}</p>
         </figure>
       </div>
