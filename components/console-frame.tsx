@@ -109,7 +109,7 @@ function AwsChrome({
           <span className="sr-only">Search</span>
           <Search className="pointer-events-none absolute top-1.5 left-2 size-4 text-[#d5dbdb]" />
           <input readOnly placeholder="Search for services, features, blogs, docs, and more" className="h-8 w-full rounded-sm border border-[#607080] bg-[#35475a] pr-16 pl-8 text-[13px] text-white outline-none placeholder:text-[#c6d0d8]" />
-          <kbd className="pointer-events-none absolute top-1.5 right-2 rounded-sm border border-[#8d9eae] px-1 text-[10px] text-[#d5dbdb]">Alt+S</kbd>
+          <kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-sm border border-[#8d9eae] px-1 font-sans! text-[10px]! leading-none text-[#d5dbdb]">Alt+S</kbd>
         </label>
         <div className="ml-auto flex items-center">
           <HeaderIcon label="CloudShell" onClick={() => go("shell")}><PromptIcon /></HeaderIcon>
@@ -240,7 +240,7 @@ function SettingsMenu() {
   const items = ["Account", "Console settings", "Billing and Cost Management", "Security credentials"]
   return (
     <details className="relative">
-      <summary aria-label="Settings" className="grid size-8 cursor-pointer list-none place-items-center rounded-sm hover:bg-white/10 [&::-webkit-details-marker]:hidden"><GearIcon /></summary>
+      <summary aria-label="Settings" className="grid size-8 cursor-pointer list-none place-items-center rounded-sm hover:bg-white/10 [&::-webkit-details-marker]:hidden"><CogIcon /></summary>
       <div className="absolute top-9 right-0 z-50 w-64 border border-[#d5dbdb] bg-white py-1 text-[13px] text-[#16191f] shadow-2xl">
         {items.map((item) => <p key={item} className="px-3 py-1.5 hover:bg-[#f2f8fd]">{item}</p>)}
       </div>
@@ -698,15 +698,6 @@ function BellIcon({ dark = false }: { dark?: boolean }) {
   )
 }
 
-function GearIcon({ dark = false }: { dark?: boolean }) {
-  const color = dark ? "#323130" : "currentColor"
-  return (
-    <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
-      <circle cx="8" cy="8" r="2" fill="none" stroke={color} strokeWidth="1.3" />
-      <path d="M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.4 3.4l1.2 1.2M11.4 11.4l1.2 1.2M12.6 3.4l-1.2 1.2M4.6 11.4l-1.2 1.2" fill="none" stroke={color} strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  )
-}
 
 function CopilotMark() {
   return (

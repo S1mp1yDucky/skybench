@@ -300,7 +300,7 @@ function Ec2Home({
           <section className="border border-[#d5dbdb] bg-white">
             <header className="flex items-center justify-between border-b border-[#eaeded] px-4 py-3">
               <h2 className="text-[18px] font-bold">Resources</h2>
-              <span className="text-[#545b64]" aria-hidden>⚙</span>
+              <span className="text-[#545b64]" aria-hidden><CogMark /></span>
             </header>
             <p className="px-4 pt-3 text-[13px]">You are using the following Amazon EC2 resources in the {regionName(region)} Region ({region}):</p>
             <div className="grid gap-x-8 px-4 py-3 md:grid-cols-2">
@@ -332,7 +332,7 @@ function Ec2Home({
         <aside className="border border-[#d5dbdb] bg-white">
           <header className="flex items-center justify-between border-b border-[#eaeded] px-4 py-3">
             <h2 className="text-[16px] font-bold">Account attributes</h2>
-            <span aria-hidden>↻</span>
+            <span className="text-[#545b64]" aria-hidden><RefreshMark /></span>
           </header>
           <div className="px-4 py-3">
             <p className="text-[12px] font-bold text-[#545b64]">Settings</p>
@@ -818,6 +818,23 @@ function Field({ id, label, children }: { id: string; label: string; children: R
       {label}
       <span className="font-normal">{children}</span>
     </label>
+  )
+}
+
+function CogMark() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
+      <path fill="currentColor" d="M9.2 1.5 9.7 3.2c.3.1.6.3.9.4l1.6-.6 1.2 2-1.3 1.1c.1.3.1.6 0 .9l1.3 1.1-1.2 2-1.6-.6c-.3.2-.6.3-.9.4l-.5 1.7H6.8l-.5-1.7c-.3-.1-.6-.2-.9-.4l-1.6.6-1.2-2 1.3-1.1a3 3 0 0 1 0-.9L2.6 5l1.2-2 1.6.6c.3-.2.6-.3.9-.4L6.8 1.5h2.4ZM8 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
+    </svg>
+  )
+}
+
+function RefreshMark() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
+      <path d="M13 8a5 5 0 1 1-1.4-3.4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M12.8 2.2v3h-3" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 
