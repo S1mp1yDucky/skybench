@@ -506,7 +506,7 @@ function DoShell({ title, children }: { title: string; children: React.ReactNode
 
 function AwsField({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
   return (
-    <label htmlFor={id} className="grid gap-1 text-[14px] font-bold">
+    <label htmlFor={id} className="grid gap-1.5 text-[14px] font-bold">
       {label}
       <span className="font-normal">{children}</span>
     </label>
@@ -515,7 +515,7 @@ function AwsField({ id, label, children }: { id: string; label: string; children
 
 function MsField({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
   return (
-    <label htmlFor={id} className="grid gap-1 text-[13px]">
+    <label htmlFor={id} className="grid gap-1.5 text-[13px]">
       {label}
       {children}
     </label>
@@ -524,7 +524,7 @@ function MsField({ id, label, children }: { id: string; label: string; children:
 
 function DoField({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
   return (
-    <label htmlFor={id} className="grid gap-1 text-[13px] font-medium">
+    <label htmlFor={id} className="grid gap-1.5 text-[13px] font-medium">
       {label}
       <span className="font-normal">{children}</span>
     </label>

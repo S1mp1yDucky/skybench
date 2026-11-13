@@ -367,8 +367,8 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
               <p className="text-[13px] font-semibold text-[#031b4e]">{label}</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {(ids as string[]).map((id) => (
-                  <button key={id} type="button" onClick={() => setRegion(id)} className={cn("rounded-full border px-3 py-1 text-[12px] font-semibold", region === id ? "border-[#0069ff] bg-[#e8f1ff] text-[#0069ff]" : "border-[#d5deea] text-[#031b4e]")}>
-                    {regionCity(id)} <span className="font-mono">{id.toUpperCase()}</span>
+                  <button key={id} type="button" onClick={() => setRegion(id)} className={cn("inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-semibold", region === id ? "border-[#0069ff] bg-[#e8f1ff] text-[#0069ff]" : "border-[#d5deea] text-[#031b4e]")}>
+                    {regionCity(id)} <span className="font-mono font-medium">{id.toUpperCase()}</span>
                   </button>
                 ))}
               </div>
@@ -379,7 +379,7 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
       </Section>
 
       <Section title="Choose an image">
-        <div className="flex gap-5 border-b border-[#e1e7f0] text-[13px]">
+        <div className="flex flex-wrap gap-x-5 gap-y-2 border-b border-[#e1e7f0] text-[13px]">
           {["OS", "Solutions", "Agents", "Custom images", "Backups", "Snapshots"].map((tab) => (
             <button key={tab} type="button" onClick={() => setImageTab(tab)} className={cn("pb-2", imageTab === tab ? "border-b-2 border-[#0069ff] font-semibold text-[#0069ff]" : "text-[#5b6785]")}>{tab}</button>
           ))}
@@ -396,7 +396,7 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
             )
           })}
         </div>
-        <label className="grid max-w-sm gap-1 text-[13px] font-medium">
+        <label className="grid max-w-sm gap-1.5 text-[13px] font-medium">
           Version
           <ConsoleSelect label="Version" theme="do" value={imageId} onChange={setImageId} options={(DISTROS.find((distro) => distro.ids.includes(imageId)) ?? DISTROS[0]).ids.map((id) => ({ value: id, label: DO_IMAGES.find((image) => image.id === id)?.label ?? id }))} />
         </label>
@@ -414,9 +414,10 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
           </button>
         </div>
         {config === "v5" ? (
-          <label className="grid max-w-sm gap-1 text-[13px]">vCPU
+          <label className="grid max-w-sm gap-2 text-[13px]">
+            <span className="font-medium">vCPU</span>
             <input type="range" min={1} max={8} value={vcpus} onChange={(event) => setVcpus(Number(event.target.value))} />
-            <span>{vcpus} shared vCPU · memory and a 30 GB boot disk follow the vCPU choice. This lab prices bundled plans.</span>
+            <span className="text-[#5b6785]">{vcpus} shared vCPU. Memory and a 30 GB boot disk follow the vCPU choice. This lab prices bundled plans.</span>
           </label>
         ) : null}
       </Section>
@@ -482,9 +483,13 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
           ))}
         </div>
         {backup === "weekly" || backup === "daily" ? (
-          <div className="flex flex-wrap gap-2 text-[13px]">
-            <label>Day <select aria-label="Backup day" value={backupDay} onChange={(event) => setBackupDay(event.target.value)} className="ml-1 h-9 rounded-md border border-[#d5deea] px-2">{["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => <option key={day}>{day}</option>)}</select></label>
-            <label>Time <select aria-label="Backup window" value={backupTime} onChange={(event) => setBackupTime(event.target.value)} className="ml-1 h-9 rounded-md border border-[#d5deea] px-2">{["12:00 AM", "4:00 AM", "8:00 AM", "12:00 PM", "4:00 PM", "8:00 PM"].map((time) => <option key={time}>{time}</option>)}</select></label>
+          <div className="grid max-w-lg gap-3 sm:grid-cols-2">
+            <label className="grid gap-1.5 text-[13px] font-medium">Backup day
+              <select aria-label="Backup day" value={backupDay} onChange={(event) => setBackupDay(event.target.value)} className="h-9 rounded-md border border-[#d5deea] bg-white px-2 font-normal">{["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => <option key={day}>{day}</option>)}</select>
+            </label>
+            <label className="grid gap-1.5 text-[13px] font-medium">Backup window
+              <select aria-label="Backup window" value={backupTime} onChange={(event) => setBackupTime(event.target.value)} className="h-9 rounded-md border border-[#d5deea] bg-white px-2 font-normal">{["12:00 AM", "4:00 AM", "8:00 AM", "12:00 PM", "4:00 PM", "8:00 PM"].map((time) => <option key={time}>{time}</option>)}</select>
+            </label>
           </div>
         ) : null}
       </Section>
@@ -500,8 +505,10 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
             <span className="mt-1 block text-[12px] text-[#5b6785]">Create a root password. Using passwords for authentication in production is not secure.</span>
           </button>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Input aria-label="SSH key name" value={keyName} onChange={(event) => setKeyName(event.target.value)} className="h-9 max-w-xs rounded-md" />
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="grid gap-1.5 text-[13px] font-medium">SSH key name
+            <Input aria-label="SSH key name" value={keyName} onChange={(event) => setKeyName(event.target.value)} className="h-9 w-64 rounded-md font-normal" />
+          </label>
           <button type="button" className="h-9 rounded-md border border-[#d5deea] bg-white px-3 text-[13px]" onClick={() => {
             const outcome = dispatch({ type: "do/key", name: keyName })
             if (outcome.error) setError(outcome.error)
@@ -509,9 +516,12 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
           }}>Add an SSH Key</button>
         </div>
         {ocean.keys.length === 0 ? <p className="text-[13px] text-[#b54708]">Select an SSH Key to create this Droplet.</p> : (
-          <ul className="grid gap-1 text-[13px]">
+          <ul className="grid gap-2 text-[13px]">
             {ocean.keys.map((key) => (
-              <li key={key.name} className="flex items-center gap-2"><input type="checkbox" checked={key.name === keyName} readOnly /> {key.name} <span className="font-mono text-[11px] text-[#5b6785]">{key.fingerprint}</span></li>
+              <li key={key.name} className="grid gap-1 sm:grid-cols-[12rem_1fr] sm:items-center sm:gap-4">
+                <label className="flex items-center gap-2"><input type="checkbox" checked={key.name === keyName} readOnly /> {key.name}</label>
+                <span className="pl-6 font-mono text-[11px] text-[#5b6785] sm:pl-0">{key.fingerprint}</span>
+              </li>
             ))}
           </ul>
         )}
@@ -531,13 +541,13 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
       </Section>
 
       <Section title="Finalize Details">
-        <label className="grid max-w-sm gap-1 text-[13px] font-medium">Quantity
+        <label className="grid max-w-sm gap-1.5 text-[13px] font-medium">Quantity
           <input value="1" readOnly className="h-9 rounded-md border border-[#d5deea] bg-[#f7f9fc] px-2 font-normal" />
         </label>
-        <label className="grid max-w-sm gap-1 text-[13px] font-medium" htmlFor="do-name">Give your Droplet a name
+        <label className="grid max-w-sm gap-1.5 text-[13px] font-medium" htmlFor="do-name">Give your Droplet a name
           <Input id="do-name" value={name} onChange={(event) => setName(event.target.value)} className="h-9 rounded-md font-normal" />
         </label>
-        <label className="grid max-w-sm gap-1 text-[13px] font-medium">Tags
+        <label className="grid max-w-sm gap-1.5 text-[13px] font-medium">Tags
           <input placeholder="Add a tag" readOnly className="h-9 rounded-md border border-[#d5deea] bg-white px-2 font-normal" />
         </label>
         <p className="text-[13px] text-[#031b4e]">Select a project <span className="font-semibold">first-project</span></p>
@@ -545,13 +555,15 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
 
       {error ? <p role="alert" className="mt-4 text-[13px] text-[#d92d20]">{error}</p> : null}
 
-      <div className="fixed right-0 bottom-0 left-0 z-20 flex items-center justify-end gap-4 border-t border-[#e1e7f0] bg-white px-6 py-3 md:left-[240px]">
-        <div className="text-right">
+      <div className="fixed right-0 bottom-0 left-0 z-20 flex flex-col gap-3 border-t border-[#e1e7f0] bg-white px-6 py-3 sm:flex-row sm:items-center sm:justify-end md:left-[240px]">
+        <div className="sm:mr-2 sm:text-right">
           <p className="text-[18px] font-semibold text-[#031b4e]">${monthly.toFixed(2)}/mo</p>
           <p className="text-[12px] text-[#5b6785]">${size ? size.hourlyUsd.toFixed(4) : "0.0000"}/hour</p>
         </div>
-        <button type="button" className="text-[13px] text-[#0069ff]" onClick={() => setCli((open) => !open)}>Create via command line</button>
-        <button type="submit" className={BLUE}>Create Droplet</button>
+        <div className="flex items-center gap-4">
+          <button type="button" className="text-[13px] text-[#0069ff]" onClick={() => setCli((open) => !open)}>Create via command line</button>
+          <button type="submit" className={BLUE}>Create Droplet</button>
+        </div>
       </div>
       {cli ? (
         <pre className="mt-4 overflow-auto rounded-md bg-[#031b4e] p-3 text-[12px] text-white">{`# cURL
@@ -580,13 +592,13 @@ function Keys() {
       </div>
       <h2 className="mt-4 text-[16px] font-semibold">SSH keys</h2>
       <p className="mt-1 max-w-xl text-[13px] text-[#5b6785]">Add an SSH public key to connect to Droplets as root.</p>
-      <form className="mt-3 flex flex-wrap items-end gap-2" onSubmit={(event) => {
+      <form className="mt-4 flex flex-wrap items-end gap-3" onSubmit={(event) => {
         event.preventDefault()
         const outcome = dispatch({ type: "do/key", name })
         if (outcome.error) setError(outcome.error)
         else { setError(null); flash(outcome.message ?? "SSH key added.") }
       }}>
-        <label className="grid gap-1 text-[13px]" htmlFor="key-name">Key name
+        <label className="grid gap-1.5 text-[13px]" htmlFor="key-name">Key name
           <Input id="key-name" value={name} onChange={(event) => setName(event.target.value)} className="h-9 w-56 rounded-md" />
         </label>
         <button type="submit" className={BLUE}>Add SSH Key</button>
@@ -622,13 +634,13 @@ function Spaces() {
         <h1 className="text-[24px] font-semibold text-[#031b4e]">Spaces</h1>
       </div>
       <p className="mt-1 text-[13px] text-[#5b6785]">Object storage for files and static assets.</p>
-      <form className="mt-4 flex flex-wrap items-end gap-2" onSubmit={(event) => {
+      <form className="mt-4 flex flex-wrap items-end gap-3" onSubmit={(event) => {
         event.preventDefault()
         const outcome = dispatch({ type: "do/space", name })
         if (outcome.error) setError(outcome.error)
         else { setError(null); flash(outcome.message ?? "Space created.") }
       }}>
-        <label className="grid gap-1 text-[13px]" htmlFor="space-name">Space name
+        <label className="grid gap-1.5 text-[13px]" htmlFor="space-name">Space name
           <Input id="space-name" value={name} onChange={(event) => setName(event.target.value)} className="h-9 w-56 rounded-md" />
         </label>
         <button type="submit" className={BLUE}>Create a Space</button>

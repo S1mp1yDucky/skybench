@@ -35,7 +35,7 @@ export function ConsoleSelect({
         {options.map((item) => <option key={item.value || "empty"} value={item.value}>{item.label}</option>)}
       </select>
       <details className="group">
-        <summary className={cn("flex cursor-pointer list-none items-center justify-between gap-2 border bg-white px-2 [&::-webkit-details-marker]:hidden", trigger)}>
+        <summary className={cn("flex cursor-pointer list-none items-center justify-between gap-3 border bg-white px-3 [&::-webkit-details-marker]:hidden", trigger)}>
           <span className="truncate">{current?.label || "Select"}</span>
           <svg viewBox="0 0 16 16" className="size-3 shrink-0" aria-hidden><path fill="currentColor" d="M3.2 5.6 8 10.8 12.8 5.6z" /></svg>
         </summary>
@@ -44,7 +44,7 @@ export function ConsoleSelect({
             <button
               key={item.value || "empty"}
               type="button"
-              className={cn("flex w-full items-center justify-between px-2 py-1.5 text-left", hover, item.value === value && "font-semibold")}
+              className={cn("flex w-full items-center justify-between gap-3 px-3 py-2 text-left", hover, item.value === value && "font-semibold")}
               onClick={(event) => {
                 onChange(item.value)
                 const parent = event.currentTarget.closest("details")

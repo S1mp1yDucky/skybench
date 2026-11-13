@@ -126,7 +126,7 @@ export function AzureConsole() {
             <DialogDescription>Deleting a resource group is irreversible. All resources in the group will be deleted.</DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col items-stretch sm:flex-col">
-            <label className="grid gap-1 text-[13px]">Type the resource group name
+            <label className="grid gap-1.5 text-[13px]">Type the resource group name
               <Input id="confirm-group" onChange={(event) => { event.currentTarget.dataset.match = event.target.value === groupToDelete ? "yes" : "no" }} />
             </label>
             <div className="flex justify-end gap-2">
@@ -156,10 +156,15 @@ function AzureCloudShell() {
   }, [step])
   return (
     <div className="flex h-full min-h-[420px] flex-col border-t border-[#edebe9] bg-[#012456] text-white">
-      <div className="flex flex-wrap items-center gap-2 bg-[#001b33] px-3 py-2 text-[13px]">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-[#001b33] px-3 py-2 text-[13px]">
         <span>Azure Cloud Shell</span>
         {step === "ready" ? <button type="button" className="rounded bg-white/10 px-2 py-1" onClick={() => setShell(shell === "Bash" ? "PowerShell" : "Bash")}>{shell === "Bash" ? "Switch to PowerShell" : "Switch to Bash"}</button> : null}
-        <span className="text-white/70">Restart · Settings · Editor · New session</span>
+        <span className="flex flex-wrap gap-x-4 gap-y-1 text-white/70">
+          <span>Restart</span>
+          <span>Settings</span>
+          <span>Editor</span>
+          <span>New session</span>
+        </span>
       </div>
       {step === "pick" ? (
         <div className="grid gap-3 bg-white p-6 text-[#323130]">
@@ -483,8 +488,8 @@ function CreateVm({ onDone }: { onDone: () => void }) {
               ) : (
                 <div className="grid gap-2 rounded-sm border border-[#edebe9] bg-white p-3">
                   <p className="text-[13px] font-semibold">Create new resource group</p>
-                  <Input id="az-group" value={group} onChange={(event) => setGroup(event.target.value)} className="h-8 max-w-sm rounded-sm" />
-                  <ConsoleSelect id="az-location" label="Region" theme="azure" value={location} onChange={setLocation} options={AZURE_LOCATIONS.map((item) => ({ value: item.id, label: item.label }))} />
+                  <Input id="az-group" value={group} onChange={(event) => setGroup(event.target.value)} className="h-8 w-full rounded-sm" />
+                  <ConsoleSelect id="az-location" label="Region" theme="azure" value={location} onChange={setLocation} options={AZURE_LOCATIONS.map((item) => ({ value: item.id, label: item.label }))} className="max-w-none" />
                   <div className="flex gap-2">
                     <button type="button" className={PRIMARY} onClick={createGroup}>OK</button>
                     {azure.resourceGroups.length > 0 ? <button type="button" className="h-8 px-3 text-[13px]" onClick={() => setMakingGroup(false)}>Cancel</button> : null}
@@ -502,7 +507,7 @@ function CreateVm({ onDone }: { onDone: () => void }) {
             <BladeField label="Image" required>
               <div className="max-w-lg">
                 <ConsoleSelect id="az-image" label="Image" theme="azure" value={imageId} onChange={setImageId} options={AZURE_IMAGES.map((item) => ({ value: item.id, label: item.label }))} className="max-w-none" />
-                <button type="button" className="mt-1 text-left text-[13px] text-[#0078d4] hover:underline" onClick={() => setImagesOpen((open) => !open)}>See all images</button>
+                <button type="button" className="mt-2 text-left text-[13px] text-[#0078d4] hover:underline" onClick={() => setImagesOpen((open) => !open)}>See all images</button>
                 {imagesOpen ? (
                   <ul className="mt-2 border border-[#edebe9] bg-white">
                     {AZURE_IMAGES.map((item) => (
@@ -517,7 +522,7 @@ function CreateVm({ onDone }: { onDone: () => void }) {
             <BladeField label="Size" required>
               <div className="max-w-lg">
                 <ConsoleSelect id="az-size" label="Size" theme="azure" value={sizeId} onChange={setSizeId} options={AZURE_SIZES.map((item) => ({ value: item.id, label: `${item.id} - ${item.vcpu} vcpu, ${item.ram} memory` }))} className="max-w-none" />
-                <button type="button" className="mt-1 text-left text-[13px] text-[#0078d4] hover:underline" onClick={() => setSizesOpen((open) => !open)}>See all sizes</button>
+                <button type="button" className="mt-2 text-left text-[13px] text-[#0078d4] hover:underline" onClick={() => setSizesOpen((open) => !open)}>See all sizes</button>
                 {sizesOpen ? (
                   <div className="mt-2 border border-[#edebe9] bg-white p-3">
                     <p className="text-[14px] font-semibold">Select a VM size</p>
@@ -545,14 +550,14 @@ function CreateVm({ onDone }: { onDone: () => void }) {
                 <BladeField label="Username" required><Input id="az-user" value={username} onChange={(event) => setUsername(event.target.value)} className="h-8 max-w-md rounded-[2px]" /></BladeField>
                 <BladeField label="SSH public key source"><FakeSelect value="Generate new key pair" /></BladeField>
                 <BladeField label="Key pair name" required>
-                  <div className="flex flex-wrap gap-2">
-                    <Input aria-label="SSH key name" value={keyName} onChange={(event) => setKeyName(event.target.value)} className="h-8 max-w-sm rounded-sm" />
-                    <button type="button" className="h-8 rounded-sm border border-[#8a8886] bg-white px-3 text-[13px]" onClick={() => {
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Input aria-label="SSH key name" value={keyName} onChange={(event) => setKeyName(event.target.value)} className="h-8 w-full max-w-sm rounded-sm" />
+                    <button type="button" className="h-8 shrink-0 rounded-sm border border-[#8a8886] bg-white px-3 text-[13px]" onClick={() => {
                       const outcome = dispatch({ type: "azure/key", name: keyName })
                       if (outcome.error) setError(outcome.error)
                       else { setError(null); flash(outcome.message ?? "SSH key created.") }
                     }}>Create SSH key</button>
-                    {azure.keyPairs.some((key) => key.name === keyName) ? <button type="button" className="h-8 px-2 text-[13px] text-[#0078d4]" onClick={() => downloadPem(keyName)}>Download</button> : null}
+                    {azure.keyPairs.some((key) => key.name === keyName) ? <button type="button" className="h-8 shrink-0 px-1 text-[13px] text-[#0078d4]" onClick={() => downloadPem(keyName)}>Download</button> : null}
                   </div>
                 </BladeField>
               </div>
@@ -606,9 +611,13 @@ function CreateVm({ onDone }: { onDone: () => void }) {
           </div>
         ) : null}
         {tab === "Tags" ? (
-          <div className="flex max-w-xl flex-wrap gap-2">
-            <Input aria-label="Tag name" value={tagName} onChange={(event) => setTagName(event.target.value)} placeholder="Name" className="h-8 max-w-48 rounded-[2px]" />
-            <Input aria-label="Tag value" value={tagValue} onChange={(event) => setTagValue(event.target.value)} placeholder="Value" className="h-8 max-w-48 rounded-[2px]" />
+          <div className="grid max-w-xl gap-4 sm:grid-cols-2">
+            <label className="grid gap-1.5 text-[13px]">Name
+              <Input aria-label="Tag name" value={tagName} onChange={(event) => setTagName(event.target.value)} placeholder="Name" className="h-8 rounded-[2px]" />
+            </label>
+            <label className="grid gap-1.5 text-[13px]">Value
+              <Input aria-label="Tag value" value={tagValue} onChange={(event) => setTagValue(event.target.value)} placeholder="Value" className="h-8 rounded-[2px]" />
+            </label>
           </div>
         ) : null}
         {tab === "Review + create" ? (
@@ -655,9 +664,9 @@ function CreateVm({ onDone }: { onDone: () => void }) {
           </DialogContent>
         </Dialog>
       </div>
-      <div className="sticky bottom-0 flex items-center gap-2 border-t border-[#edebe9] bg-white px-6 py-3">
+      <div className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t border-[#edebe9] bg-white px-6 py-3">
         <button type="button" className={PRIMARY} onClick={() => tab === "Review + create" ? launch() : setTab("Review + create")}>{tab === "Review + create" ? "Create" : "Review + create"}</button>
-        <button type="button" className="h-8 px-3 text-[13px]" onClick={() => setTab(TABS[Math.max(0, TABS.indexOf(tab) - 1)] ?? "Basics")}>Previous</button>
+        <button type="button" className="h-8 rounded-[2px] border border-[#8a8886] bg-white px-4 text-[13px]" onClick={() => setTab(TABS[Math.max(0, TABS.indexOf(tab) - 1)] ?? "Basics")}>Previous</button>
         <button type="button" className="h-8 px-3 text-[13px] text-[#0078d4]" onClick={() => setTab(TABS[Math.min(TABS.length - 1, TABS.indexOf(tab) + 1)] ?? "Review + create")}>Next</button>
       </div>
     </div>
@@ -762,7 +771,7 @@ function Groups({ onDelete }: { onDelete: (name: string) => void }) {
 
 function BladeField({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <div className="grid items-start gap-1 text-[13px] sm:grid-cols-[210px_minmax(0,1fr)] sm:gap-4">
+    <div className="grid items-start gap-1.5 text-[13px] sm:grid-cols-[210px_minmax(0,1fr)] sm:gap-6">
       <span className="pt-1.5 text-[#323130]">{label}{required ? <span className="text-[#a4262c]"> *</span> : null}</span>
       <div className="min-w-0">{children}</div>
     </div>

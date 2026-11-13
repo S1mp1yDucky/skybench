@@ -183,12 +183,15 @@ function CloudShellPanel({ region }: { region: string }) {
   }, [])
   return (
     <div className="flex min-h-[520px] flex-col bg-[#161d26] text-white">
-      <div className="flex flex-wrap items-center gap-2 border-b border-white/10 px-3 py-2 text-[13px]">
+      <div className="relative flex flex-wrap items-center gap-3 border-b border-white/10 px-3 py-2 text-[13px]">
         <span className="rounded-t bg-[#232f3e] px-3 py-1">{region}</span>
         <button type="button" className="rounded px-2 py-1 hover:bg-white/10" onClick={() => setMenu(menu === "actions" ? null : "actions")}>Actions</button>
         <button type="button" className="rounded px-2 py-1 hover:bg-white/10" onClick={() => setMenu(menu === "prefs" ? null : "prefs")}>Preferences</button>
-        {menu === "actions" ? <span className="text-[#d5dbdb]">New tab · Restart · Delete environment</span> : null}
-        {menu === "prefs" ? <span className="text-[#d5dbdb]">Font size · Tabs layout</span> : null}
+        {menu ? (
+          <div className="absolute top-10 left-24 z-20 grid min-w-48 gap-1 rounded-sm border border-white/10 bg-[#232f3e] p-2 text-[#d5dbdb] shadow-xl">
+            {(menu === "actions" ? ["New tab", "Restart", "Delete environment"] : ["Font size", "Tabs layout"]).map((item) => <p key={item} className="px-2 py-1">{item}</p>)}
+          </div>
+        ) : null}
       </div>
       <p className="px-4 py-2 text-[13px] text-[#d5dbdb]">{ready ? "Environment ready." : "Preparing your CloudShell environment…"}</p>
       <div className="px-3 pb-3"><Terminal platform="aws" /></div>
@@ -527,10 +530,14 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
             <p className="text-[12px] text-[#545b64]">The name is a tag, where the key is Name, and the value is the name that you specify.</p>
             <button type="button" className="w-fit text-[13px] text-[#0073bb] hover:underline" onClick={() => setTags((current) => [...current, { key: "", value: "" }])}>Add additional tags</button>
             {tags.map((tag, index) => (
-              <div key={index} className="flex flex-wrap gap-2">
-                <Input aria-label="Tag key" value={tag.key} onChange={(event) => setTags((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, key: event.target.value } : item))} className="h-8 max-w-40 rounded-[2px]" placeholder="Key" />
-                <Input aria-label="Tag value" value={tag.value} onChange={(event) => setTags((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, value: event.target.value } : item))} className="h-8 max-w-40 rounded-[2px]" placeholder="Value" />
-                <span className="self-center text-[12px] text-[#545b64]">Instances, volumes, network interfaces</span>
+              <div key={index} className="grid items-end gap-3 sm:grid-cols-[minmax(0,12rem)_minmax(0,12rem)_minmax(0,1fr)]">
+                <label className="grid gap-1.5 text-[12px] font-bold">Key
+                  <Input aria-label="Tag key" value={tag.key} onChange={(event) => setTags((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, key: event.target.value } : item))} className="h-8 rounded-[2px] font-normal" placeholder="Key" />
+                </label>
+                <label className="grid gap-1.5 text-[12px] font-bold">Value
+                  <Input aria-label="Tag value" value={tag.value} onChange={(event) => setTags((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, value: event.target.value } : item))} className="h-8 rounded-[2px] font-normal" placeholder="Value" />
+                </label>
+                <p className="pb-2 text-[12px] font-normal text-[#545b64]">Instances, volumes, and network interfaces</p>
               </div>
             ))}
           </Card>
@@ -611,8 +618,10 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
             <Field id="aws-key-label" label="Key pair name">
               <ConsoleSelect id="aws-key" label="Key pair name" theme="aws" value={proceed ? "__none__" : keyName} onChange={(value) => { setProceed(value === "__none__"); setKeyName(value === "__none__" ? "" : value) }} options={[{ value: "", label: "Select a key pair" }, { value: "__none__", label: "Proceed without a key pair (Not recommended)" }, ...aws.keyPairs.map((key) => ({ value: key.name, label: key.name }))]} />
             </Field>
-            <div className="flex flex-wrap items-center gap-2">
-              <Input aria-label="New key pair name" value={newKey} onChange={(event) => setNewKey(event.target.value)} className="h-8 max-w-52 rounded-sm" />
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-end">
+              <label className="grid w-full max-w-xs gap-1.5 text-[13px] font-bold">New key pair name
+                <Input aria-label="New key pair name" value={newKey} onChange={(event) => setNewKey(event.target.value)} className="h-8 rounded-[2px] font-normal" />
+              </label>
               <button
                 type="button"
                 className={GHOST}
@@ -630,11 +639,13 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
               >
                 Create key pair
               </button>
-              <label className="text-[13px]">Type
-                <select aria-label="Key pair type" value={keyType} onChange={(event) => setKeyType(event.target.value)} className="ml-2 h-8 rounded-[2px] border border-[#7d8998] bg-white px-2"><option>RSA</option><option>ED25519</option></select>
+            </div>
+            <div className="grid max-w-xl gap-3 sm:grid-cols-2">
+              <label className="grid gap-1.5 text-[13px] font-bold">Key pair type
+                <select aria-label="Key pair type" value={keyType} onChange={(event) => setKeyType(event.target.value)} className="h-8 rounded-[2px] border border-[#7d8998] bg-white px-2 font-normal"><option>RSA</option><option>ED25519</option></select>
               </label>
-              <label className="text-[13px]">Format
-                <select aria-label="Private key file format" value={keyFormat} onChange={(event) => setKeyFormat(event.target.value)} className="ml-2 h-8 rounded-[2px] border border-[#7d8998] bg-white px-2"><option>.pem</option><option>.ppk</option></select>
+              <label className="grid gap-1.5 text-[13px] font-bold">Private key file format
+                <select aria-label="Private key file format" value={keyFormat} onChange={(event) => setKeyFormat(event.target.value)} className="h-8 rounded-[2px] border border-[#7d8998] bg-white px-2 font-normal"><option>.pem</option><option>.ppk</option></select>
               </label>
             </div>
             {proceed ? <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" checked={ack} onChange={(event) => setAck(event.target.checked)} /> I acknowledge that I will not be able to connect to the instance unless I already know how to log in.</label> : null}
@@ -642,21 +653,23 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
           </Card>
           <Card id="launch-5" title="Network settings">
             <div className="flex justify-end"><button type="button" className="text-[13px] text-[#0073bb] hover:underline" onClick={() => setEditNet((open) => !open)}>{editNet ? "Close" : "Edit"}</button></div>
-            <dl className="grid gap-2 text-[13px] sm:grid-cols-2">
-              <div><dt className="text-[#545b64]">Network</dt><dd>{editNet ? <select aria-label="VPC" className="h-8 rounded-[2px] border border-[#7d8998] px-2"><option>vpc-08f2c1a04b7e93d21 (default)</option></select> : "vpc-08f2c1a04b7e93d21 (default)"}</dd></div>
-              <div><dt className="text-[#545b64]">Subnet</dt><dd>{editNet ? <select aria-label="Subnet" className="h-8 rounded-[2px] border border-[#7d8998] px-2"><option>No preference (default subnet in any availability zone)</option></select> : "No preference (default subnet in any availability zone)"}</dd></div>
-              <div><dt className="text-[#545b64]">Auto-assign public IP</dt><dd>{editNet ? <select aria-label="Auto-assign public IP" className="h-8 rounded-[2px] border border-[#7d8998] px-2"><option>Enable</option><option>Disable</option></select> : "Enable"}</dd></div>
-              <div><dt className="text-[#545b64]">Firewall (security groups)</dt><dd>{editNet ? <select aria-label="Firewall" value={firewall} onChange={(event) => setFirewall(event.target.value)} className="h-8 rounded-[2px] border border-[#7d8998] px-2"><option value="create">Create security group</option><option value="existing">Select existing security group</option></select> : firewall === "create" ? "Create security group" : "Select existing security group"}</dd></div>
+            <dl className="grid max-w-xl gap-4 text-[13px]">
+              <div className="grid gap-1.5"><dt className="text-[#545b64]">Network</dt><dd>{editNet ? <select aria-label="VPC" className="h-8 w-full rounded-[2px] border border-[#7d8998] bg-white px-2"><option>vpc-08f2c1a04b7e93d21 (default)</option></select> : "vpc-08f2c1a04b7e93d21 (default)"}</dd></div>
+              <div className="grid gap-1.5"><dt className="text-[#545b64]">Subnet</dt><dd>{editNet ? <select aria-label="Subnet" className="h-8 w-full rounded-[2px] border border-[#7d8998] bg-white px-2"><option>No preference (default subnet in any availability zone)</option></select> : "No preference (default subnet in any availability zone)"}</dd></div>
+              <div className="grid gap-1.5"><dt className="text-[#545b64]">Auto-assign public IP</dt><dd>{editNet ? <select aria-label="Auto-assign public IP" className="h-8 w-full rounded-[2px] border border-[#7d8998] bg-white px-2"><option>Enable</option><option>Disable</option></select> : "Enable"}</dd></div>
+              <div className="grid gap-1.5"><dt className="text-[#545b64]">Firewall (security groups)</dt><dd>{editNet ? <select aria-label="Firewall" value={firewall} onChange={(event) => setFirewall(event.target.value)} className="h-8 w-full rounded-[2px] border border-[#7d8998] bg-white px-2"><option value="create">Create security group</option><option value="existing">Select existing security group</option></select> : firewall === "create" ? "Create security group" : "Select existing security group"}</dd></div>
             </dl>
-            <label className="flex flex-wrap items-center gap-2 text-[13px]">
-              <input type="checkbox" checked readOnly />
-              Allow SSH traffic from
+            <div className="grid max-w-sm gap-1.5">
+              <label className="flex items-center gap-2 text-[13px]">
+                <input type="checkbox" checked readOnly />
+                Allow SSH traffic from
+              </label>
               <select aria-label="Allow SSH traffic from" value={sshFrom} onChange={(event) => setSshFrom(event.target.value)} className="h-8 rounded-[2px] border border-[#7d8998] bg-white px-2">
                 <option>Anywhere 0.0.0.0/0</option>
                 <option>Custom</option>
                 <option>My IP</option>
               </select>
-            </label>
+            </div>
             <label className="flex items-center gap-2 text-[13px]">
               <input type="checkbox" readOnly />
               Allow HTTPS traffic from the internet
@@ -667,19 +680,21 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
             </label>
           </Card>
           <Card id="launch-6" title="Configure storage">
-            <div className="flex justify-end gap-2 text-[13px]">
-              <button type="button" className={cn(storageView === "simple" && "font-bold text-[#0073bb]")} onClick={() => setStorageView("simple")}>Simple</button>
-              <button type="button" className={cn(storageView === "advanced" && "font-bold text-[#0073bb]")} onClick={() => setStorageView("advanced")}>Advanced</button>
+            <div className="flex justify-end gap-4 text-[13px]">
+              <button type="button" className={cn("px-1", storageView === "simple" && "font-bold text-[#0073bb]")} onClick={() => setStorageView("simple")}>Simple</button>
+              <button type="button" className={cn("px-1", storageView === "advanced" && "font-bold text-[#0073bb]")} onClick={() => setStorageView("advanced")}>Advanced</button>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-[13px]">
-              <span>1x</span>
-              <input aria-label="Volume size" type="number" min={8} value={volumeSize} onChange={(event) => setVolumeSize(Number(event.target.value))} className="h-8 w-16 rounded-[2px] border border-[#7d8998] px-2" />
-              <span>GiB</span>
-              <select aria-label="Volume type" className="h-8 rounded-[2px] border border-[#7d8998] bg-white px-2"><option>gp3</option><option>gp2</option><option>io1</option></select>
-              <span>Root volume</span>
-              <label className="flex items-center gap-1"><input type="checkbox" checked={encrypted} onChange={(event) => setEncrypted(event.target.checked)} /> Encrypted</label>
-              {storageView === "advanced" ? <label className="flex items-center gap-1"><input type="checkbox" defaultChecked /> Delete on termination</label> : null}
+            <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+              <label className="grid w-20 gap-1.5 text-[12px] font-bold">Size
+                <input aria-label="Volume size" type="number" min={8} value={volumeSize} onChange={(event) => setVolumeSize(Number(event.target.value))} className="h-8 rounded-[2px] border border-[#7d8998] px-2 font-normal" />
+              </label>
+              <label className="grid w-28 gap-1.5 text-[12px] font-bold">Volume type
+                <select aria-label="Volume type" className="h-8 rounded-[2px] border border-[#7d8998] bg-white px-2 font-normal"><option>gp3</option><option>gp2</option><option>io1</option></select>
+              </label>
+              <p className="pb-1.5 text-[13px] font-normal">GiB · Root volume</p>
+              <label className="flex items-center gap-2 pb-1.5 text-[13px] font-normal"><input type="checkbox" checked={encrypted} onChange={(event) => setEncrypted(event.target.checked)} /> Encrypted</label>
             </div>
+            {storageView === "advanced" ? <label className="flex items-center gap-2 text-[13px]"><input type="checkbox" defaultChecked /> Delete on termination</label> : null}
             {extraVolume ? <p className="text-[13px]">1x 20 GiB gp3 · Data volume</p> : null}
             <button type="button" className="w-fit text-[13px] text-[#0073bb] hover:underline" onClick={() => setExtraVolume(true)}>Add new volume</button>
           </Card>
@@ -696,13 +711,13 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
         </div>
         <aside className="sticky top-4 border border-[#d5dbdb] bg-white p-4">
           <h2 className="text-[18px] font-bold">Summary</h2>
-          <label className="mt-3 grid gap-1 text-[13px]">
+          <label className="mt-4 grid gap-1.5 text-[13px]">
             Number of instances
             <input type="number" min={1} max={1} value={count} onChange={(event) => setCount(Number(event.target.value))} className="h-8 w-24 rounded-sm border border-[#aab7b8] px-2" />
           </label>
-          <ol className="mt-3 grid gap-2 text-[13px]">
+          <ol className="mt-4 grid gap-3 text-[13px]">
             {summary.map(([label, value], index) => (
-              <li key={label}><a href={`#launch-${index + 1}`} className="text-[#0073bb] hover:underline">{index + 1}. {label}</a><p className="break-words text-[#16191f]">{value}</p></li>
+              <li key={label}><a href={`#launch-${index + 1}`} className="text-[#0073bb] hover:underline">{index + 1}. {label}</a><p className="mt-0.5 break-words text-[#16191f]">{value}</p></li>
             ))}
           </ol>
           <button type="submit" className={cn(ORANGE, "mt-4 w-full")}>Launch instance</button>
@@ -749,7 +764,7 @@ function Buckets({ region, buckets }: { region: string; buckets: { name: string;
       <h1 className="text-[28px] font-bold">Buckets</h1>
       <p className="mt-1 text-[13px] text-[#545b64]">Amazon S3 · {region}. General purpose buckets.</p>
       <form
-        className="mt-3 flex flex-wrap items-end gap-2"
+        className="mt-4 flex flex-wrap items-end gap-3"
         onSubmit={(event) => {
           event.preventDefault()
           const outcome = dispatch({ type: "aws/bucket", name })
@@ -760,7 +775,7 @@ function Buckets({ region, buckets }: { region: string; buckets: { name: string;
           }
         }}
       >
-        <label className="grid gap-1 text-[13px]">Bucket name
+        <label className="grid gap-1.5 text-[13px]">Bucket name
           <Input id="bucket-name" value={name} onChange={(event) => setName(event.target.value)} className="h-8 w-64 rounded-sm" />
         </label>
         <button type="submit" className={ORANGE}>Create bucket</button>
@@ -797,7 +812,7 @@ function Card({ title, children, id }: { title: string; children: React.ReactNod
 
 function Field({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
   return (
-    <label htmlFor={id} className="grid gap-1 text-[13px] font-bold">
+    <label htmlFor={id} className="grid gap-1.5 text-[13px] font-bold">
       {label}
       <span className="font-normal">{children}</span>
     </label>
