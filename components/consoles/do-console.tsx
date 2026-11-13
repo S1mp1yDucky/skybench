@@ -52,7 +52,7 @@ export function DoConsole() {
     <ConsoleFrame
       theme="do"
       product="DigitalOcean"
-      account={ocean.signedIn ? ocean.email : "Signed out"}
+      account={ocean.email || STUDENT.email}
       region={
         ocean.signedIn ? (
           <span className="flex items-center gap-2">
@@ -193,14 +193,21 @@ function DoWelcome({
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">Welcome aboard!</h1>
         <p className="mt-3 flex items-center gap-2 text-sm font-medium"><span className="grid size-6 place-items-center rounded-full bg-[#0069ff] text-xs text-white">TM</span> My Team</p>
       </div>
-      <div className="rounded-md bg-[#0069ff] px-5 py-4 text-white">
-        <p className="text-lg font-semibold">You have $5.00 in free Inference Cloud credits!</p>
-        <p className="mt-1 text-sm text-white/90">In this lab the credit is a picture of the control panel. Droplets still use the simulated meter.</p>
+      <div className="flex items-center justify-between rounded-md bg-[#0069ff] px-5 py-4 text-white">
+        <div>
+          <p className="text-lg font-semibold">You have $5.00 in free Inference Cloud credits!</p>
+          <p className="mt-1 text-sm text-white/90">Deploy AI models, run inference workloads, and explore the platform – on us.</p>
+        </div>
+        <span className="hidden text-4xl sm:block">🎁</span>
       </div>
-      <div className="rounded-md border border-[#d5dbe7] bg-white p-5">
-        <p className="text-xs font-semibold tracking-wide text-[#5b6785] uppercase">DigitalOcean</p>
-        <h2 className="mt-2 text-xl font-semibold">Droplets are the practical</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#31405f]">Create an Ubuntu Droplet, connect with ssh root@address, run uname -a, then destroy it. A Droplet keeps billing while it is powered off.</p>
+      <div className="grid items-center gap-4 rounded-md border border-[#d5dbe7] bg-white p-5 md:grid-cols-[1fr_180px]">
+        <div>
+          <p className="text-xs font-semibold tracking-wide text-[#5b6785]">DigitalOcean Signals</p>
+          <h2 className="mt-2 text-xl font-semibold">See How Your Agents Really Behave in Production</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#31405f]">Signals watches production traffic. In this control panel the Droplet is the machine you create, connect to, and destroy.</p>
+          <button type="button" onClick={onCreate} className="mt-4 h-9 rounded-full bg-[#0069ff] px-4 text-sm text-white">Enable Signals</button>
+        </div>
+        <div className="hidden h-28 rounded-md bg-[radial-gradient(circle_at_30%_40%,#8ec5ff,transparent_40%),radial-gradient(circle_at_70%_60%,#b7f3d0,transparent_42%),linear-gradient(#eef6ff,#f7fbff)] md:block" />
       </div>
       <div>
         <h2 className="text-lg font-semibold">Quick Actions</h2>
@@ -244,8 +251,8 @@ function DropletList({
     <div className="grid gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-heading text-3xl">Droplets</h1>
-          <p className="mt-1 max-w-2xl text-sm text-[#4d463c]">Project bscs-lab. Addresses use 192.0.2.0/24, which is reserved for documentation and is not routable.</p>
+          <h1 className="text-[22px] font-semibold">Droplets</h1>
+          <p className="mt-1 text-sm text-[#5b6785]">My Team · project</p>
         </div>
         <Button type="button" className={CTA} onClick={onCreate}>Create Droplet</Button>
       </div>

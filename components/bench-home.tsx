@@ -77,6 +77,7 @@ export function BenchHome() {
             <p className="mt-2 font-heading text-2xl">{STUDENT.name}</p>
             <dl className="mt-3 grid gap-1 text-sm text-[#4d463c]">
               <div className="flex justify-between gap-3"><dt>Enrollment</dt><dd>{STUDENT.enrollment}</dd></div>
+              <div className="flex justify-between gap-3"><dt>Email</dt><dd className="break-all text-right">{STUDENT.email}</dd></div>
               <div className="flex justify-between gap-3"><dt>Submitted to</dt><dd>{STUDENT.instructor}</dd></div>
               <div className="flex justify-between gap-3"><dt>Lab progress</dt><dd>{progress.reduce((sum, steps) => sum + doneCount(steps), 0)}/21</dd></div>
             </dl>

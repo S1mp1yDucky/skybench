@@ -2,11 +2,11 @@ import type { ImageOption, RegionOption, SizeOption } from "@/lib/types"
 
 export const STUDENT = {
   name: "Talal Majid",
-  enrollment: "4-38-2023/015",
+  enrollment: "4-38/2023/021",
   program: "BSCS, 8th Semester",
   subject: "Cloud Computing",
   instructor: "Sir Kashif",
-  email: "talal.majid@student.skybench.test",
+  email: "03352869102t@gmail.com",
   drive:
     "https://drive.google.com/drive/folders/1HtcP42A-1Krayzo1UgTcQyOp5_Zv6NqD",
 }

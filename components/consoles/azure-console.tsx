@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { AppWindow, Boxes, Monitor, Plus, SquareTerminal, Wallet } from "lucide-react"
 import { toast } from "sonner"
 import { AccountForm, SignInCard } from "@/components/account-form"
 import { BillingPanel } from "@/components/billing-panel"
@@ -52,7 +51,7 @@ export function AzureConsole() {
     <ConsoleFrame
       theme="azure"
       product="Azure portal"
-      account={azure.signedIn ? azure.email : "Signed out"}
+      account={azure.email || STUDENT.email}
       region={
         azure.signedIn ? (
           <span className="flex items-center gap-2">
@@ -192,28 +191,32 @@ function AzureHome({
 }) {
   const visible = vms.filter((vm) => vm.state !== "terminated")
   const services = [
-    { label: "Create a resource", id: "create", icon: Plus },
-    { label: "Virtual machines", id: "vms", icon: Monitor },
-    { label: "Resource groups", id: "groups", icon: Boxes },
-    { label: "Cost management", id: "billing", icon: Wallet },
-    { label: "Products and pricing", id: "study", icon: AppWindow },
-    { label: "VMware shell", id: "shell", icon: SquareTerminal },
+    { label: "Create a resource", id: "create", color: "#0078d4", mark: "+" },
+    { label: "Virtual machines", id: "vms", color: "#0078d4", mark: "▣" },
+    { label: "Quickstart Center", id: "study", color: "#d83b01", mark: "🚀" },
+    { label: "Foundry", id: "study", color: "#5c2d91", mark: "A" },
+    { label: "Kubernetes services", id: "study", color: "#5c2d91", mark: "⎈" },
+    { label: "App Services", id: "study", color: "#0078d4", mark: "▦" },
+    { label: "Storage accounts", id: "groups", color: "#107c10", mark: "▤" },
+    { label: "SQL databases", id: "study", color: "#0078d4", mark: "SQL" },
+    { label: "Azure Cosmos DB", id: "study", color: "#0078d4", mark: "◌" },
+    { label: "More services", id: "shell", color: "#0078d4", mark: "→" },
   ]
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-8 bg-white">
       <section>
-        <h2 className="text-xl font-semibold">Azure services</h2>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <h2 className="text-[20px] font-semibold">Azure services</h2>
+        <div className="mt-4 flex gap-1 overflow-x-auto pb-2">
           {services.map((service) => (
-            <button key={service.id} type="button" onClick={() => onOpen(service.id)} className="grid w-28 justify-items-center gap-2 px-1 text-center text-xs text-[#0078d4]">
-              <service.icon className="size-7" strokeWidth={1.5} />
+            <button key={service.label} type="button" onClick={() => onOpen(service.id)} className="grid w-[92px] shrink-0 justify-items-center gap-2 text-center text-[12px] leading-4 text-[#0078d4]">
+              <span className="grid size-8 place-items-center text-lg" style={{ color: service.color }}>{service.mark}</span>
               {service.label}
             </button>
           ))}
         </div>
       </section>
       <section>
-        <h2 className="text-xl font-semibold">Resources</h2>
+        <h2 className="text-[20px] font-semibold">Resources</h2>
         <div className="mt-3 flex gap-4 border-b border-[#e1dfdd] text-sm">
           <span className="border-b-2 border-[#0078d4] pb-2 font-semibold text-[#0078d4]">Recent</span>
           <span className="pb-2 text-[#616161]">Favorite</span>
@@ -229,7 +232,10 @@ function AzureHome({
           <tbody>
             {visible.length === 0 ? (
               <tr>
-                <td colSpan={3} className="py-10 text-center text-[#616161]">No resources have been viewed recently</td>
+                <td colSpan={3} className="py-16 text-center text-[#616161]">
+                  <span className="mx-auto mb-3 grid size-16 place-items-center rounded-lg border border-[#edebe9] text-3xl text-[#c8c6c4]">▣</span>
+                  <span className="block">No resources have been viewed recently</span>
+                </td>
               </tr>
             ) : (
               visible.map((vm) => (
@@ -242,7 +248,8 @@ function AzureHome({
             )}
           </tbody>
         </table>
-        <p className="mt-2 text-xs text-[#616161]">Signed in as {account}. This portal is local and does not open a real subscription.</p>
+        <button type="button" onClick={() => onOpen("vms")} className="mt-3 text-sm text-[#0078d4]">View all resources</button>
+        <p className="sr-only">{account}</p>
       </section>
       {continueLabel && onContinue ? (
         <Button type="button" className="h-9 w-fit bg-[#0078d4] text-white hover:bg-[#006cbe]" onClick={onContinue}>
@@ -271,8 +278,8 @@ function VmList({
     <div className="grid gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-heading text-3xl">Virtual machines</h1>
-          <p className="mt-1 text-sm text-[#4d463c]">Addresses use the documentation range 198.51.100.0/24. Cleanup is deleting the resource group, not only stopping the VM.</p>
+          <h1 className="text-[22px] font-semibold">Virtual machines</h1>
+          <p className="mt-1 text-sm text-[#616161]">Subscription · Default Directory</p>
         </div>
         <Button type="button" className={CTA} onClick={onCreate}>
           Create virtual machine

@@ -22,6 +22,7 @@ export function ReportView() {
         <dl className="mt-6 grid gap-1 text-sm sm:grid-cols-2">
           <div><dt className="text-[#6d6256]">Submitted by</dt><dd>{STUDENT.name}</dd></div>
           <div><dt className="text-[#6d6256]">Enrollment</dt><dd>{STUDENT.enrollment}</dd></div>
+          <div><dt className="text-[#6d6256]">Email</dt><dd className="break-all">{STUDENT.email}</dd></div>
           <div><dt className="text-[#6d6256]">Program</dt><dd>{STUDENT.program}</dd></div>
           <div><dt className="text-[#6d6256]">Submitted to</dt><dd>{STUDENT.instructor}</dd></div>
         </dl>

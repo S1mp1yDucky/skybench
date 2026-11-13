@@ -15,6 +15,7 @@ const LINKS = [
 
 export function SimBanner() {
   const pathname = usePathname()
+  if (pathname.startsWith("/aws") || pathname.startsWith("/azure") || pathname.startsWith("/digitalocean")) return null
 
   return (
     <div className="no-print border-b border-[#1a332e] bg-[#23453d] text-[#f4efe4]">

@@ -52,24 +52,24 @@ export function AwsConsole() {
     <ConsoleFrame
       theme="aws"
       product="AWS console"
-      account={aws.signedIn ? aws.email : "Signed out"}
+      account={aws.email || STUDENT.email}
       region={
-        aws.signedIn ? (
-          <span className="flex items-center gap-2">
-            <RegionSelect
-              label="AWS region"
-              value={aws.region}
-              options={AWS_REGIONS}
-              onChange={(region) => {
-                const outcome = dispatch({ type: "aws/region", region })
-                if (outcome.error) toast.error(outcome.error)
-              }}
-            />
-            <Button type="button" variant="ghost" className="text-white hover:bg-white/10" onClick={() => dispatch({ type: "aws/signout" })}>
+        <span className="flex items-center gap-1">
+          <RegionSelect
+            label="AWS region"
+            value={aws.region}
+            options={AWS_REGIONS}
+            onChange={(region) => {
+              const outcome = dispatch({ type: "aws/region", region })
+              if (outcome.error) toast.error(outcome.error)
+            }}
+          />
+          {aws.signedIn ? (
+            <Button type="button" variant="ghost" className="h-8 text-white hover:bg-white/10" onClick={() => dispatch({ type: "aws/signout" })}>
               Sign out
             </Button>
-          </span>
-        ) : null
+          ) : null}
+        </span>
       }
       nav={[
         { id: "home", label: "Dashboard" },
@@ -218,55 +218,54 @@ function Ec2Home({
     ["Capacity Reservations", "None"],
     ["Dedicated Hosts", "None"],
     ["Elastic IPs", "None"],
-    ["Instances", visible.length === 0 ? "No instances in this region" : `${visible.length} in ${region}`],
-    ["Key pairs", "Create one before launch"],
+    ["Instances", visible.length === 0 ? "No instances" : `${visible.length}`],
+    ["Key pairs", "None"],
     ["Load balancers", "None"],
     ["Placement groups", "None"],
-    ["Security groups", "SSH on port 22 is opened for lab instances"],
+    ["Security groups", "None"],
     ["Snapshots", "None"],
-    ["Volumes", "A stopped instance can still leave a disk on a real account"],
+    ["Volumes", "None"],
   ] as const
   return (
-    <div className="grid gap-6 xl:grid-cols-[1fr_280px]">
+    <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_260px]">
       <div>
-        <h1 className="text-[28px] font-medium">Resources</h1>
-        <p className="mt-2 text-sm text-[#16191f]">You are using the following Amazon EC2 resources in the {regionLabel} Region:</p>
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="flex items-center justify-between">
+          <h1 className="text-[22px] font-bold">Resources</h1>
+          <span className="text-[#545b64]">⚙</span>
+        </div>
+        <p className="mt-1 text-sm">You are using the following Amazon EC2 resources in the {regionLabel} Region:</p>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
           {tiles.map(([title, detail]) => (
-            <ResourceTile
-              key={title}
-              title={title}
-              detail={detail}
-              onClick={title.startsWith("Instances") ? onOpenInstances : undefined}
-            />
+            <ResourceTile key={title} title={title} detail={detail} onClick={title.startsWith("Instances") ? onOpenInstances : undefined} />
           ))}
         </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
           <button type="button" onClick={onLaunch} className="rounded border border-[#d5dbdb] bg-white p-4 text-left">
-            <span className="text-lg text-[#0073bb]">Launch instance</span>
-            <span className="mt-1 block text-sm text-[#545b64]">To get started, launch an Amazon EC2 instance</span>
+            <span className="text-base font-medium">Launch instance</span>
+            <span className="mt-1 block text-sm text-[#0073bb]">To get started, launch an Amazon EC2 instance</span>
           </button>
           <div className="rounded border border-[#d5dbdb] bg-white p-4">
-            <p className="text-lg">Service health</p>
+            <p className="text-base font-medium">Service health</p>
             <a className="text-sm text-[#0073bb]" href="https://health.aws.amazon.com/health/status" target="_blank" rel="noreferrer">AWS Health Dashboard</a>
           </div>
         </div>
         {continueLabel && onContinue ? (
-          <Button type="button" className="mt-4 h-9 bg-[#ec7211] text-white hover:bg-[#eb5f07]" onClick={onContinue}>
+          <Button type="button" className="mt-4 h-8 rounded-sm bg-[#ec7211] px-4 text-white hover:bg-[#eb5f07]" onClick={onContinue}>
             {continueLabel}
           </Button>
         ) : null}
       </div>
       <aside className="rounded border border-[#d5dbdb] bg-white p-4">
-        <h2 className="text-lg font-medium">Account attributes</h2>
-        <ul className="mt-3 grid gap-2 text-sm text-[#0073bb]">
-          <li>Data protection and security</li>
-          <li>Allowed AMIs</li>
-          <li>Settings</li>
-          <li>Zones</li>
-          <li>EC2 Serial Console</li>
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold">Account attributes</h2>
+          <span className="text-[#545b64]">↻</span>
+        </div>
+        <p className="mt-3 text-xs font-semibold tracking-wide text-[#545b64] uppercase">Settings</p>
+        <ul className="mt-2 grid gap-2 text-sm text-[#0073bb]">
+          {["Data protection and security", "Allowed AMIs", "Zones", "EC2 Serial Console", "Default credit specification", "Managed resources", "EC2 console preferences"].map((item) => (
+            <li key={item}>{item}</li>
+          ))}
         </ul>
-        <p className="mt-4 text-xs leading-5 text-[#545b64]">This console is local. It does not open the account shown in a screen recording.</p>
       </aside>
     </div>
   )
@@ -294,8 +293,8 @@ function InstanceTable({
     <div className="grid gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-heading text-3xl">Instances</h1>
-          <p className="mt-1 text-sm text-[#4d463c]">Region {region}. Public addresses use the documentation range 203.0.113.0/24.</p>
+          <h1 className="text-[22px] font-bold">Instances</h1>
+          <p className="mt-1 text-sm text-[#545b64]">{region}</p>
         </div>
         <Button type="button" className={CTA} onClick={onLaunch}>
           Launch instance

@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Fraunces, IBM_Plex_Mono, Outfit } from "next/font/google"
+import { Fraunces, IBM_Plex_Mono, Inter, Outfit } from "next/font/google"
 import { Providers } from "@/components/providers"
 import { SimBanner } from "@/components/sim-banner"
 import "./globals.css"
@@ -12,6 +12,11 @@ const outfit = Outfit({
 const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
+})
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-console",
 })
 
 const plex = IBM_Plex_Mono({
@@ -33,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${outfit.variable} ${fraunces.variable} ${plex.variable} h-full antialiased`}
+      className={`${outfit.variable} ${fraunces.variable} ${plex.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="flex min-h-dvh flex-col">
         <Providers>

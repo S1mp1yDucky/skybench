@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronDown, Menu, Search, X } from "lucide-react"
+import { Bell, ChevronDown, CircleHelp, Menu, Search, Settings, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { LabStep } from "@/lib/steps"
 import { cn } from "@/lib/utils"
@@ -53,48 +53,49 @@ export function ConsoleFrame({
   )
 
   return (
-    <div className={cn("flex min-h-0 flex-1 flex-col", theme === "do" ? "bg-[#f4f7fb] text-[#031b4e]" : "bg-white text-[#16191f]")}>
+    <div className={cn("flex min-h-0 flex-1 flex-col font-[family-name:var(--font-console)]", theme === "do" ? "bg-[#f3f5f9] text-[#031b4e]" : "bg-white text-[#16191f]")}>
       {theme === "aws" ? (
-        <header className="flex h-12 items-center gap-3 bg-[#232f3e] px-2 text-white sm:px-3">
+        <header className="flex h-12 items-center gap-2 bg-[#232f3e] px-2 text-white sm:px-3">
           <MenuButton open={open} onClick={() => setOpen((value) => !value)} light />
-          <span className="text-[22px] font-semibold tracking-tight lowercase">aws</span>
-          <span className="hidden text-sm text-[#d5dbdb] sm:inline">EC2</span>
-          <div className="ml-auto flex min-w-0 items-center gap-2 text-xs sm:gap-3 sm:text-sm">
+          <AwsMark />
+          <div className="ml-auto flex min-w-0 items-center gap-1 text-xs sm:gap-2 sm:text-sm">
+            <IconButton label="Search"><Search className="size-4" /></IconButton>
+            <IconButton label="Notifications"><Bell className="size-4" /></IconButton>
+            <IconButton label="Settings"><Settings className="size-4" /></IconButton>
             {region}
-            <span className="max-w-[180px] truncate">{account}</span>
+            <AccountChip account={account} />
             <StepsMenu done={done} steps={steps} dark />
           </div>
         </header>
       ) : null}
       {theme === "azure" ? (
-        <header className="flex h-12 items-center gap-2 bg-[#0078d4] px-2 text-white sm:px-3">
+        <header className="flex h-12 items-center gap-2 bg-[#0078d4] px-2 text-white sm:gap-3 sm:px-3">
           <MenuButton open={open} onClick={() => setOpen((value) => !value)} light />
           <span className="hidden shrink-0 text-[15px] font-semibold sm:inline">Microsoft Azure</span>
-          <label className="relative mx-1 min-w-0 flex-1">
+          <label className="relative min-w-0 flex-1">
             <span className="sr-only">Search resources, services, and docs</span>
-            <Search className="pointer-events-none absolute top-1.5 left-2 size-4 text-[#616161]" />
+            <Search className="pointer-events-none absolute top-2 left-3 size-4 text-[#616161]" />
             <input
               readOnly
-              value=""
               placeholder="Search resources, services, and docs (G+/)"
-              className="h-8 w-full rounded-sm bg-white pr-2 pl-8 text-sm text-[#242424] outline-none placeholder:text-[#616161]"
+              className="h-8 w-full rounded-sm bg-white pr-3 pl-9 text-sm text-[#242424] outline-none placeholder:text-[#616161]"
             />
           </label>
-          <div className="flex min-w-0 items-center gap-2 text-xs">
-            <span className="hidden text-right leading-tight sm:block">
-              <span className="block max-w-[220px] truncate">{account}</span>
-              <span className="block text-[10px] tracking-wide text-white/80 uppercase">Default Directory</span>
-            </span>
-            <StepsMenu done={done} steps={steps} dark />
-          </div>
+          <IconButton label="Notifications"><Bell className="size-4" /></IconButton>
+          <IconButton label="Settings"><Settings className="size-4" /></IconButton>
+          <IconButton label="Help"><CircleHelp className="size-4" /></IconButton>
+          <span className="hidden text-right leading-tight sm:block">
+            <span className="block max-w-[220px] truncate text-xs">{account}</span>
+            <span className="block text-[10px] tracking-wide uppercase">Default Directory</span>
+          </span>
+          <StepsMenu done={done} steps={steps} dark />
         </header>
       ) : null}
       {theme === "do" ? (
         <div className="flex min-h-0 flex-1">
           <aside className={cn("z-30 w-56 shrink-0 bg-[#031b4e] text-white md:static md:flex md:flex-col", open ? "absolute inset-y-0 left-0 flex" : "hidden md:flex")}>
             <div className="flex items-center gap-2 px-4 py-4">
-              <span className="grid size-7 place-items-center rounded-full bg-white text-sm font-bold text-[#0069ff]">D</span>
-              <span className="text-sm font-semibold">DigitalOcean</span>
+              <DoMark />
             </div>
             {sidebar}
           </aside>
@@ -106,12 +107,15 @@ export function ConsoleFrame({
                 <Search className="pointer-events-none absolute top-2 left-2 size-4 text-[#8b93a7]" />
                 <input readOnly placeholder="Search resources, pages, or public IP (Ctrl+K)" className="h-8 w-full max-w-md rounded-full border border-[#d5dbe7] pr-3 pl-8 text-sm outline-none" />
               </label>
-              <Button type="button" className="ml-auto h-8 rounded-full bg-[#0069ff] px-4 text-white hover:bg-[#0056d6]" onClick={() => go("create")} disabled={locked}>
+              <Button type="button" className="ml-auto h-8 rounded-full bg-[#0069ff] px-4 text-sm text-white hover:bg-[#0056d6]" onClick={() => go("create")} disabled={locked}>
                 Create
               </Button>
-              <span className="hidden rounded-full bg-[#e8f8ef] px-2 py-1 text-xs font-medium text-[#0b7a3b] sm:inline">Signup Credit: $5.00</span>
-              <span className="hidden text-sm sm:inline">My Team</span>
-              <span className="max-w-[120px] truncate text-xs text-[#4d5875]">{account}</span>
+              <span className="hidden items-center gap-1 rounded-full border border-[#d5dbe7] px-2 py-1 text-xs sm:inline-flex">
+                <span className="size-2 rounded-full bg-[#2fbf71]" />
+                Signup Credit: $5.00
+              </span>
+              <span className="hidden text-sm font-medium sm:inline">My Team</span>
+              <AccountChip account={account} tone="do" />
               <StepsMenu done={done} steps={steps} />
             </header>
             {alert ? <Alert>{alert}</Alert> : null}
@@ -173,8 +177,8 @@ function Alert({ children }: { children: React.ReactNode }) {
 function StepsMenu({ done, steps, dark = false }: { done: number; steps: LabStep[]; dark?: boolean }) {
   return (
     <details className="relative">
-      <summary className={cn("cursor-pointer list-none rounded px-2 py-1 text-xs font-medium", dark ? "hover:bg-white/10" : "hover:bg-[#f3f7ff]")}>
-        Assignment {done}/7
+      <summary className={cn("grid size-8 cursor-pointer list-none place-items-center rounded-full", dark ? "hover:bg-white/10" : "hover:bg-[#f3f7ff]")} aria-label={`Assignment steps, ${done} of 7`}>
+        <CircleHelp className="size-4" />
       </summary>
       <div className="absolute top-8 right-0 z-40 w-80 rounded-lg border border-[#d5dbdb] bg-white p-3 text-[#16191f] shadow-xl">
         <p className="text-sm font-medium">{done} of 7 complete</p>
@@ -246,8 +250,10 @@ function AwsNav({ nav, active, locked, onNavigate }: { nav: ConsoleNavItem[]; ac
   return (
     <div className="grid gap-3 text-sm">
       <div>
-        <p className="px-2 text-base font-semibold">EC2</p>
+        <p className="px-2 text-[15px] font-semibold">EC2</p>
         {item("home", "Dashboard")}
+        <p className="px-2 py-1.5 text-[#0073bb]">AWS Global View</p>
+        <p className="px-2 py-1.5 text-[#16191f]">Events</p>
         {item("study", "Products and pricing")}
       </div>
       <div>
@@ -264,6 +270,7 @@ function AwsNav({ nav, active, locked, onNavigate }: { nav: ConsoleNavItem[]; ac
         <p className="px-2 text-xs font-semibold text-[#545b64]">Elastic Block Store</p>
         <p className="px-6 py-1 text-[#545b64]">Volumes</p>
         <p className="px-6 py-1 text-[#545b64]">Snapshots</p>
+        <p className="px-6 py-1 text-[#545b64]">Lifecycle Manager</p>
       </div>
       <div>
         <p className="px-2 text-xs font-semibold text-[#545b64]">Network & Security</p>
@@ -333,6 +340,48 @@ export function ResourceTile({ title, detail, onClick }: { title: string; detail
       </span>
       <ChevronDown className="size-4 text-[#545b64]" />
     </div>
+  )
+}
+
+function IconButton({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <button type="button" aria-label={label} className="grid size-8 place-items-center rounded-full hover:bg-white/10">
+      {children}
+    </button>
+  )
+}
+
+function AccountChip({ account, tone = "aws" }: { account: string; tone?: "aws" | "do" }) {
+  const letter = (account.replace(/[^a-zA-Z]/g, "").slice(0, 1) || "T").toUpperCase()
+  return (
+    <span className="flex max-w-[180px] items-center gap-2 text-xs">
+      <span className={cn("grid size-7 shrink-0 place-items-center rounded-full text-[11px] font-semibold", tone === "do" ? "bg-[#0069ff] text-white" : "bg-[#ff9900] text-[#232f3e]")}>{letter}</span>
+      <span className="hidden truncate sm:inline">{account}</span>
+    </span>
+  )
+}
+
+function AwsMark() {
+  return (
+    <span className="flex items-end gap-1 pr-2" aria-label="Amazon Web Services">
+      <svg viewBox="0 0 72 32" className="h-7 w-14" aria-hidden>
+        <text x="4" y="20" fill="white" fontSize="18" fontFamily="Arial, sans-serif" fontWeight="700">aws</text>
+        <path d="M18 24c8 5 22 5 32 0" fill="none" stroke="#ff9900" strokeWidth="2.4" strokeLinecap="round" />
+        <path d="M48 22l4 3-5 1" fill="#ff9900" />
+      </svg>
+    </span>
+  )
+}
+
+function DoMark() {
+  return (
+    <span className="flex items-center gap-2 text-sm font-semibold">
+      <svg viewBox="0 0 32 32" className="size-7" aria-hidden>
+        <circle cx="16" cy="16" r="16" fill="#0069ff" />
+        <path d="M8 18c2-6 6-9 8-9s6 3 8 9c-2 2-5 3-8 3s-6-1-8-3z" fill="white" />
+      </svg>
+      DigitalOcean
+    </span>
   )
 }
 

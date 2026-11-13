@@ -21,7 +21,7 @@ export function AccountForm({
   onCreate: (input: { email: string; student: boolean }) => { error?: string }
 }) {
   const [email, setEmail] = useState(emailDefault)
-  const [phone, setPhone] = useState("+92 300 0000000")
+  const [phone, setPhone] = useState("03352869102")
   const [password, setPassword] = useState("")
   const [sent, setSent] = useState<string | null>(null)
   const [code, setCode] = useState("")
