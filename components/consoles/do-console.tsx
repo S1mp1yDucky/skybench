@@ -34,7 +34,7 @@ const CTA = "h-10 bg-[#0069ff] text-white hover:bg-[#0056d6]"
 export function DoConsole() {
   const lab = useLabState()
   const ocean = lab.do
-  const [view, setView] = useState("droplets")
+  const [view, setView] = useState("home")
   const [connectId, setConnectId] = useState<string | null>(null)
   const [destroyId, setDestroyId] = useState<string | null>(null)
   const stage = !ocean.reviewedSite ? "study" : !ocean.accountCreated ? "signup" : !ocean.signedIn ? "signin" : view
@@ -72,6 +72,7 @@ export function DoConsole() {
         ) : null
       }
       nav={[
+        { id: "home", label: "Home" },
         { id: "droplets", label: "Droplets" },
         { id: "create", label: "Create Droplet" },
         { id: "keys", label: "SSH keys" },
@@ -86,16 +87,17 @@ export function DoConsole() {
       steps={doSteps(lab)}
       alert={alert}
     >
-      {stage === "study" ? (
-        <StudyView
-          study={STUDIES.do}
-          continueLabel={ocean.accountCreated ? "Back to Droplets" : "Continue to account setup"}
-          onContinue={() => {
-            if (!ocean.reviewedSite) dispatch({ type: "do/review" })
-            else setView("droplets")
-          }}
+      {stage === "study" && !ocean.reviewedSite ? (
+        <DoWelcome
+          onCreate={() => undefined}
+          continueLabel="Continue to account setup"
+          onContinue={() => dispatch({ type: "do/review" })}
         />
       ) : null}
+      {stage === "study" && ocean.reviewedSite ? (
+        <StudyView study={STUDIES.do} continueLabel="Back to Droplets" onContinue={() => setView("droplets")} />
+      ) : null}
+      {stage === "home" ? <DoWelcome onCreate={() => setView("create")} /> : null}
       {stage === "signup" ? (
         <AccountForm
           heading="Create a DigitalOcean account"
@@ -170,6 +172,58 @@ export function DoConsole() {
 function tell(outcome: { error?: string; message?: string }) {
   if (outcome.error) toast.error(outcome.error)
   else if (outcome.message) toast.success(outcome.message)
+}
+
+function DoWelcome({
+  onCreate,
+  continueLabel,
+  onContinue,
+}: {
+  onCreate: () => void
+  continueLabel?: string
+  onContinue?: () => void
+}) {
+  const now = useNow(true)
+  const actions = ["Create a ticket", "Invite team members", "View billing", "Create a Droplet", "Create resource alerts", "Create a Project"]
+  const today = now == null ? "\u00a0" : new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric", timeZone: "Asia/Karachi" }).format(now)
+  return (
+    <div className="grid gap-6">
+      <div>
+        <p className="text-sm text-[#5b6785]">{today}</p>
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight">Welcome aboard!</h1>
+        <p className="mt-3 flex items-center gap-2 text-sm font-medium"><span className="grid size-6 place-items-center rounded-full bg-[#0069ff] text-xs text-white">TM</span> My Team</p>
+      </div>
+      <div className="rounded-md bg-[#0069ff] px-5 py-4 text-white">
+        <p className="text-lg font-semibold">You have $5.00 in free Inference Cloud credits!</p>
+        <p className="mt-1 text-sm text-white/90">In this lab the credit is a picture of the control panel. Droplets still use the simulated meter.</p>
+      </div>
+      <div className="rounded-md border border-[#d5dbe7] bg-white p-5">
+        <p className="text-xs font-semibold tracking-wide text-[#5b6785] uppercase">DigitalOcean</p>
+        <h2 className="mt-2 text-xl font-semibold">Droplets are the practical</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#31405f]">Create an Ubuntu Droplet, connect with ssh root@address, run uname -a, then destroy it. A Droplet keeps billing while it is powered off.</p>
+      </div>
+      <div>
+        <h2 className="text-lg font-semibold">Quick Actions</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {actions.map((action) => (
+            <button
+              key={action}
+              type="button"
+              onClick={action === "Create a Droplet" ? onCreate : undefined}
+              className="rounded-full border border-[#c9d3e8] bg-white px-3 py-1.5 text-sm"
+            >
+              {action}
+            </button>
+          ))}
+        </div>
+      </div>
+      {continueLabel && onContinue ? (
+        <Button type="button" className="h-9 w-fit rounded-full bg-[#0069ff] text-white hover:bg-[#0056d6]" onClick={onContinue}>
+          {continueLabel}
+        </Button>
+      ) : null}
+    </div>
+  )
 }
 
 function DropletList({
@@ -354,7 +408,7 @@ function Keys() {
 
 function Spaces() {
   const ocean = useLabState().do
-  const [name, setName] = useState("hassan-notes")
+  const [name, setName] = useState("talal-notes")
   const [error, setError] = useState<string | null>(null)
   return (
     <div className="grid gap-4">

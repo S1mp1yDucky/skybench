@@ -4,7 +4,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { AccountForm, SignInCard } from "@/components/account-form"
 import { BillingPanel } from "@/components/billing-panel"
-import { ConsoleFrame } from "@/components/console-frame"
+import { ConsoleFrame, ResourceTile } from "@/components/console-frame"
 import { ConnectDialog, downloadPem } from "@/components/connect-dialog"
 import { RegionSelect } from "@/components/region-select"
 import { StateBadge } from "@/components/state-badge"
@@ -34,7 +34,7 @@ const CTA = "h-10 bg-[#ff9900] text-[#16191f] hover:bg-[#ec8d00]"
 export function AwsConsole() {
   const lab = useLabState()
   const aws = lab.aws
-  const [view, setView] = useState("ec2")
+  const [view, setView] = useState("home")
   const [connectId, setConnectId] = useState<string | null>(null)
   const [killId, setKillId] = useState<string | null>(null)
   const stage = !aws.reviewedSite ? "study" : !aws.accountCreated ? "signup" : !aws.signedIn ? "signin" : view
@@ -72,6 +72,7 @@ export function AwsConsole() {
         ) : null
       }
       nav={[
+        { id: "home", label: "Dashboard" },
         { id: "ec2", label: "EC2 instances" },
         { id: "launch", label: "Launch instance" },
         { id: "keys", label: "Key pairs" },
@@ -86,14 +87,29 @@ export function AwsConsole() {
       steps={awsSteps(lab)}
       alert={alert}
     >
-      {stage === "study" ? (
+      {stage === "study" && !aws.reviewedSite ? (
+        <Ec2Home
+          region={aws.region}
+          instances={aws.instances}
+          onLaunch={() => undefined}
+          onOpenInstances={() => undefined}
+          continueLabel="Continue to account setup"
+          onContinue={() => dispatch({ type: "aws/review" })}
+        />
+      ) : null}
+      {stage === "study" && aws.reviewedSite ? (
         <StudyView
           study={STUDIES.aws}
-          continueLabel={aws.accountCreated ? "Back to instances" : "Continue to account setup"}
-          onContinue={() => {
-            if (!aws.reviewedSite) dispatch({ type: "aws/review" })
-            else setView("ec2")
-          }}
+          continueLabel="Back to instances"
+          onContinue={() => setView("ec2")}
+        />
+      ) : null}
+      {stage === "home" ? (
+        <Ec2Home
+          region={aws.region}
+          instances={aws.instances}
+          onLaunch={() => setView("launch")}
+          onOpenInstances={() => setView("ec2")}
         />
       ) : null}
       {stage === "signup" ? (
@@ -176,6 +192,84 @@ export function AwsConsole() {
 function tell(outcome: { error?: string; message?: string }) {
   if (outcome.error) toast.error(outcome.error)
   else if (outcome.message) toast.success(outcome.message)
+}
+
+function Ec2Home({
+  region,
+  instances,
+  onLaunch,
+  onOpenInstances,
+  continueLabel,
+  onContinue,
+}: {
+  region: string
+  instances: Vm[]
+  onLaunch: () => void
+  onOpenInstances: () => void
+  continueLabel?: string
+  onContinue?: () => void
+}) {
+  const visible = instances.filter((vm) => vm.state !== "terminated")
+  const running = visible.filter((vm) => vm.state === "running").length
+  const regionLabel = AWS_REGIONS.find((item) => item.id === region)?.label.replace(` ${region}`, "") ?? region
+  const tiles = [
+    ["Instances (running)", running === 0 ? "No instances" : `${running} running`],
+    ["Auto Scaling Groups", "None"],
+    ["Capacity Reservations", "None"],
+    ["Dedicated Hosts", "None"],
+    ["Elastic IPs", "None"],
+    ["Instances", visible.length === 0 ? "No instances in this region" : `${visible.length} in ${region}`],
+    ["Key pairs", "Create one before launch"],
+    ["Load balancers", "None"],
+    ["Placement groups", "None"],
+    ["Security groups", "SSH on port 22 is opened for lab instances"],
+    ["Snapshots", "None"],
+    ["Volumes", "A stopped instance can still leave a disk on a real account"],
+  ] as const
+  return (
+    <div className="grid gap-6 xl:grid-cols-[1fr_280px]">
+      <div>
+        <h1 className="text-[28px] font-medium">Resources</h1>
+        <p className="mt-2 text-sm text-[#16191f]">You are using the following Amazon EC2 resources in the {regionLabel} Region:</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {tiles.map(([title, detail]) => (
+            <ResourceTile
+              key={title}
+              title={title}
+              detail={detail}
+              onClick={title.startsWith("Instances") ? onOpenInstances : undefined}
+            />
+          ))}
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <button type="button" onClick={onLaunch} className="rounded border border-[#d5dbdb] bg-white p-4 text-left">
+            <span className="text-lg text-[#0073bb]">Launch instance</span>
+            <span className="mt-1 block text-sm text-[#545b64]">To get started, launch an Amazon EC2 instance</span>
+          </button>
+          <div className="rounded border border-[#d5dbdb] bg-white p-4">
+            <p className="text-lg">Service health</p>
+            <a className="text-sm text-[#0073bb]" href="https://health.aws.amazon.com/health/status" target="_blank" rel="noreferrer">AWS Health Dashboard</a>
+          </div>
+        </div>
+        {continueLabel && onContinue ? (
+          <Button type="button" className="mt-4 h-9 bg-[#ec7211] text-white hover:bg-[#eb5f07]" onClick={onContinue}>
+            {continueLabel}
+          </Button>
+        ) : null}
+      </div>
+      <aside className="rounded border border-[#d5dbdb] bg-white p-4">
+        <h2 className="text-lg font-medium">Account attributes</h2>
+        <ul className="mt-3 grid gap-2 text-sm text-[#0073bb]">
+          <li>Data protection and security</li>
+          <li>Allowed AMIs</li>
+          <li>Settings</li>
+          <li>Zones</li>
+          <li>EC2 Serial Console</li>
+        </ul>
+        <p className="mt-4 text-xs leading-5 text-[#545b64]">This console is local. It does not open the account shown in a screen recording.</p>
+      </aside>
+    </div>
+  )
 }
 
 function InstanceTable({
@@ -391,7 +485,7 @@ function KeyPairs({ keys }: { keys: { name: string; fingerprint: string; publicK
 }
 
 function Buckets({ region, buckets }: { region: string; buckets: { name: string; region: string }[] }) {
-  const [name, setName] = useState("hassan-notes")
+  const [name, setName] = useState("talal-notes")
   const [error, setError] = useState<string | null>(null)
   return (
     <div className="grid gap-4">

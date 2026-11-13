@@ -47,7 +47,7 @@ try {
   await page.goto(base, { waitUntil: "load" })
   await settle()
   const home = await bodyText()
-  if (!home.includes("Hassan Shah Khan")) throw new Error("Home is missing the student name")
+  if (!home.includes("Talal Majid")) throw new Error("Home is missing the student name")
   if (!home.includes("Three clouds, on the bench.")) throw new Error("Home heading missing")
   await shot("01-bench")
 

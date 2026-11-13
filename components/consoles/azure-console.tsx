@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { AppWindow, Boxes, Monitor, Plus, SquareTerminal, Wallet } from "lucide-react"
 import { toast } from "sonner"
 import { AccountForm, SignInCard } from "@/components/account-form"
 import { BillingPanel } from "@/components/billing-panel"
@@ -34,7 +35,7 @@ const CTA = "h-10 bg-[#0078d4] text-white hover:bg-[#006cbe]"
 export function AzureConsole() {
   const lab = useLabState()
   const azure = lab.azure
-  const [view, setView] = useState("vms")
+  const [view, setView] = useState("portal")
   const [connectId, setConnectId] = useState<string | null>(null)
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null)
   const stage = !azure.reviewedSite ? "study" : !azure.accountCreated ? "signup" : !azure.signedIn ? "signin" : view
@@ -71,8 +72,9 @@ export function AzureConsole() {
         ) : null
       }
       nav={[
+        { id: "portal", label: "Home" },
+        { id: "create", label: "Create a resource" },
         { id: "vms", label: "Virtual machines" },
-        { id: "create", label: "Create VM" },
         { id: "groups", label: "Resource groups" },
         { id: "shell", label: "VMware shell" },
         { id: "billing", label: "Cost management" },
@@ -84,16 +86,19 @@ export function AzureConsole() {
       steps={azureSteps(lab)}
       alert={alert}
     >
-      {stage === "study" ? (
-        <StudyView
-          study={STUDIES.azure}
-          continueLabel={azure.accountCreated ? "Back to virtual machines" : "Continue to account setup"}
-          onContinue={() => {
-            if (!azure.reviewedSite) dispatch({ type: "azure/review" })
-            else setView("vms")
-          }}
+      {stage === "study" && !azure.reviewedSite ? (
+        <AzureHome
+          account={azure.email || STUDENT.email}
+          vms={azure.vms}
+          onOpen={(id) => setView(id)}
+          continueLabel="Continue to account setup"
+          onContinue={() => dispatch({ type: "azure/review" })}
         />
       ) : null}
+      {stage === "study" && azure.reviewedSite ? (
+        <StudyView study={STUDIES.azure} continueLabel="Back to virtual machines" onContinue={() => setView("vms")} />
+      ) : null}
+      {stage === "portal" ? <AzureHome account={azure.email} vms={azure.vms} onOpen={setView} /> : null}
       {stage === "signup" ? (
         <AccountForm
           heading="Create an Azure account"
@@ -170,6 +175,82 @@ export function AzureConsole() {
 function tell(outcome: { error?: string; message?: string }) {
   if (outcome.error) toast.error(outcome.error)
   else if (outcome.message) toast.success(outcome.message)
+}
+
+function AzureHome({
+  account,
+  vms,
+  onOpen,
+  continueLabel,
+  onContinue,
+}: {
+  account: string
+  vms: Vm[]
+  onOpen: (id: string) => void
+  continueLabel?: string
+  onContinue?: () => void
+}) {
+  const visible = vms.filter((vm) => vm.state !== "terminated")
+  const services = [
+    { label: "Create a resource", id: "create", icon: Plus },
+    { label: "Virtual machines", id: "vms", icon: Monitor },
+    { label: "Resource groups", id: "groups", icon: Boxes },
+    { label: "Cost management", id: "billing", icon: Wallet },
+    { label: "Products and pricing", id: "study", icon: AppWindow },
+    { label: "VMware shell", id: "shell", icon: SquareTerminal },
+  ]
+  return (
+    <div className="grid gap-8">
+      <section>
+        <h2 className="text-xl font-semibold">Azure services</h2>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {services.map((service) => (
+            <button key={service.id} type="button" onClick={() => onOpen(service.id)} className="grid w-28 justify-items-center gap-2 px-1 text-center text-xs text-[#0078d4]">
+              <service.icon className="size-7" strokeWidth={1.5} />
+              {service.label}
+            </button>
+          ))}
+        </div>
+      </section>
+      <section>
+        <h2 className="text-xl font-semibold">Resources</h2>
+        <div className="mt-3 flex gap-4 border-b border-[#e1dfdd] text-sm">
+          <span className="border-b-2 border-[#0078d4] pb-2 font-semibold text-[#0078d4]">Recent</span>
+          <span className="pb-2 text-[#616161]">Favorite</span>
+        </div>
+        <table className="mt-3 w-full text-left text-sm">
+          <thead className="text-[#616161]">
+            <tr>
+              <th className="py-2 font-medium">Name</th>
+              <th className="py-2 font-medium">Type</th>
+              <th className="py-2 font-medium">Last Viewed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visible.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="py-10 text-center text-[#616161]">No resources have been viewed recently</td>
+              </tr>
+            ) : (
+              visible.map((vm) => (
+                <tr key={vm.id} className="border-t border-[#edebe9]">
+                  <td className="py-2 text-[#0078d4]">{vm.name}</td>
+                  <td className="py-2">Virtual machine</td>
+                  <td className="py-2">{vm.state}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+        <p className="mt-2 text-xs text-[#616161]">Signed in as {account}. This portal is local and does not open a real subscription.</p>
+      </section>
+      {continueLabel && onContinue ? (
+        <Button type="button" className="h-9 w-fit bg-[#0078d4] text-white hover:bg-[#006cbe]" onClick={onContinue}>
+          {continueLabel}
+        </Button>
+      ) : null}
+    </div>
+  )
 }
 
 function VmList({
