@@ -1,29 +1,24 @@
 import { cn } from "@/lib/utils"
 import type { VmState } from "@/lib/types"
 
-const TONE: Record<VmState, string> = {
-  pending: "bg-[#f4e2c4] text-[#6a4b12]",
-  running: "bg-[#d7ead8] text-[#1d5a32]",
-  stopped: "bg-[#e6e2da] text-[#4d463c]",
-  terminated: "bg-[#f3d6d2] text-[#8a2e24]",
+const COLOR: Record<VmState, string> = {
+  pending: "#d9822b",
+  running: "#1d8102",
+  stopped: "#687078",
+  terminated: "#d13212",
 }
 
-export function StateBadge({ state }: { state: VmState }) {
+const LABEL: Record<"aws" | "azure" | "do", Record<VmState, string>> = {
+  aws: { pending: "Pending", running: "Running", stopped: "Stopped", terminated: "Terminated" },
+  azure: { pending: "Starting", running: "Running", stopped: "Stopped (deallocated)", terminated: "Deleted" },
+  do: { pending: "New", running: "Active", stopped: "Off", terminated: "Destroyed" },
+}
+
+export function StateBadge({ state, provider = "aws" }: { state: VmState; provider?: "aws" | "azure" | "do" }) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide",
-        TONE[state]
-      )}
-    >
-      <span
-        className={cn(
-          "size-1.5 rounded-full bg-current",
-          state === "pending" && "animate-pulse motion-reduce:animate-none"
-        )}
-        aria-hidden
-      />
-      {state}
+    <span className="inline-flex items-center gap-1.5 text-[13px] text-[#16191f]">
+      <span className={cn("size-2 shrink-0 rounded-full", state === "pending" && "animate-pulse motion-reduce:animate-none")} style={{ background: COLOR[state] }} aria-hidden />
+      {LABEL[provider][state]}
     </span>
   )
 }

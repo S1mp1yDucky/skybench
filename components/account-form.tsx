@@ -11,6 +11,7 @@ export function AccountForm({
   ack,
   emailDefault,
   showStudent,
+  accent = "aws",
   onCreate,
 }: {
   heading: string
@@ -18,6 +19,7 @@ export function AccountForm({
   ack: string
   emailDefault: string
   showStudent?: boolean
+  accent?: "aws" | "azure" | "do"
   onCreate: (input: { email: string; student: boolean }) => { error?: string }
 }) {
   const [email, setEmail] = useState(emailDefault)
@@ -61,10 +63,10 @@ export function AccountForm({
   }
 
   return (
-    <form onSubmit={submit} className="mx-auto grid w-full max-w-xl gap-4" noValidate>
+    <form onSubmit={submit} className="mx-auto grid w-full max-w-xl gap-4 rounded-sm border border-[#d5dbdb] bg-white p-6 shadow-sm" noValidate>
       <div>
-        <h1 className="font-heading text-3xl text-[#1c1915]">{heading}</h1>
-        <p className="mt-2 text-sm leading-6 text-[#4d463c]">{lede}</p>
+        <h1 className="text-2xl font-semibold text-[#16191f]">{heading}</h1>
+        <p className="mt-2 text-sm leading-6 text-[#545b64]">{lede}</p>
       </div>
       <Field id="lab-email" label="Email">
         <Input
@@ -96,9 +98,9 @@ export function AccountForm({
           onChange={(event) => setPassword(event.target.value)}
         />
       </Field>
-      <div className="rounded-xl border border-dashed border-[#c8bba6] bg-[#f7f1e6] p-3">
+      <div className="rounded-sm border border-[#d5dbdb] bg-[#fafafa] p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs font-medium tracking-[0.14em] text-[#6d6256] uppercase">Lab switchboard</p>
+          <p className="text-xs font-semibold text-[#545b64]">Verification</p>
           <Button
             type="button"
             variant="outline"
@@ -154,7 +156,7 @@ export function AccountForm({
           {error}
         </p>
       ) : null}
-      <Button type="submit" className="h-10">
+      <Button type="submit" className={accentClass(accent)}>
         Create lab account
       </Button>
     </form>
@@ -163,9 +165,11 @@ export function AccountForm({
 
 export function SignInCard({
   email,
+  accent = "aws",
   onSignIn,
 }: {
   email: string
+  accent?: "aws" | "azure" | "do"
   onSignIn: () => { error?: string }
 }) {
   const [password, setPassword] = useState("")
@@ -183,10 +187,10 @@ export function SignInCard({
   }
 
   return (
-    <form onSubmit={submit} className="mx-auto grid w-full max-w-md gap-4">
+    <form onSubmit={submit} className="mx-auto grid w-full max-w-md gap-4 rounded-sm border border-[#d5dbdb] bg-white p-6 shadow-sm">
       <div>
-        <h1 className="font-heading text-3xl text-[#1c1915]">Sign in</h1>
-        <p className="mt-2 text-sm leading-6 text-[#4d463c]">
+        <h1 className="text-2xl font-semibold text-[#16191f]">Sign in</h1>
+        <p className="mt-2 text-sm leading-6 text-[#545b64]">
           The phone check already happened when the account was created. This only opens the console session for{" "}
           <span className="font-medium text-[#1c1915]">{email}</span>.
         </p>
@@ -207,11 +211,17 @@ export function SignInCard({
           {error}
         </p>
       ) : null}
-      <Button type="submit" className="h-10">
+      <Button type="submit" className={accentClass(accent)}>
         Sign in
       </Button>
     </form>
   )
+}
+
+function accentClass(accent: "aws" | "azure" | "do") {
+  if (accent === "azure") return "h-9 rounded-sm bg-[#0078d4] text-white hover:bg-[#106ebe]"
+  if (accent === "do") return "h-9 rounded-sm bg-[#0069ff] text-white hover:bg-[#0058d6]"
+  return "h-9 rounded-sm bg-[#ec7211] font-bold text-white hover:bg-[#eb5f07]"
 }
 
 function Field({

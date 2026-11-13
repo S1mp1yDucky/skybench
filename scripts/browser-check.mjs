@@ -34,6 +34,16 @@ async function clickText(text) {
   if (!clicked) throw new Error(`Could not click "${text}"`)
 }
 
+async function clickSubmit() {
+  const clicked = await page.evaluate(() => {
+    const button = document.querySelector("form button[type='submit']")
+    if (!(button instanceof HTMLButtonElement) || button.disabled) return false
+    button.click()
+    return true
+  })
+  if (!clicked) throw new Error("Could not submit the form")
+}
+
 async function settle() {
   await page.waitForFunction(() => document.readyState === "complete")
   await new Promise((resolve) => setTimeout(resolve, 1200))
@@ -67,16 +77,16 @@ try {
   await page.waitForFunction(() => document.body.innerText.includes("Sign in"))
   await page.type("#signin-password", "Testpass1")
   await clickText("Sign in")
-  await page.waitForFunction(() => document.body.innerText.includes("No instances"))
+  await page.waitForFunction(() => document.body.innerText.includes("EC2 Dashboard"))
   await shot("02-aws-empty")
 
   await clickText("Launch instance")
   await page.waitForFunction(() => document.body.innerText.includes("Launch instance"))
-  await clickText("Launch")
+  await clickSubmit()
   await page.waitForFunction(() => document.body.innerText.includes("does not exist"))
   await clickText("Create key pair")
   await page.waitForFunction(() => document.querySelector("#aws-key option[value='skybench']"))
-  await clickText("Launch")
+  await clickSubmit()
   await page.waitForFunction(() => {
     if (!/203\.0\.113\.\d+/.test(document.body.innerText)) return false
     const connect = [...document.querySelectorAll("button")].find((item) => item.textContent?.trim() === "Connect")
@@ -137,7 +147,7 @@ try {
   await page.goto(`${base}/aws`, { waitUntil: "load" })
   await settle()
   await page.click('button[aria-label="Open navigation"]')
-  await page.waitForFunction(() => document.body.innerText.includes("EC2 instances"))
+  await page.waitForFunction(() => document.body.innerText.includes("Key Pairs"))
   await shot("08-aws-mobile-nav")
 
   const serious = errors.filter((line) => !line.includes("favicon") && !line.includes("Download the React DevTools") && !line.includes("_next/hmr"))

@@ -6,7 +6,6 @@ import { AccountForm, SignInCard } from "@/components/account-form"
 import { BillingPanel } from "@/components/billing-panel"
 import { ConsoleFrame } from "@/components/console-frame"
 import { ConnectDialog, downloadPem } from "@/components/connect-dialog"
-import { RegionSelect } from "@/components/region-select"
 import { StateBadge } from "@/components/state-badge"
 import { StudyView } from "@/components/study-view"
 import { Terminal } from "@/components/terminal"
@@ -21,15 +20,26 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { DO_IMAGES, DO_REGIONS, DO_SIZES, STUDENT, STUDIES } from "@/lib/catalog"
-import { hourlyLabel, usd } from "@/lib/format"
+import { usd } from "@/lib/format"
 import { isMetering, platformCost } from "@/lib/simulator"
 import { dispatch, useLabState } from "@/lib/store"
 import { doSteps } from "@/lib/steps"
+import { cn } from "@/lib/utils"
 import type { Vm } from "@/lib/types"
 
-const CTA = "h-10 bg-[#0069ff] text-white hover:bg-[#0056d6]"
+const BLUE = "inline-flex h-9 items-center justify-center rounded-md bg-[#0069ff] px-4 text-[14px] font-medium text-white hover:bg-[#0058d6] disabled:opacity-50"
+
+const DISKS: Record<string, string> = {
+  "s-1vcpu-512mb-10gb": "10 GB",
+  "s-1vcpu-1gb": "25 GB",
+  "s-1vcpu-2gb": "50 GB",
+}
+const TRANSFER: Record<string, string> = {
+  "s-1vcpu-512mb-10gb": "500 GiB",
+  "s-1vcpu-1gb": "1,000 GiB",
+  "s-1vcpu-2gb": "2,000 GiB",
+}
 
 export function DoConsole() {
   const lab = useLabState()
@@ -39,7 +49,7 @@ export function DoConsole() {
   const [destroyId, setDestroyId] = useState<string | null>(null)
   const stage = !ocean.reviewedSite ? "study" : !ocean.accountCreated ? "signup" : !ocean.signedIn ? "signin" : view
   const metering = ocean.droplets.some((vm) => isMetering(vm))
-  const now = useNow(stage === "billing" || metering)
+  const now = useNow(stage === "billing" || metering || stage === "home" || stage === "study")
   const spend = now == null ? 0 : platformCost(lab, "do", now)
   const alert =
     now != null && spend > ocean.budgetUsd
@@ -53,30 +63,13 @@ export function DoConsole() {
       theme="do"
       product="DigitalOcean"
       account={ocean.email || STUDENT.email}
-      region={
-        ocean.signedIn ? (
-          <span className="flex items-center gap-2">
-            <RegionSelect
-              label="DigitalOcean region"
-              value={ocean.region}
-              options={DO_REGIONS}
-              onChange={(region) => {
-                const outcome = dispatch({ type: "do/region", region })
-                if (outcome.error) toast.error(outcome.error)
-              }}
-            />
-            <Button type="button" variant="ghost" onClick={() => dispatch({ type: "do/signout" })}>
-              Sign out
-            </Button>
-          </span>
-        ) : null
-      }
+      onSignOut={ocean.signedIn ? () => dispatch({ type: "do/signout" }) : undefined}
       nav={[
         { id: "home", label: "Home" },
         { id: "droplets", label: "Droplets" },
         { id: "create", label: "Create Droplet" },
-        { id: "keys", label: "SSH keys" },
-        { id: "spaces", label: "Spaces" },
+        { id: "keys", label: "Settings" },
+        { id: "spaces", label: "Spaces Object Storage" },
         { id: "shell", label: "VMware shell" },
         { id: "billing", label: "Billing" },
         { id: "study", label: "Products and pricing" },
@@ -88,26 +81,27 @@ export function DoConsole() {
       alert={alert}
     >
       {stage === "study" && !ocean.reviewedSite ? (
-        <DoWelcome
-          onCreate={() => undefined}
-          continueLabel="Continue to account setup"
-          onContinue={() => dispatch({ type: "do/review" })}
-        />
+        <DoWelcome onCreate={() => undefined} continueLabel="Continue to account setup" onContinue={() => dispatch({ type: "do/review" })} />
       ) : null}
       {stage === "study" && ocean.reviewedSite ? (
-        <StudyView study={STUDIES.do} continueLabel="Back to Droplets" onContinue={() => setView("droplets")} />
+        <div className="p-6"><StudyView study={STUDIES.do} continueLabel="Back to Droplets" onContinue={() => setView("droplets")} /></div>
       ) : null}
-      {stage === "home" ? <DoWelcome onCreate={() => setView("create")} /> : null}
+      {stage === "home" ? <DoWelcome onCreate={() => setView("create")} droplets={ocean.droplets} onOpen={() => setView("droplets")} /> : null}
       {stage === "signup" ? (
-        <AccountForm
-          heading="Create a DigitalOcean account"
-          lede="A real account verifies email and then asks for a card or PayPal. Skybench applies a simulated promo credit instead."
-          ack="I understand DigitalOcean requires a card or PayPal, and that a powered-off Droplet still bills until it is destroyed. This lab takes no payment method."
-          emailDefault={STUDENT.email}
-          onCreate={({ email }) => dispatch({ type: "do/signup", email })}
-        />
+        <div className="p-6">
+          <AccountForm
+            accent="do"
+            heading="Create a DigitalOcean account"
+            lede="A real account verifies email and then asks for a card or PayPal. Skybench applies a simulated promo credit instead."
+            ack="I understand DigitalOcean requires a card or PayPal, and that a powered-off Droplet still bills until it is destroyed. This lab takes no payment method."
+            emailDefault={STUDENT.email}
+            onCreate={({ email }) => dispatch({ type: "do/signup", email })}
+          />
+        </div>
       ) : null}
-      {stage === "signin" ? <SignInCard email={ocean.email} onSignIn={() => dispatch({ type: "do/signin" })} /> : null}
+      {stage === "signin" ? (
+        <div className="p-6"><SignInCard accent="do" email={ocean.email} onSignIn={() => dispatch({ type: "do/signin" })} /></div>
+      ) : null}
       {stage === "droplets" ? (
         <DropletList
           droplets={ocean.droplets}
@@ -121,47 +115,35 @@ export function DoConsole() {
       {stage === "keys" ? <Keys /> : null}
       {stage === "spaces" ? <Spaces /> : null}
       {stage === "shell" ? (
-        <div className="grid gap-3">
-          <h1 className="font-heading text-3xl">VMware shell</h1>
-          <p className="max-w-2xl text-sm leading-6 text-[#4d463c]">
-            Generate a key, install doctl, authenticate, create the Droplet, then ssh root@the address. Destroy it before you close the recording.
-          </p>
+        <div className="grid gap-3 p-6">
+          <h1 className="text-[24px] font-semibold">Local shell</h1>
+          <p className="max-w-2xl text-[13px] leading-5 text-[#5b6785]">Generate a key, install doctl, authenticate, create the Droplet, then ssh root@the address. Destroy it before you close the recording.</p>
           <Terminal platform="do" />
         </div>
       ) : null}
       {stage === "billing" ? (
-        <BillingPanel
-          title="Billing"
-          note="DigitalOcean bills a Droplet until it is destroyed, including while it is powered off. The meter here does the same, so you can see the difference from AWS and Azure."
-          budget={ocean.budgetUsd}
-          vms={ocean.droplets}
-          now={now}
-          fastForward={{ type: "do/fast-forward" }}
-          onBudget={(amount) => ({ type: "do/budget", amount })}
-        />
+        <div className="p-6">
+          <BillingPanel
+            title="Billing"
+            note="DigitalOcean bills a Droplet until it is destroyed, including while it is powered off. The meter here does the same, so you can see the difference from AWS and Azure."
+            budget={ocean.budgetUsd}
+            vms={ocean.droplets}
+            now={now}
+            fastForward={{ type: "do/fast-forward" }}
+            onBudget={(amount) => ({ type: "do/budget", amount })}
+          />
+        </div>
       ) : null}
       <ConnectDialog platform="do" vm={connectVm} open={connectVm != null} onOpenChange={(open) => !open && setConnectId(null)} />
       <Dialog open={destroyVm != null} onOpenChange={(open) => !open && setDestroyId(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Destroy {destroyVm?.name}?</DialogTitle>
-            <DialogDescription>
-              Destroy is the only action that stops DigitalOcean billing. Power off leaves the Droplet on the invoice.
-            </DialogDescription>
+            <DialogDescription>Destroy is the only action that stops DigitalOcean billing. Power off leaves the Droplet on the invoice.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setDestroyId(null)}>Keep it</Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => {
-                if (!destroyVm) return
-                tell(dispatch({ type: "do/destroy", id: destroyVm.id }))
-                setDestroyId(null)
-              }}
-            >
-              Destroy
-            </Button>
+            <Button type="button" variant="destructive" onClick={() => { if (!destroyVm) return; tell(dispatch({ type: "do/destroy", id: destroyVm.id })); setDestroyId(null) }}>Destroy</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -176,59 +158,74 @@ function tell(outcome: { error?: string; message?: string }) {
 
 function DoWelcome({
   onCreate,
+  onOpen,
+  droplets = [],
   continueLabel,
   onContinue,
 }: {
   onCreate: () => void
+  onOpen?: () => void
+  droplets?: Vm[]
   continueLabel?: string
   onContinue?: () => void
 }) {
   const now = useNow(true)
-  const actions = ["Create a ticket", "Invite team members", "View billing", "Create a Droplet", "Create resource alerts", "Create a Project"]
-  const today = now == null ? "\u00a0" : new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric", timeZone: "Asia/Karachi" }).format(now)
+  const today = now == null ? "\u00a0" : new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "Asia/Karachi" }).format(now)
+  const visible = droplets.filter((vm) => vm.state !== "terminated")
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5 p-6">
+      {continueLabel && onContinue ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[#b9d4ff] bg-[#f3f8ff] px-4 py-3 text-[13px]">
+          <p>This is the DigitalOcean control panel. Review it, then continue. A real account is created at cloud.digitalocean.com.</p>
+          <button type="button" className={BLUE} onClick={onContinue}>{continueLabel}</button>
+        </div>
+      ) : null}
       <div>
-        <p className="text-sm text-[#5b6785]">{today}</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">Welcome aboard!</h1>
-        <p className="mt-3 flex items-center gap-2 text-sm font-medium"><span className="grid size-6 place-items-center rounded-full bg-[#0069ff] text-xs text-white">TM</span> My Team</p>
+        <p className="text-[13px] text-[#5b6785]">{today}</p>
+        <h1 className="mt-1 text-[28px] font-semibold tracking-tight text-[#031b4e]">Welcome, Talal</h1>
+        <p className="mt-1 text-[13px] text-[#5b6785]">My Team</p>
       </div>
-      <div className="flex items-center justify-between rounded-md bg-[#0069ff] px-5 py-4 text-white">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-[#0069ff] px-5 py-4 text-white">
         <div>
-          <p className="text-lg font-semibold">You have $5.00 in free Inference Cloud credits!</p>
-          <p className="mt-1 text-sm text-white/90">Deploy AI models, run inference workloads, and explore the platform – on us.</p>
+          <p className="text-[16px] font-semibold">You have $5.00 in promotional credit</p>
+          <p className="mt-1 text-[13px] text-white/90">Credit applies to Droplets, bandwidth, and Spaces until it runs out. A powered-off Droplet still uses it.</p>
         </div>
-        <span className="hidden text-4xl sm:block">🎁</span>
-      </div>
-      <div className="grid items-center gap-4 rounded-md border border-[#d5dbe7] bg-white p-5 md:grid-cols-[1fr_180px]">
-        <div>
-          <p className="text-xs font-semibold tracking-wide text-[#5b6785]">DigitalOcean Signals</p>
-          <h2 className="mt-2 text-xl font-semibold">See How Your Agents Really Behave in Production</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#31405f]">Signals watches production traffic. In this control panel the Droplet is the machine you create, connect to, and destroy.</p>
-          <button type="button" onClick={onCreate} className="mt-4 h-9 rounded-full bg-[#0069ff] px-4 text-sm text-white">Enable Signals</button>
-        </div>
-        <div className="hidden h-28 rounded-md bg-[radial-gradient(circle_at_30%_40%,#8ec5ff,transparent_40%),radial-gradient(circle_at_70%_60%,#b7f3d0,transparent_42%),linear-gradient(#eef6ff,#f7fbff)] md:block" />
+        <button type="button" onClick={onCreate} className="h-9 rounded-md bg-white px-4 text-[13px] font-medium text-[#0069ff]">Create a Droplet</button>
       </div>
       <div>
-        <h2 className="text-lg font-semibold">Quick Actions</h2>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {actions.map((action) => (
-            <button
-              key={action}
-              type="button"
-              onClick={action === "Create a Droplet" ? onCreate : undefined}
-              className="rounded-full border border-[#c9d3e8] bg-white px-3 py-1.5 text-sm"
-            >
-              {action}
+        <h2 className="text-[16px] font-semibold">Start building</h2>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {([
+            ["Droplets", "Linux virtual machines", onCreate],
+            ["Kubernetes", "Managed clusters", undefined],
+            ["App Platform", "Deploy from a repo", undefined],
+            ["Databases", "Managed Postgres and MySQL", undefined],
+          ] as [string, string, (() => void) | undefined][]).map(([title, detail, action]) => (
+            <button key={title} type="button" onClick={action} className="rounded-md border border-[#e1e7f0] bg-white p-4 text-left hover:border-[#0069ff]">
+              <p className="font-semibold text-[#031b4e]">{title}</p>
+              <p className="mt-1 text-[13px] text-[#5b6785]">{detail}</p>
             </button>
           ))}
         </div>
       </div>
-      {continueLabel && onContinue ? (
-        <Button type="button" className="h-9 w-fit rounded-full bg-[#0069ff] text-white hover:bg-[#0056d6]" onClick={onContinue}>
-          {continueLabel}
-        </Button>
-      ) : null}
+      <div className="rounded-md border border-[#e1e7f0] bg-white">
+        <div className="flex items-center justify-between border-b border-[#eef2f7] px-4 py-3">
+          <h2 className="font-semibold">Droplets</h2>
+          {onOpen ? <button type="button" onClick={onOpen} className="text-[13px] text-[#0069ff]">View all</button> : null}
+        </div>
+        {visible.length === 0 ? (
+          <p className="px-4 py-8 text-[13px] text-[#5b6785]">You don’t have any Droplets yet.</p>
+        ) : (
+          <ul>
+            {visible.slice(0, 4).map((vm) => (
+              <li key={vm.id} className="flex items-center justify-between border-t border-[#eef2f7] px-4 py-3 text-[13px]">
+                <span className="font-medium">{vm.name}</span>
+                <StateBadge state={vm.state} provider="do" />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   )
 }
@@ -246,48 +243,71 @@ function DropletList({
   onPower: (id: string, on: boolean) => void
   onDestroy: (id: string) => void
 }) {
-  const visible = droplets.filter((vm) => vm.state !== "terminated")
+  const [query, setQuery] = useState("")
+  const [menu, setMenu] = useState<string | null>(null)
+  const visible = droplets.filter((vm) => vm.state !== "terminated" && vm.name.toLowerCase().includes(query.trim().toLowerCase()))
   return (
-    <div className="grid gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-[22px] font-semibold">Droplets</h1>
-          <p className="mt-1 text-sm text-[#5b6785]">My Team · project</p>
-        </div>
-        <Button type="button" className={CTA} onClick={onCreate}>Create Droplet</Button>
+    <div className="p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-[24px] font-semibold text-[#031b4e]">Droplets</h1>
+        <button type="button" className={BLUE} onClick={onCreate}>Create Droplet</button>
       </div>
-      {visible.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[#b9c8e6] bg-white px-4 py-10">
-          <p className="font-medium">No Droplets in this project.</p>
-          <p className="mt-1 max-w-lg text-sm leading-6 text-[#4d463c]">Add an SSH key, pick Ubuntu and a basic plan, then destroy the Droplet when you are done. Powering it off is not cleanup.</p>
+      <div className="mt-4 rounded-md border border-[#e1e7f0] bg-white">
+        <div className="border-b border-[#eef2f7] px-3 py-2">
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by Droplet name" className="h-8 w-full max-w-xs rounded-md border border-[#d5deea] px-2 text-[13px] outline-none" />
         </div>
-      ) : (
-        <ul className="grid gap-3">
-          {visible.map((vm) => (
-            <li key={vm.id} className="rounded-2xl border border-black/10 bg-white p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-lg font-medium">{vm.name}</p>
-                  <p className="mt-1 font-mono text-sm">{vm.publicIp ?? "Assigning address…"}</p>
-                  <p className="mt-1 text-xs text-[#6d6256]">{vm.region} · {vm.sizeLabel} · {vm.imageLabel}</p>
-                </div>
-                <StateBadge state={vm.state} />
-              </div>
-              {vm.state === "stopped" ? (
-                <p className="mt-3 text-sm text-[#6a4b12]">Powered off, and still on the meter. Destroy it to stop simulated billing.</p>
-              ) : null}
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button type="button" size="sm" variant="outline" disabled={vm.state !== "running"} onClick={() => onConnect(vm.id)}>Console SSH</Button>
-                <Button type="button" size="sm" variant="outline" disabled={vm.state !== "running"} onClick={() => onPower(vm.id, false)}>Power off</Button>
-                <Button type="button" size="sm" variant="outline" disabled={vm.state !== "stopped"} onClick={() => onPower(vm.id, true)}>Power on</Button>
-                <Button type="button" size="sm" variant="destructive" onClick={() => onDestroy(vm.id)}>Destroy</Button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+        {visible.length === 0 ? (
+          <div className="px-4 py-16 text-center">
+            <p className="text-[16px] font-semibold text-[#031b4e]">You don’t have any Droplets.</p>
+            <p className="mx-auto mt-1 max-w-md text-[13px] text-[#5b6785]">Create a Droplet to get a Linux virtual machine. Add an SSH key, pick a region, an image, and a plan.</p>
+            <button type="button" className={cn(BLUE, "mt-4")} onClick={onCreate}>Create Droplet</button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-left text-[13px]">
+              <thead className="text-[#5b6785]">
+                <tr className="border-b border-[#eef2f7]">
+                  {["Name", "IP Address", "Created", "Tags", ""].map((heading) => <th key={heading || "m"} className="px-4 py-2 font-medium">{heading}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((vm) => (
+                  <tr key={vm.id} className="border-b border-[#eef2f7] last:border-0">
+                    <td className="px-4 py-3">
+                      <p className="flex items-center gap-2 font-medium text-[#0069ff]">
+                        <StateBadge state={vm.state} provider="do" />
+                        <span className="text-[#031b4e]">{vm.name}</span>
+                      </p>
+                      <p className="mt-1 text-[12px] text-[#5b6785]">{vm.imageLabel} · {vm.sizeLabel} · {regionCity(vm.region)}</p>
+                      {vm.state === "stopped" ? <p className="mt-1 text-[12px] text-[#b54708]">Powered off. This Droplet is still billed until you destroy it.</p> : null}
+                    </td>
+                    <td className="px-4 py-3 font-mono">{vm.publicIp ?? "Assigning…"}</td>
+                    <td className="px-4 py-3 text-[#5b6785]">{vm.region}</td>
+                    <td className="px-4 py-3 text-[#5b6785]">—</td>
+                    <td className="relative px-4 py-3 text-right">
+                      <button type="button" className="rounded-md border border-[#d5deea] px-2 py-1" onClick={() => setMenu(menu === vm.id ? null : vm.id)} aria-expanded={menu === vm.id}>More</button>
+                      {menu === vm.id ? (
+                        <div className="absolute right-4 z-10 mt-1 w-40 rounded-md border border-[#e1e7f0] bg-white py-1 text-left shadow-lg">
+                          <MenuButton disabled={vm.state !== "running"} onClick={() => { setMenu(null); onConnect(vm.id) }}>Web console</MenuButton>
+                          <MenuButton disabled={vm.state !== "running"} onClick={() => { setMenu(null); onPower(vm.id, false) }}>Power off</MenuButton>
+                          <MenuButton disabled={vm.state !== "stopped"} onClick={() => { setMenu(null); onPower(vm.id, true) }}>Power on</MenuButton>
+                          <MenuButton onClick={() => { setMenu(null); onDestroy(vm.id) }}>Destroy</MenuButton>
+                        </div>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   )
+}
+
+function MenuButton({ children, onClick, disabled }: { children: React.ReactNode; onClick: () => void; disabled?: boolean }) {
+  return <button type="button" disabled={disabled} onClick={onClick} className="block w-full px-3 py-1.5 text-left text-[13px] hover:bg-[#f4f7fb] disabled:text-[#b0b8c6]">{children}</button>
 }
 
 function CreateDroplet({ onDone }: { onDone: () => void }) {
@@ -297,11 +317,14 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
   const [imageId, setImageId] = useState(DO_IMAGES[0].id)
   const [sizeId, setSizeId] = useState(DO_SIZES[1].id)
   const [keyName, setKeyName] = useState(ocean.keys[0]?.name ?? "skybench")
+  const [auth, setAuth] = useState<"ssh" | "password">("ssh")
   const [error, setError] = useState<string | null>(null)
+  const size = DO_SIZES.find((item) => item.id === sizeId)
+  const monthly = size ? Math.round(size.hourlyUsd * 730) : 0
 
   return (
     <form
-      className="mx-auto grid max-w-2xl gap-4"
+      className="p-6 pb-28"
       onSubmit={(event) => {
         event.preventDefault()
         const outcome = dispatch({ type: "do/launch", name, imageId, sizeId, keyName, region })
@@ -312,59 +335,119 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
         }
       }}
     >
-      <div>
-        <h1 className="font-heading text-3xl">Create Droplet</h1>
-        <p className="mt-2 text-sm leading-6 text-[#4d463c]">Basic shared CPU, Ubuntu, and an SSH key. root is the login.</p>
-      </div>
-      {ocean.keys.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[#b9c8e6] bg-white p-4 text-sm leading-6">
-          <p className="font-medium">No SSH keys on the account.</p>
-          <p className="mt-1 text-[#4d463c]">DigitalOcean will not create a Droplet you can enter until a public key is attached. Generate one, then submit the form.</p>
-        </div>
-      ) : null}
-      <Labeled id="do-name" label="Hostname">
-        <Input id="do-name" value={name} onChange={(event) => setName(event.target.value)} />
-      </Labeled>
-      <Labeled id="do-region" label="Region">
-        <NativeSelect id="do-region" value={region} onChange={setRegion}>
+      <h1 className="text-[28px] font-semibold text-[#031b4e]">Create Droplet</h1>
+      <p className="mt-1 text-[13px] text-[#5b6785]">Choose a datacenter, image, and plan. root is the login.</p>
+
+      <Section title="Choose Region">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {DO_REGIONS.map((item) => (
-            <option key={item.id} value={item.id}>{item.label}</option>
+            <button key={item.id} type="button" onClick={() => setRegion(item.id)} className={cn("rounded-md border bg-white px-3 py-3 text-left", region === item.id ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea] hover:border-[#0069ff]")}>
+              <span className="block text-[14px] font-semibold text-[#031b4e]">{regionCity(item.id)}</span>
+              <span className="mt-1 block font-mono text-[12px] text-[#5b6785]">{item.id.toUpperCase()}</span>
+            </button>
           ))}
-        </NativeSelect>
-      </Labeled>
-      <Labeled id="do-image" label="Image">
-        <NativeSelect id="do-image" value={imageId} onChange={setImageId}>
+        </div>
+        <p className="text-[12px] text-[#5b6785]">VPC network: default-{region}</p>
+      </Section>
+
+      <Section title="Choose an image">
+        <div className="flex gap-2 border-b border-[#e1e7f0] text-[13px]">
+          {["OS", "Marketplace", "Custom images", "Backups", "Snapshots"].map((tab, index) => (
+            <span key={tab} className={cn("px-3 py-2", index === 0 ? "border-b-2 border-[#0069ff] font-semibold text-[#0069ff]" : "text-[#5b6785]")}>{tab}</span>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2">
           {DO_IMAGES.map((image) => (
-            <option key={image.id} value={image.id}>{image.label}</option>
+            <button key={image.id} type="button" onClick={() => setImageId(image.id)} className={cn("rounded-md border bg-white px-4 py-3 text-left text-[13px]", imageId === image.id ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea]")}>
+              <span className="block font-semibold text-[#031b4e]">{image.os.split(" ")[0]}</span>
+              <span className="text-[#5b6785]">{image.label}</span>
+            </button>
           ))}
-        </NativeSelect>
-      </Labeled>
-      <Labeled id="do-size" label="Plan">
-        <NativeSelect id="do-size" value={sizeId} onChange={setSizeId}>
-          {DO_SIZES.map((item) => (
-            <option key={item.id} value={item.id}>{item.label} · {hourlyLabel(item.hourlyUsd)} · {item.note}</option>
+        </div>
+        <p className="text-[12px] text-[#5b6785]">Version is pinned to the image above. 64-bit.</p>
+      </Section>
+
+      <Section title="Choose Size">
+        <div className="flex flex-wrap gap-2 text-[13px]">
+          {["Basic", "CPU-Optimized", "General Purpose", "Memory-Optimized", "Storage-Optimized"].map((plan, index) => (
+            <span key={plan} className={cn("rounded-full px-3 py-1", index === 0 ? "bg-[#e8f1ff] font-semibold text-[#0069ff]" : "bg-white text-[#5b6785] ring-1 ring-[#d5deea]")}>{plan}</span>
           ))}
-        </NativeSelect>
-      </Labeled>
-      <div className="flex flex-wrap gap-2">
-        <Input aria-label="SSH key name" value={keyName} onChange={(event) => setKeyName(event.target.value)} className="max-w-52" />
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
+        </div>
+        <p className="text-[13px] font-medium">Shared CPU · Regular</p>
+        <div className="overflow-x-auto rounded-md border border-[#e1e7f0] bg-white">
+          <table className="w-full min-w-[680px] text-left text-[13px]">
+            <thead className="text-[#5b6785]">
+              <tr>{["", "Memory", "vCPU", "SSD", "Transfer", "$/mo"].map((heading) => <th key={heading || "r"} className="px-3 py-2 font-medium">{heading}</th>)}</tr>
+            </thead>
+            <tbody>
+              {DO_SIZES.map((item) => (
+                <tr key={item.id} className={cn("cursor-pointer border-t border-[#eef2f7]", sizeId === item.id && "bg-[#f3f8ff]")} onClick={() => setSizeId(item.id)}>
+                  <td className="px-3 py-3"><input type="radio" name="size" checked={sizeId === item.id} onChange={() => setSizeId(item.id)} aria-label={item.label} /></td>
+                  <td className="px-3 py-3 font-medium">{item.ram.replace("MiB", "MB").replace("GiB", "GB")}</td>
+                  <td className="px-3 py-3">{item.vcpu} vCPU</td>
+                  <td className="px-3 py-3">{DISKS[item.id] ?? "25 GB"}</td>
+                  <td className="px-3 py-3">{TRANSFER[item.id] ?? "1,000 GiB"}</td>
+                  <td className="px-3 py-3">${Math.round(item.hourlyUsd * 730)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {size ? <p className="text-[12px] text-[#5b6785]">{size.note}</p> : null}
+      </Section>
+
+      <Section title="Choose Authentication Method">
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button type="button" onClick={() => setAuth("ssh")} className={cn("rounded-md border bg-white p-3 text-left", auth === "ssh" ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea]")}>
+            <span className="block font-semibold">SSH Key</span>
+            <span className="mt-1 block text-[12px] text-[#5b6785]">Recommended. Connect with a key pair instead of a password.</span>
+          </button>
+          <button type="button" onClick={() => setAuth("password")} className={cn("rounded-md border bg-white p-3 text-left", auth === "password" ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea]")}>
+            <span className="block font-semibold">Password</span>
+            <span className="mt-1 block text-[12px] text-[#5b6785]">A real panel emails a root password. This lab uses SSH keys.</span>
+          </button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Input aria-label="SSH key name" value={keyName} onChange={(event) => setKeyName(event.target.value)} className="h-9 max-w-xs rounded-md" />
+          <button type="button" className="h-9 rounded-md border border-[#d5deea] bg-white px-3 text-[13px]" onClick={() => {
             const outcome = dispatch({ type: "do/key", name: keyName })
             if (outcome.error) setError(outcome.error)
-            else {
-              setError(null)
-              toast.success(outcome.message ?? "Key added.")
-            }
-          }}
-        >
-          Generate SSH key
-        </Button>
+            else { setError(null); toast.success(outcome.message ?? "Key added.") }
+          }}>New SSH Key</button>
+        </div>
+        {ocean.keys.length === 0 ? <p className="text-[13px] text-[#b54708]">No SSH keys on the account. Add one before you create the Droplet.</p> : (
+          <ul className="grid gap-1 text-[13px]">
+            {ocean.keys.map((key) => (
+              <li key={key.name} className="flex items-center gap-2"><input type="checkbox" checked={key.name === keyName} readOnly /> {key.name} <span className="font-mono text-[11px] text-[#5b6785]">{key.fingerprint}</span></li>
+            ))}
+          </ul>
+        )}
+      </Section>
+
+      <Section title="We recommend these options">
+        <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" defaultChecked /> <span><span className="font-medium">Monitoring</span><span className="block text-[#5b6785]">Collect metrics for free with the DigitalOcean agent.</span></span></label>
+        <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" /> <span><span className="font-medium">Add backups</span><span className="block text-[#5b6785]">Weekly backups at 20% of the Droplet price. Left off so the lab bill stays on the Droplet only.</span></span></label>
+      </Section>
+
+      <Section title="Finalize Details">
+        <label className="grid max-w-sm gap-1 text-[13px] font-medium">Quantity
+          <input value="1 Droplet" readOnly className="h-9 rounded-md border border-[#d5deea] bg-[#f7f9fc] px-2 font-normal" />
+        </label>
+        <label className="grid max-w-sm gap-1 text-[13px] font-medium" htmlFor="do-name">Hostname
+          <Input id="do-name" value={name} onChange={(event) => setName(event.target.value)} className="h-9 rounded-md font-normal" />
+        </label>
+        <p className="text-[13px] text-[#5b6785]">Project: My Team</p>
+      </Section>
+
+      {error ? <p role="alert" className="mt-4 text-[13px] text-[#d92d20]">{error}</p> : null}
+
+      <div className="fixed right-0 bottom-0 left-0 z-20 flex items-center justify-end gap-4 border-t border-[#e1e7f0] bg-white px-6 py-3 md:left-[240px]">
+        <div className="text-right">
+          <p className="text-[18px] font-semibold text-[#031b4e]">${monthly.toFixed(2)}/mo</p>
+          <p className="text-[12px] text-[#5b6785]">${size ? size.hourlyUsd.toFixed(4) : "0.0000"}/hour</p>
+        </div>
+        <button type="submit" className={BLUE}>Create Droplet</button>
       </div>
-      {error ? <p role="alert" className="text-sm text-[#8a2e24]">{error}</p> : null}
-      <Button type="submit" className={CTA}>Create Droplet</Button>
     </form>
   )
 }
@@ -374,41 +457,43 @@ function Keys() {
   const [name, setName] = useState("skybench")
   const [error, setError] = useState<string | null>(null)
   return (
-    <div className="grid gap-4">
-      <h1 className="font-heading text-3xl">SSH keys</h1>
-      <form
-        className="flex flex-wrap items-end gap-2"
-        onSubmit={(event) => {
-          event.preventDefault()
-          const outcome = dispatch({ type: "do/key", name })
-          if (outcome.error) setError(outcome.error)
-          else {
-            setError(null)
-            toast.success(outcome.message ?? "Key added.")
-          }
-        }}
-      >
-        <Labeled id="key-name" label="Key name">
-          <Input id="key-name" value={name} onChange={(event) => setName(event.target.value)} />
-        </Labeled>
-        <Button type="submit" className={CTA}>Add key</Button>
+    <div className="p-6">
+      <h1 className="text-[24px] font-semibold text-[#031b4e]">Settings</h1>
+      <div className="mt-4 flex gap-4 border-b border-[#e1e7f0] text-[13px]">
+        <span className="border-b-2 border-[#0069ff] pb-2 font-semibold text-[#0069ff]">Security</span>
+        <span className="pb-2 text-[#5b6785]">Team</span>
+        <span className="pb-2 text-[#5b6785]">Profile</span>
+      </div>
+      <h2 className="mt-4 text-[16px] font-semibold">SSH keys</h2>
+      <p className="mt-1 max-w-xl text-[13px] text-[#5b6785]">Add a public key to connect as root. The download is a lab prop, not a private key.</p>
+      <form className="mt-3 flex flex-wrap items-end gap-2" onSubmit={(event) => {
+        event.preventDefault()
+        const outcome = dispatch({ type: "do/key", name })
+        if (outcome.error) setError(outcome.error)
+        else { setError(null); toast.success(outcome.message ?? "Key added.") }
+      }}>
+        <label className="grid gap-1 text-[13px]" htmlFor="key-name">Key name
+          <Input id="key-name" value={name} onChange={(event) => setName(event.target.value)} className="h-9 w-56 rounded-md" />
+        </label>
+        <button type="submit" className={BLUE}>Add SSH Key</button>
       </form>
-      {error ? <p role="alert" className="text-sm text-[#8a2e24]">{error}</p> : null}
-      {keys.length === 0 ? (
-        <p className="text-sm text-[#4d463c]">No keys yet. In the shell: ssh-keygen -t ed25519 -f ~/.ssh/skybench with an empty passphrase.</p>
-      ) : (
-        <ul className="grid gap-2">
-          {keys.map((key) => (
-            <li key={key.name} className="rounded-xl border border-black/10 bg-white p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-medium">{key.name}</p>
-                <Button type="button" size="sm" variant="outline" onClick={() => downloadPem(key.name)}>Download prop key</Button>
-              </div>
-              <p className="mt-1 font-mono text-xs text-[#6d6256]">{key.fingerprint}</p>
-            </li>
-          ))}
-        </ul>
-      )}
+      {error ? <p role="alert" className="mt-2 text-[13px] text-[#d92d20]">{error}</p> : null}
+      <div className="mt-4 overflow-hidden rounded-md border border-[#e1e7f0] bg-white">
+        {keys.length === 0 ? <p className="px-4 py-8 text-[13px] text-[#5b6785]">No SSH keys.</p> : (
+          <table className="w-full text-left text-[13px]">
+            <thead className="text-[#5b6785]"><tr><th className="px-4 py-2 font-medium">Name</th><th className="px-4 py-2 font-medium">Fingerprint</th><th /></tr></thead>
+            <tbody>
+              {keys.map((key) => (
+                <tr key={key.name} className="border-t border-[#eef2f7]">
+                  <td className="px-4 py-3 font-medium">{key.name}</td>
+                  <td className="px-4 py-3 font-mono text-[12px]">{key.fingerprint}</td>
+                  <td className="px-4 py-3 text-right"><button type="button" className="text-[#0069ff]" onClick={() => downloadPem(key.name)}>Download</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   )
 }
@@ -418,70 +503,56 @@ function Spaces() {
   const [name, setName] = useState("talal-notes")
   const [error, setError] = useState<string | null>(null)
   return (
-    <div className="grid gap-4">
-      <div>
-        <h1 className="font-heading text-3xl">Spaces</h1>
-        <p className="mt-1 text-sm text-[#4d463c]">Object storage with a short name. This list never leaves the browser.</p>
+    <div className="p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-[24px] font-semibold text-[#031b4e]">Spaces</h1>
       </div>
-      <form
-        className="flex flex-wrap items-end gap-2"
-        onSubmit={(event) => {
-          event.preventDefault()
-          const outcome = dispatch({ type: "do/space", name })
-          if (outcome.error) setError(outcome.error)
-          else {
-            setError(null)
-            toast.success(outcome.message ?? "Space created.")
-          }
-        }}
-      >
-        <Labeled id="space-name" label="Space name">
-          <Input id="space-name" value={name} onChange={(event) => setName(event.target.value)} />
-        </Labeled>
-        <Button type="submit" className={CTA}>Create Space</Button>
+      <p className="mt-1 text-[13px] text-[#5b6785]">Object storage. Names stay in this browser.</p>
+      <form className="mt-4 flex flex-wrap items-end gap-2" onSubmit={(event) => {
+        event.preventDefault()
+        const outcome = dispatch({ type: "do/space", name })
+        if (outcome.error) setError(outcome.error)
+        else { setError(null); toast.success(outcome.message ?? "Space created.") }
+      }}>
+        <label className="grid gap-1 text-[13px]" htmlFor="space-name">Space name
+          <Input id="space-name" value={name} onChange={(event) => setName(event.target.value)} className="h-9 w-56 rounded-md" />
+        </label>
+        <button type="submit" className={BLUE}>Create a Space</button>
       </form>
-      {error ? <p role="alert" className="text-sm text-[#8a2e24]">{error}</p> : null}
-      {ocean.spaces.length === 0 ? (
-        <p className="text-sm text-[#4d463c]">No Spaces yet. Use lowercase letters and hyphens.</p>
-      ) : (
-        <ul className="grid gap-2">
-          {ocean.spaces.map((space) => (
-            <li key={space.name} className="flex items-center justify-between rounded-xl border border-black/10 bg-white px-3 py-2">
-              <span className="font-mono text-sm">{space.name}</span>
-              <Button type="button" size="sm" variant="outline" onClick={() => tell(dispatch({ type: "do/delete-space", name: space.name }))}>
-                Delete
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {error ? <p role="alert" className="mt-2 text-[13px] text-[#d92d20]">{error}</p> : null}
+      <div className="mt-4 rounded-md border border-[#e1e7f0] bg-white">
+        {ocean.spaces.length === 0 ? <p className="px-4 py-10 text-center text-[13px] text-[#5b6785]">You don’t have any Spaces.</p> : (
+          <ul>
+            {ocean.spaces.map((space) => (
+              <li key={space.name} className="flex items-center justify-between border-b border-[#eef2f7] px-4 py-3 last:border-0">
+                <span className="font-medium">{space.name}</span>
+                <button type="button" className="text-[13px] text-[#d92d20]" onClick={() => tell(dispatch({ type: "do/delete-space", name: space.name }))}>Delete</button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   )
 }
 
-function Labeled({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="grid gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
+    <section className="mt-8 grid gap-3">
+      <h2 className="text-[18px] font-semibold text-[#031b4e]">{title}</h2>
       {children}
-    </div>
+    </section>
   )
 }
 
-function NativeSelect({
-  id,
-  value,
-  onChange,
-  children,
-}: {
-  id: string
-  value: string
-  onChange: (value: string) => void
-  children: React.ReactNode
-}) {
-  return (
-    <select id={id} value={value} onChange={(event) => onChange(event.target.value)} className="h-8 w-full rounded-lg border border-input bg-white px-2 text-sm">
-      {children}
-    </select>
-  )
+function regionCity(id: string) {
+  const map: Record<string, string> = {
+    blr1: "Bangalore",
+    sgp1: "Singapore",
+    fra1: "Frankfurt",
+    lon1: "London",
+    nyc1: "New York",
+    sfo3: "San Francisco",
+  }
+  return map[id] ?? id
 }
