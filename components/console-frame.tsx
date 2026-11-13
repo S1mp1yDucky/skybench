@@ -293,30 +293,31 @@ function AzureChrome({
   }, [])
   return (
     <>
-      <header className="flex h-12 shrink-0 items-center gap-2 bg-[#0078d4] px-2 text-white">
+      <header className="relative flex h-12 shrink-0 items-center gap-2 bg-[#0078d4] px-2 text-white">
         <button type="button" className="grid size-8 place-items-center rounded-sm hover:bg-white/15" aria-expanded={open} aria-label={open ? "Close navigation" : "Open navigation"} onClick={() => setOpen((value) => !value)}>
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
         <MicrosoftMark />
         <span className="text-[16px] font-semibold"><span className="hidden sm:inline">Microsoft </span>Azure</span>
-        <label className="relative mx-3 hidden min-w-0 flex-1 md:block">
+        <label className="absolute top-2 left-1/2 hidden w-[min(520px,36vw)] -translate-x-1/2 lg:block">
           <span className="sr-only">Search resources, services, and docs</span>
           <Search className="pointer-events-none absolute top-2 left-3 size-4 text-[#605e5c]" />
-          <input readOnly placeholder="Search resources, services, and docs (G+/)" className="h-8 w-full max-w-[560px] rounded-sm border-0 bg-white pr-3 pl-9 text-[13px] text-[#323130] outline-none placeholder:text-[#605e5c]" />
+          <input readOnly placeholder="Search resources, services, and docs (G+/)" className="h-8 w-full rounded-sm border-0 bg-white pr-3 pl-9 text-[13px] text-[#323130] outline-none placeholder:text-[#605e5c]" />
         </label>
         <div className="ml-auto flex items-center gap-0.5">
-          <button type="button" className="mr-2 hidden h-8 items-center gap-1.5 rounded-sm bg-white px-2.5 text-[13px] font-semibold text-[#0078d4] hover:bg-[#f3f2f1] md:inline-flex" aria-label="Copilot">
-            <SparkIcon />
+          <button type="button" className="mr-1 hidden h-8 items-center gap-1.5 rounded-sm bg-white px-2.5 text-[13px] font-semibold text-[#242424] hover:bg-[#f3f2f1] lg:inline-flex" aria-label="Copilot">
+            <CopilotMark />
             Copilot
           </button>
-          <HeaderIcon label="Cloud Shell" onClick={() => go("shell")}><PromptIcon /></HeaderIcon>
+          <HeaderIcon label="Cloud Shell" onClick={() => go("shell")}><AzureShellIcon /></HeaderIcon>
           <HeaderIcon label="Notifications" onClick={() => setNotesOpen((value) => !value)}><BellIcon /></HeaderIcon>
           <PortalMenu onDark label="Settings" items={["Appearance", "Language + region", "My permissions", "Default subscription"]}>
-            <GearIcon />
+            <CogIcon />
           </PortalMenu>
           <PortalMenu onDark label="Support + troubleshooting" items={["Help + support", "New support request", "Service Health", "Privacy"]}>
             <CircleHelp className="size-4" />
           </PortalMenu>
+          <HeaderIcon label="Feedback"><FeedbackIcon /></HeaderIcon>
           <AccountMenu theme="azure" account={account} go={go} onSignOut={onSignOut} />
         </div>
       </header>
@@ -332,7 +333,7 @@ function AzureChrome({
       ) : null}
       <div className="flex min-h-0 flex-1">
         {active === "create" ? null : (
-          <aside className={cn("z-30 w-[248px] shrink-0 overflow-auto border-r border-[#edebe9] bg-white py-2 md:static md:block", open ? "absolute top-12 bottom-0 left-0 block shadow-xl" : "hidden md:block")}>
+          <aside className={cn("z-30 w-[248px] shrink-0 overflow-auto border-r border-[#edebe9] bg-white py-2", active === "portal" ? (open ? "absolute top-12 bottom-0 left-0 block shadow-xl md:static" : "hidden") : open ? "absolute top-12 bottom-0 left-0 block shadow-xl md:static md:block" : "hidden md:block")}>
             {active === "vms" ? <ComputeMenu go={go} /> : <AzureMenu active={active} go={go} />}
           </aside>
         )}
@@ -530,10 +531,10 @@ function AccountMenu({
         {theme === "azure" ? (
           <span className="hidden text-right leading-tight sm:block">
             <span className="block max-w-[180px] truncate text-[12px]">{account}</span>
-            <span className="block text-[10px] tracking-wide">DEFAULT DIRECTORY</span>
+            <span className="block max-w-[190px] truncate text-[10px] tracking-wide">DEFAULT DIRECTORY (TALALMAJ…)</span>
           </span>
         ) : null}
-        <span className={cn("grid size-7 place-items-center rounded-full text-[11px] font-semibold", theme === "aws" && "bg-[#ff9900] text-[#232f3e]", theme === "azure" && "bg-white/25 text-white", theme === "do" && "bg-gradient-to-br from-[#d946ef] to-[#818cf8] text-white")}>{theme === "aws" ? letter : initials}</span>
+        {theme === "azure" ? <PersonMark /> : <span className={cn("grid size-7 place-items-center rounded-full text-[11px] font-semibold", theme === "aws" && "bg-[#ff9900] text-[#232f3e]", theme === "do" && "bg-gradient-to-br from-[#d946ef] to-[#818cf8] text-white")}>{theme === "aws" ? letter : initials}</span>}
         {theme === "aws" ? <span className="hidden max-w-[120px] truncate text-[13px] sm:inline">Talal</span> : null}
         {theme === "do" ? <span className="hidden text-[13px] sm:inline">My Team</span> : null}
         {theme !== "azure" ? <ChevronDown className="size-3 opacity-80" /> : null}
@@ -707,10 +708,49 @@ function GearIcon({ dark = false }: { dark?: boolean }) {
   )
 }
 
-function SparkIcon() {
+function CopilotMark() {
   return (
     <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
-      <path fill="currentColor" d="M8 1.2 9.2 6 14 7.2 9.2 8.4 8 13.2 6.8 8.4 2 7.2 6.8 6Z" />
+      <path fill="#0f6cbd" d="M1.6 10.6 7.4 3.2 9.6 5.2 4.4 12.2Z" />
+      <path fill="#7b4dff" d="M5.2 11.4 10.2 6.2 12.6 8.2 7.6 13.6Z" />
+      <path fill="#3dd6f5" d="M7.2 2.2 14.2 5.4 12.4 8.2 6.2 5Z" />
+      <path fill="#20b26b" d="M2.4 6.2 6.2 5.2 7.4 8.6 3.2 10.2Z" />
+    </svg>
+  )
+}
+
+function AzureShellIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
+      <rect x="1.4" y="3.1" width="13.2" height="9.8" rx="1.3" fill="none" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M5 6.4 8.1 8.2 5 10" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function CogIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
+      <path fill="currentColor" d="M9.2 1.5 9.7 3.2c.3.1.6.3.9.4l1.6-.6 1.2 2-1.3 1.1c.1.3.1.6 0 .9l1.3 1.1-1.2 2-1.6-.6c-.3.2-.6.3-.9.4l-.5 1.7H6.8l-.5-1.7c-.3-.1-.6-.2-.9-.4l-1.6.6-1.2-2 1.3-1.1a3 3 0 0 1 0-.9L2.6 5l1.2-2 1.6.6c.3-.2.6-.3.9-.4L6.8 1.5h2.4ZM8 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
+    </svg>
+  )
+}
+
+function FeedbackIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
+      <path d="M3 3.2h10v7.2H6.2L3.4 12.8V3.2Z" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M6.2 6.6h.01M8 6.6h.01M9.8 6.6h.01" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function PersonMark() {
+  return (
+    <svg viewBox="0 0 28 28" className="size-7" aria-hidden>
+      <circle cx="14" cy="14" r="12" fill="none" stroke="white" strokeWidth="1.4" />
+      <circle cx="14" cy="11" r="3.2" fill="white" />
+      <path d="M7.4 21.2c1.2-3 3.4-4.4 6.6-4.4s5.4 1.4 6.6 4.4" fill="white" />
     </svg>
   )
 }

@@ -1337,40 +1337,47 @@ function ServiceGlyph({ kind }: { kind: string }) {
   if (kind === "plus") {
     return (
       <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
-        <path d="M16 6v20M6 16h20" stroke="#0078d4" strokeWidth="2.4" strokeLinecap="round" />
+        <path d="M16 5v22M5 16h22" stroke="#0078d4" strokeWidth="2.2" strokeLinecap="round" />
       </svg>
     )
   }
   if (kind === "vm") {
     return (
       <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
-        <rect x="4" y="7" width="24" height="15" rx="1.5" fill="none" stroke="#0078d4" strokeWidth="1.6" />
-        <path d="M12 26h8M16 22v4" stroke="#0078d4" strokeWidth="1.6" />
+        <rect x="3" y="5" width="26" height="17" rx="1.6" fill="#deecf9" stroke="#0078d4" strokeWidth="1.4" />
+        <path d="M16 8.6 21.2 11.5v5.6L16 20.1 10.8 17.1v-5.6Z" fill="#0078d4" />
+        <path d="M16 8.6 21.2 11.5 16 14.4 10.8 11.5Z" fill="#50a0e6" />
+        <path d="M10.8 11.5 16 14.4v5.7l-5.2-3Z" fill="#0f548c" />
+        <path d="M11 26h10M16 22v4" stroke="#0078d4" strokeWidth="1.6" />
       </svg>
     )
   }
   if (kind === "app") {
     return (
       <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
-        <rect x="6" y="6" width="20" height="20" rx="3" fill="#0078d4" />
-        <path d="M11 17c2-4 8-4 10 0" fill="none" stroke="white" strokeWidth="1.6" />
-        <circle cx="16" cy="14" r="2" fill="white" />
+        <circle cx="16" cy="16" r="10" fill="#0078d4" />
+        <ellipse cx="16" cy="16" rx="4.2" ry="10" fill="none" stroke="white" strokeWidth="1.2" />
+        <path d="M6.2 16h19.6M7.2 11.4h17.6M7.2 20.6h17.6" stroke="white" strokeWidth="1.15" />
       </svg>
     )
   }
   if (kind === "rocket") {
     return (
       <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
-        <path d="M18 6c4 2 7 8 7 13l-5-2-4 6-2-5-6-2c4-1 7-6 10-10Z" fill="#ff8c00" />
-        <path d="M10 22c2 2 3 4 2 6-2-1-4-2-6-2 1-2 2-3 4-4Z" fill="#f2c811" />
+        <path d="M17.2 3.5c5.2 2.2 8.2 7.4 8.2 12.6l-5.2-.6-2.2 4.6-3.2-5.4-5.6-2.6c3.2-1.4 5.4-5 8-8.6Z" fill="#ff8c00" />
+        <circle cx="19.2" cy="11.2" r="1.9" fill="white" />
+        <path d="M9.2 19.6c2.2 1.2 3.4 3.2 2.6 6.2-2.6-.6-4.6-2-6-4 1.2-1.2 2.2-1.8 3.4-2.2Z" fill="#f2c811" />
+        <path d="M12.4 18.2c1.2 1.6 1.4 3.2.6 5" fill="none" stroke="#d83b01" strokeWidth="1.3" strokeLinecap="round" />
       </svg>
     )
   }
   if (kind === "foundry") {
     return (
       <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
-        <path d="M8 22 16 6l8 16H8Z" fill="#5c2d91" />
-        <path d="M12 22h8l-4 5-4-5Z" fill="#8764b8" />
+        <path d="M9 27V6.2h2.2V27H9Z" fill="#5c2d91" />
+        <path d="M11.2 7.2c7.6 2.8 12.2 1.6 14.6-.8-2.6 5.2-6.8 6.6-14.6 4.4V7.2Z" fill="#5c2d91" />
+        <path d="M11.2 7.2c6.2 3.2 10.6 2.6 13.4.6-3.4 1.8-7.6 1.4-13.4-.6Z" fill="#d4c6ee" />
+        <path d="M11.2 14.6c6.8 1.8 11.2 1.2 13.8-.8-3.6 2.8-8.2 3-13.8 1.2v-.4Z" fill="#8764b8" />
       </svg>
     )
   }
@@ -1385,49 +1392,58 @@ function ServiceGlyph({ kind }: { kind: string }) {
   if (kind === "sql") {
     return (
       <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
-        <ellipse cx="16" cy="9" rx="8" ry="3" fill="none" stroke="#0078d4" strokeWidth="1.6" />
-        <path d="M8 9v14c0 1.7 3.6 3 8 3s8-1.3 8-3V9" fill="none" stroke="#0078d4" strokeWidth="1.6" />
-        <path d="M8 15c0 1.7 3.6 3 8 3s8-1.3 8-3" fill="none" stroke="#0078d4" strokeWidth="1.6" />
+        <path d="M8 9c0-2.2 3.6-4 8-4s8 1.8 8 4v13c0 2.2-3.6 4-8 4s-8-1.8-8-4V9Z" fill="#0078d4" />
+        <ellipse cx="16" cy="9" rx="8" ry="4" fill="#50a0e6" />
+        <path d="M8 14.2c0 2.2 3.6 4 8 4s8-1.8 8-4M8 19c0 2.2 3.6 4 8 4s8-1.8 8-4" fill="none" stroke="white" strokeWidth="1.1" />
+        <text x="16" y="19.2" textAnchor="middle" fill="white" fontSize="7" fontFamily="Segoe UI, sans-serif" fontWeight="700">SQL</text>
       </svg>
     )
   }
   if (kind === "cosmos") {
     return (
       <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
-        <circle cx="16" cy="16" r="3" fill="#0078d4" />
-        <path d="M16 5c4 4 6 7 6 11s-2 7-6 11c-4-4-6-7-6-11s2-7 6-11Z" fill="none" stroke="#50e6ff" strokeWidth="1.4" />
+        <ellipse cx="16" cy="16" rx="13" ry="4.6" fill="none" stroke="#50e6ff" strokeWidth="1.7" transform="rotate(-22 16 16)" />
+        <circle cx="16" cy="16" r="7" fill="#0078d4" />
+        <path d="M12.2 13.2a3 3 0 0 1 3.6-1" fill="none" stroke="#9ad7ff" strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M6.2 19.4c2.2 3.2 6 5.2 10.6 5.2 4.2 0 7.6-1.6 9.8-4.2" fill="none" stroke="#0f548c" strokeWidth="1.8" strokeLinecap="round" />
       </svg>
     )
   }
   if (kind === "disk") {
     return (
       <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
-        <ellipse cx="16" cy="10" rx="8" ry="3" fill="none" stroke="#107c10" strokeWidth="1.6" />
-        <path d="M8 10v12c0 1.7 3.6 3 8 3s8-1.3 8-3V10" fill="none" stroke="#107c10" strokeWidth="1.6" />
+        <path d="M8 10c0-2.4 3.6-4.2 8-4.2s8 1.8 8 4.2v12c0 2.4-3.6 4.2-8 4.2s-8-1.8-8-4.2V10Z" fill="#107c10" />
+        <ellipse cx="16" cy="10" rx="8" ry="4.2" fill="#54b054" />
+        <path d="M8 15c0 2.4 3.6 4.2 8 4.2s8-1.8 8-4.2M8 19.5c0 2.4 3.6 4.2 8 4.2s8-1.8 8-4.2" fill="none" stroke="white" strokeWidth="1.15" />
       </svg>
     )
   }
   if (kind === "k8s") {
     return (
       <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
-        <circle cx="16" cy="16" r="3" fill="none" stroke="#326ce5" strokeWidth="1.5" />
-        <path d="M16 6v4M16 22v4M6 16h4M22 16h4M9 9l3 3M20 20l3 3M23 9l-3 3M12 20l-3 3" stroke="#326ce5" strokeWidth="1.4" />
+        <polygon points="16.0,13.2 18.4,14.6 18.4,17.4 16.0,18.8 13.6,17.4 13.6,14.6" fill="#5c2d91" />
+        <polygon points="16.0,6.4 18.2,7.7 18.2,10.2 16.0,11.5 13.8,10.2 13.8,7.7" fill="#7a4eab" />
+        <polygon points="21.8,9.8 24.0,11.1 24.0,13.6 21.8,14.9 19.6,13.6 19.6,11.1" fill="#5c2d91" />
+        <polygon points="21.8,17.1 24.0,18.4 24.0,20.9 21.8,22.2 19.6,20.9 19.6,18.4" fill="#8764b8" />
+        <polygon points="16.0,20.5 18.2,21.8 18.2,24.3 16.0,25.6 13.8,24.3 13.8,21.8" fill="#5c2d91" />
+        <polygon points="10.2,17.1 12.4,18.4 12.4,20.9 10.2,22.2 8.0,20.9 8.0,18.4" fill="#7a4eab" />
+        <polygon points="10.2,9.8 12.4,11.1 12.4,13.6 10.2,14.9 8.0,13.6 8.0,11.1" fill="#8764b8" />
       </svg>
     )
   }
   if (kind === "net") {
     return (
       <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
-        <circle cx="8" cy="16" r="2.2" fill="#0078d4" />
-        <circle cx="24" cy="8" r="2.2" fill="#0078d4" />
-        <circle cx="24" cy="24" r="2.2" fill="#0078d4" />
+        <circle cx="8" cy="16" r="2.4" fill="#0078d4" />
+        <circle cx="24" cy="8" r="2.4" fill="#0078d4" />
+        <circle cx="24" cy="24" r="2.4" fill="#0078d4" />
         <path d="M10 15 22 9M10 17l12 6" stroke="#0078d4" strokeWidth="1.4" />
       </svg>
     )
   }
   return (
     <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
-      <path d="M8 16h12M16 10l6 6-6 6" fill="none" stroke="#0078d4" strokeWidth="1.8" />
+      <path d="M6 16h16M16 8l8 8-8 8" fill="none" stroke="#0078d4" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
