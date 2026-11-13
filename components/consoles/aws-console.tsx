@@ -395,7 +395,7 @@ function InstanceTable({
           <button type="button" className={ORANGE} onClick={onLaunch}>Launch instances</button>
           <button type="button" className={GHOST} disabled={active?.state !== "running"} onClick={() => active && onConnect(active.id)}>Connect</button>
           <details className="relative">
-            <summary className={`${GHOST} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>Instance state</summary>
+            <summary className={`${GHOST} cursor-pointer gap-1.5 list-none [&::-webkit-details-marker]:hidden`}>Instance state <Caret /></summary>
             <div className="absolute top-9 left-0 z-20 w-64 border border-[#d5dbdb] bg-white py-1 shadow-xl">
               <MenuAction disabled={active?.state !== "running"} onClick={() => active && onStop(active.id)}>Stop instance</MenuAction>
               <MenuAction disabled={active?.state !== "stopped"} onClick={() => active && onStart(active.id)}>Start instance</MenuAction>
@@ -405,7 +405,7 @@ function InstanceTable({
             </div>
           </details>
           <details className="relative">
-            <summary className={`${GHOST} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>Actions</summary>
+            <summary className={`${GHOST} cursor-pointer gap-1.5 list-none [&::-webkit-details-marker]:hidden`}>Actions <Caret /></summary>
             <div className="absolute top-9 left-0 z-20 w-56 border border-[#d5dbdb] bg-white py-1 text-[13px] shadow-xl">
               {["Instance settings", "Networking", "Security", "Image and templates", "Monitor and troubleshoot"].map((item) => (
                 <p key={item} className="px-3 py-1.5 text-[#16191f]">{item}</p>
@@ -576,7 +576,7 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
             </div>
             <div className="grid gap-1.5">
               <p className="text-[13px] font-bold">Amazon Machine Image (AMI)</p>
-              <ConsoleSelect id="aws-image" label="Amazon Machine Image (AMI)" theme="aws" value={imageId} onChange={setImageId} options={AWS_IMAGES.map((item) => ({ value: item.id, label: `${item.amiTitle ?? item.label}${item.freeTier ? " — Free tier eligible" : ""}` }))} className="max-w-none" />
+              <ConsoleSelect id="aws-image" label="Amazon Machine Image (AMI)" theme="aws" value={imageId} onChange={setImageId} options={AWS_IMAGES.map((item) => ({ value: item.id, label: `${item.amiTitle ?? item.label}${item.freeTier ? " — Free tier eligible" : ""}` }))} />
               <p className="text-[12px] text-[#545b64]">Virtualization: hvm · ENA enabled: true · Root device type: ebs{image?.amiIds ? ` · ${image.amiIds}` : ""}</p>
               <button type="button" className="w-fit text-[13px] font-bold text-[#0073bb]" onClick={() => setCatalog((open) => !open)}>Browse more AMIs</button>
               {catalog ? (
@@ -658,14 +658,14 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
             action={<button type="button" className="text-[13px] font-bold text-[#0073bb] hover:underline" onClick={() => setEditNet((open) => !open)}>{editNet ? "Close" : "Edit"}</button>}
           >
             <dl className="grid gap-x-10 gap-y-3 text-[13px] sm:grid-cols-2">
-              <div><dt className="text-[#545b64]">Network</dt><dd className="mt-0.5">{editNet ? <select aria-label="VPC" className="mt-1 h-8 w-full rounded-[2px] border border-[#7d8998] bg-white px-2"><option>vpc-08f2c1a04b7e93d21 (default)</option></select> : "vpc-08f2c1a04b7e93d21 (default)"}</dd></div>
-              <div><dt className="text-[#545b64]">Subnet</dt><dd className="mt-0.5">{editNet ? <select aria-label="Subnet" className="mt-1 h-8 w-full rounded-[2px] border border-[#7d8998] bg-white px-2"><option>No preference (default subnet in any availability zone)</option></select> : "No preference (default subnet in any availability zone)"}</dd></div>
-              <div><dt className="text-[#545b64]">Auto-assign public IP</dt><dd className="mt-0.5">{editNet ? <select aria-label="Auto-assign public IP" className="mt-1 h-8 w-full rounded-[2px] border border-[#7d8998] bg-white px-2"><option>Enable</option><option>Disable</option></select> : "Enable"}</dd></div>
-              <div><dt className="text-[#545b64]">Firewall (security groups)</dt><dd className="mt-0.5">{editNet ? <select aria-label="Firewall" value={firewall} onChange={(event) => setFirewall(event.target.value)} className="mt-1 h-8 w-full rounded-[2px] border border-[#7d8998] bg-white px-2"><option value="create">Create security group</option><option value="existing">Select existing security group</option></select> : firewall === "create" ? "Create security group" : "Select existing security group"}</dd></div>
+              <div><dt className="text-[#545b64]">Network</dt><dd className="mt-0.5">{editNet ? <select aria-label="VPC" className="mt-1 h-8 w-fit rounded-[2px] border border-[#7d8998] bg-white px-2"><option>vpc-08f2c1a04b7e93d21 (default)</option></select> : "vpc-08f2c1a04b7e93d21 (default)"}</dd></div>
+              <div><dt className="text-[#545b64]">Subnet</dt><dd className="mt-0.5">{editNet ? <select aria-label="Subnet" className="mt-1 h-8 w-fit rounded-[2px] border border-[#7d8998] bg-white px-2"><option>No preference (default subnet in any availability zone)</option></select> : "No preference (default subnet in any availability zone)"}</dd></div>
+              <div><dt className="text-[#545b64]">Auto-assign public IP</dt><dd className="mt-0.5">{editNet ? <select aria-label="Auto-assign public IP" className="mt-1 h-8 w-fit rounded-[2px] border border-[#7d8998] bg-white px-2"><option>Enable</option><option>Disable</option></select> : "Enable"}</dd></div>
+              <div><dt className="text-[#545b64]">Firewall (security groups)</dt><dd className="mt-0.5">{editNet ? <select aria-label="Firewall" value={firewall} onChange={(event) => setFirewall(event.target.value)} className="mt-1 h-8 w-fit rounded-[2px] border border-[#7d8998] bg-white px-2"><option value="create">Create security group</option><option value="existing">Select existing security group</option></select> : firewall === "create" ? "Create security group" : "Select existing security group"}</dd></div>
             </dl>
             <label className="flex flex-wrap items-center gap-3 text-[13px]">
               <span className="inline-flex items-center gap-2"><input type="checkbox" checked readOnly /> Allow SSH traffic from</span>
-              <select aria-label="Allow SSH traffic from" value={sshFrom} onChange={(event) => setSshFrom(event.target.value)} className="h-8 min-w-52 rounded-[2px] border border-[#7d8998] bg-white px-2">
+              <select aria-label="Allow SSH traffic from" value={sshFrom} onChange={(event) => setSshFrom(event.target.value)} className="h-8 w-fit rounded-[2px] border border-[#7d8998] bg-white px-2">
                 <option>Anywhere 0.0.0.0/0</option>
                 <option>Custom</option>
                 <option>My IP</option>
@@ -823,6 +823,10 @@ function Field({ id, label, children }: { id: string; label: string; children: R
 
 function Info() {
   return <span className="grid size-4 place-items-center rounded-full border border-[#545b64] text-[10px] font-bold text-[#545b64]" aria-hidden>i</span>
+}
+
+function Caret() {
+  return <svg viewBox="0 0 16 16" className="size-3" aria-hidden><path fill="currentColor" d="M3.2 5.6 8 10.8 12.8 5.6z" /></svg>
 }
 
 function OsLockup({ name }: { name: string }) {

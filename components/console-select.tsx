@@ -20,6 +20,7 @@ export function ConsoleSelect({
   className?: string
 }) {
   const current = options.find((item) => item.value === value)
+  const hug = theme !== "azure"
   const trigger = theme === "do"
     ? "h-9 rounded-[4px] border-[#d5deea] text-[14px]"
     : theme === "azure"
@@ -30,28 +31,28 @@ export function ConsoleSelect({
     : "rounded-[2px] border-[#d5dbdb]"
   const hover = theme === "azure" ? "hover:bg-[#f3f2f1]" : theme === "do" ? "hover:bg-[#f4f7fb]" : "hover:bg-[#f2f8fd]"
   return (
-    <div className={cn("relative max-w-md", className)}>
+    <div className={cn(hug ? "relative inline-block max-w-full" : "relative max-w-md", className)}>
       <select id={id} aria-label={label} value={value} onChange={(event) => onChange(event.target.value)} className="sr-only">
         {options.map((item) => <option key={item.value || "empty"} value={item.value}>{item.label}</option>)}
       </select>
       <details className="group">
-        <summary className={cn("flex cursor-pointer list-none items-center justify-between gap-3 border bg-white px-3 [&::-webkit-details-marker]:hidden", trigger)}>
+        <summary className={cn("cursor-pointer list-none items-center border bg-white px-3 [&::-webkit-details-marker]:hidden", hug ? "inline-flex w-max max-w-full gap-2" : "flex justify-between gap-3", trigger)}>
           <span className="truncate">{current?.label || "Select"}</span>
           <svg viewBox="0 0 16 16" className="size-3 shrink-0" aria-hidden><path fill="currentColor" d="M3.2 5.6 8 10.8 12.8 5.6z" /></svg>
         </summary>
-        <div className={cn("absolute z-30 mt-1 max-h-64 w-full overflow-auto border bg-white py-1 shadow-lg", menu)}>
+        <div className={cn("absolute left-0 z-30 mt-1 max-h-64 overflow-auto border bg-white py-1 shadow-lg", hug ? "w-max min-w-full max-w-[28rem]" : "w-full", menu)}>
           {options.map((item) => (
             <button
               key={item.value || "empty"}
               type="button"
-              className={cn("flex w-full items-center justify-between gap-3 px-3 py-2 text-left", hover, item.value === value && "font-semibold")}
+              className={cn("flex items-center gap-2 px-3 py-2 text-left whitespace-nowrap", hug ? "w-max min-w-full" : "w-full justify-between", hover, item.value === value && "font-semibold")}
               onClick={(event) => {
                 onChange(item.value)
                 const parent = event.currentTarget.closest("details")
                 if (parent) parent.open = false
               }}
             >
-              <span className="truncate">{item.label}</span>
+              <span>{item.label}</span>
               {item.value === value ? <span aria-hidden>✓</span> : null}
             </button>
           ))}

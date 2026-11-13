@@ -160,37 +160,39 @@ function DoWelcome({
 }) {
   const visible = droplets.filter((vm) => vm.state !== "terminated")
   return (
-    <div className="grid gap-5 p-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="mt-1 text-[28px] font-semibold tracking-tight text-[#031b4e]">Welcome aboard!</h1>
+    <div className="grid gap-8 p-6 sm:p-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="flex items-center gap-2 text-[20px] font-semibold text-[#031b4e]">
+          <span className="text-[#5b6785]" aria-hidden>▣</span> first-project
+        </h1>
+        <div className="flex items-center gap-2">
+          {continueLabel && onContinue ? <button type="button" className={BLUE} onClick={onContinue}>{continueLabel}</button> : null}
+          <button type="button" className="h-8 rounded-md border border-[#d5deea] bg-white px-3 text-[13px]">Project settings</button>
         </div>
-        {continueLabel && onContinue ? <button type="button" className={BLUE} onClick={onContinue}>{continueLabel}</button> : null}
       </div>
       <div>
-        <h2 className="text-[16px] font-semibold">Quick actions</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {([
-            ["Create Droplet", "Droplets", onCreate],
-            ["Create App", "App Platform", undefined],
-            ["Create Database", "Databases", undefined],
-            ["Kubernetes", "Kubernetes", undefined],
-          ] as [string, string, (() => void) | undefined][]).map(([title, detail, action]) => (
-            <button key={title} type="button" onClick={action} className="rounded-md border border-[#e1e7f0] bg-white p-4 text-left hover:border-[#0069ff]">
-              <p className="font-semibold text-[#031b4e]">{title}</p>
-              <p className="mt-1 text-[13px] text-[#5b6785]">{detail}</p>
-            </button>
+        <h2 className="text-[32px] font-semibold tracking-tight text-[#031b4e]">Welcome aboard!</h2>
+        <p className="mt-2 text-[15px] text-[#5b6785]">Spin up your first cloud resources to get your project off the ground.</p>
+        <div className="mt-6 grid gap-4 lg:grid-cols-3">
+          <WelcomeCard title="Deploy a virtual machine" product="Droplets" action="Create Droplet" onClick={onCreate} />
+          <WelcomeCard title="Build a web app" product="App Platform" action="Launch App" />
+          <WelcomeCard title="Store and manage data" product="Spaces Object Storage" action="Create Space" onClick={onOpen} />
+        </div>
+      </div>
+      <div>
+        <h2 className="text-[18px] font-semibold text-[#031b4e]">Explore all products</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {["Kubernetes", "Databases", "Functions", "Volumes", "Networking", "Container Registry", "Backups", "Marketplace"].map((product) => (
+            <div key={product} className="rounded-md border border-[#e1e7f0] bg-white px-4 py-3 text-[14px] font-medium">{product}</div>
           ))}
         </div>
       </div>
-      <div className="rounded-md border border-[#e1e7f0] bg-white">
-        <div className="flex items-center justify-between border-b border-[#eef2f7] px-4 py-3">
-          <h2 className="font-semibold">Droplets</h2>
-          {onOpen ? <button type="button" onClick={onOpen} className="text-[13px] text-[#0069ff]">View all</button> : null}
-        </div>
-        {visible.length === 0 ? (
-          <p className="px-4 py-8 text-[13px] text-[#5b6785]">You don’t have any Droplets yet.</p>
-        ) : (
+      {visible.length > 0 ? (
+        <div className="rounded-md border border-[#e1e7f0] bg-white">
+          <div className="flex items-center justify-between border-b border-[#eef2f7] px-4 py-3">
+            <h2 className="font-semibold">Droplets</h2>
+            {onOpen ? <button type="button" onClick={onOpen} className="text-[13px] text-[#0069ff]">View all</button> : null}
+          </div>
           <ul>
             {visible.slice(0, 4).map((vm) => (
               <li key={vm.id} className="flex items-center justify-between border-t border-[#eef2f7] px-4 py-3 text-[13px]">
@@ -199,8 +201,18 @@ function DoWelcome({
               </li>
             ))}
           </ul>
-        )}
-      </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function WelcomeCard({ title, product, action, onClick }: { title: string; product: string; action: string; onClick?: () => void }) {
+  return (
+    <div className="flex flex-col rounded-md border border-[#e1e7f0] bg-white p-5">
+      <p className="text-[16px] font-semibold text-[#031b4e]">{title}</p>
+      <p className="mt-1 text-[13px] text-[#5b6785]">{product}</p>
+      <button type="button" onClick={onClick} className="mt-4 h-8 w-fit rounded-md bg-[#0069ff] px-3 text-[13px] font-semibold text-white hover:bg-[#0058d6]">{action}</button>
     </div>
   )
 }
@@ -241,61 +253,69 @@ function DropletList({
 }) {
   const [query, setQuery] = useState("")
   const [menu, setMenu] = useState<string | null>(null)
-  const visible = droplets.filter((vm) => vm.state !== "terminated" && vm.name.toLowerCase().includes(query.trim().toLowerCase()))
+  const [tab, setTab] = useState("Droplets")
+  const all = droplets.filter((vm) => vm.state !== "terminated")
+  const visible = all.filter((vm) => vm.name.toLowerCase().includes(query.trim().toLowerCase()))
+  const tabs = [
+    ["Droplets", all.length],
+    ["Volumes", 0],
+    ["Reserved IPs", 0],
+    ["Snapshots", 0],
+  ] as const
   return (
     <div className="p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-[24px] font-semibold text-[#031b4e]">Droplets</h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-[24px] font-semibold text-[#031b4e]">Droplets</h1>
+          <div className="mt-3 flex gap-5 text-[14px]">
+            {tabs.map(([label, count]) => (
+              <button key={label} type="button" onClick={() => setTab(label)} className={cn("pb-2", tab === label ? "border-b-2 border-[#0069ff] font-semibold text-[#0069ff]" : "text-[#5b6785]")}>
+                {label} <span className="ml-1 rounded-full bg-[#eef2f7] px-1.5 text-[12px]">{count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
         <button type="button" className={BLUE} onClick={onCreate}>Create Droplet</button>
       </div>
       <div className="mt-4 rounded-md border border-[#e1e7f0] bg-white">
         <div className="border-b border-[#eef2f7] px-3 py-2">
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by Droplet name" className="h-8 w-full max-w-xs rounded-md border border-[#d5deea] px-2 text-[13px] outline-none" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === "Droplets" ? "Search by Droplet name" : `Search ${tab}`} className="h-8 w-full max-w-xs rounded-md border border-[#d5deea] px-2 text-[13px] outline-none" />
         </div>
-        {visible.length === 0 ? (
+        {tab !== "Droplets" ? (
+          <p className="px-4 py-16 text-center text-[14px] text-[#5b6785]">You don’t have any {tab.toLowerCase()}.</p>
+        ) : visible.length === 0 ? (
           <div className="px-4 py-16 text-center">
             <p className="text-[16px] font-semibold text-[#031b4e]">You don’t have any Droplets.</p>
             <button type="button" className={cn(BLUE, "mt-4")} onClick={onCreate}>Get Started with a Droplet</button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-[13px]">
-              <thead className="text-[#5b6785]">
-                <tr className="border-b border-[#eef2f7]">
-                  {["Name", "IP Address", "Created", "Tags", ""].map((heading) => <th key={heading || "m"} className="px-4 py-2 font-medium">{heading}</th>)}
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((vm) => (
-                  <tr key={vm.id} className="border-b border-[#eef2f7] last:border-0">
-                    <td className="px-4 py-3">
-                      <p className="flex items-center gap-2 font-medium text-[#0069ff]">
-                        <StateBadge state={vm.state} provider="do" />
-                        <button type="button" className="text-[#0069ff] hover:underline" onClick={() => onOpen(vm.id)}>{vm.name}</button>
-                      </p>
-                      <p className="mt-1 text-[12px] text-[#5b6785]">{vm.imageLabel} · {vm.sizeLabel} · {regionCity(vm.region)}</p>
-                      {vm.state === "pending" ? <div className="mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-[#e5eaf2]"><div className="h-full w-2/3 animate-pulse bg-[#0069ff]" /></div> : null}
-                      {vm.state === "stopped" ? <p className="mt-1 text-[12px] text-[#b54708]">Powered off. This Droplet is still billed until you destroy it.</p> : null}
-                    </td>
-                    <td className="px-4 py-3 font-mono">{vm.publicIp ?? "Assigning…"}</td>
-                    <td className="px-4 py-3 text-[#5b6785]">{vm.region}</td>
-                    <td className="px-4 py-3 text-[#5b6785]">—</td>
-                    <td className="relative px-4 py-3 text-right">
-                      <button type="button" className="rounded-md border border-[#d5deea] px-2 py-1" onClick={() => setMenu(menu === vm.id ? null : vm.id)} aria-expanded={menu === vm.id}>More</button>
-                      {menu === vm.id ? (
-                        <div className="absolute right-4 z-10 mt-1 w-40 rounded-md border border-[#e1e7f0] bg-white py-1 text-left shadow-lg">
-                          <MenuButton disabled={vm.state !== "running"} onClick={() => { setMenu(null); onConnect(vm.id) }}>Web console</MenuButton>
-                          <MenuButton disabled={vm.state !== "running"} onClick={() => { setMenu(null); onPower(vm.id, false) }}>Power off</MenuButton>
-                          <MenuButton disabled={vm.state !== "stopped"} onClick={() => { setMenu(null); onPower(vm.id, true) }}>Power on</MenuButton>
-                          <MenuButton onClick={() => { setMenu(null); onDestroy(vm.id) }}>Destroy</MenuButton>
-                        </div>
-                      ) : null}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul>
+            {visible.map((vm) => (
+              <li key={vm.id} className="flex flex-wrap items-center gap-4 border-b border-[#eef2f7] px-4 py-4 last:border-0">
+                <span className="grid size-8 place-items-center text-[#0069ff]" aria-hidden>◉</span>
+                <div className="min-w-0 flex-1">
+                  <button type="button" className="font-medium text-[#0069ff] hover:underline" onClick={() => onOpen(vm.id)}>{vm.name}</button>
+                  <p className="font-mono text-[13px] text-[#031b4e]">{vm.publicIp ?? "Assigning…"}</p>
+                  <p className="mt-1 text-[12px] text-[#5b6785]">{vm.sizeLabel} / {vm.region.toUpperCase()} — {vm.imageLabel}</p>
+                  {vm.state === "pending" ? <div className="mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-[#e5eaf2]"><div className="h-full w-2/3 animate-pulse bg-[#0069ff]" /></div> : null}
+                  {vm.state !== "running" && vm.state !== "pending" ? <p className="mt-1"><StateBadge state={vm.state} provider="do" /></p> : null}
+                </div>
+                <div className="relative">
+                  <button type="button" className="inline-flex items-center gap-1 rounded-md border border-[#d5deea] px-2 py-1 text-[13px]" onClick={() => setMenu(menu === vm.id ? null : vm.id)} aria-expanded={menu === vm.id}>More <span aria-hidden>▾</span></button>
+                  {menu === vm.id ? (
+                    <div className="absolute right-0 z-10 mt-1 w-44 rounded-md border border-[#e1e7f0] bg-white py-1 text-left shadow-lg">
+                      <MenuButton disabled={vm.state !== "running"} onClick={() => { setMenu(null); onConnect(vm.id) }}>Access console</MenuButton>
+                      <MenuButton disabled={vm.state !== "running"} onClick={() => { setMenu(null); onPower(vm.id, false) }}>Power off</MenuButton>
+                      <MenuButton disabled={vm.state !== "stopped"} onClick={() => { setMenu(null); onPower(vm.id, true) }}>Power on</MenuButton>
+                      <MenuButton disabled onClick={() => setMenu(null)}>Resize</MenuButton>
+                      <MenuButton disabled onClick={() => setMenu(null)}>View graphs</MenuButton>
+                      <MenuButton onClick={() => { setMenu(null); onDestroy(vm.id) }}>Destroy</MenuButton>
+                    </div>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </div>

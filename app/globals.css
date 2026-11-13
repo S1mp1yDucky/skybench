@@ -173,3 +173,9 @@
     padding: 0 !important;
   }
 }
+
+.console-aws select:not(.sr-only),
+.console-do select:not(.sr-only) {
+  width: fit-content;
+  max-width: 100%;
+}
