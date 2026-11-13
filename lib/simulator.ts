@@ -111,7 +111,7 @@ export function vmByIp(state: LabState, ip: string): { platform: PlatformId; vm:
 
 export function isMetering(vm: Vm): boolean {
   if (vm.meterFrom == null) return false
-  return vm.state === "running" || (vm.state === "stopped" && vm.billsWhileStopped)
+  return vm.state === "running" || ((vm.state === "stopped" || vm.state === "stopping") && vm.billsWhileStopped)
 }
 
 export function vmCost(vm: Vm, now: number): number {
@@ -332,13 +332,25 @@ function promote(state: LabState, now: number): ReduceResult {
   let changed = false
   const logs: string[] = []
   const lift = (vm: Vm, platform: PlatformId): Vm => {
-    if (vm.state !== "pending") return vm
-    changed = true
-    const publicIp = publicAddress(platform, vm.id)
-    logs.push(`${vm.name} is running at ${publicIp}.`)
-    return { ...vm, state: "running", publicIp, meterFrom: now }
+    if (vm.state === "pending") {
+      changed = true
+      const publicIp = publicAddress(platform, vm.id)
+      logs.push(`${vm.name} is running at ${publicIp}.`)
+      return { ...vm, state: "running", publicIp, meterFrom: now }
+    }
+    if (vm.state === "stopping") {
+      changed = true
+      logs.push(`${vm.name} is stopped.`)
+      return { ...vm, state: "stopped" }
+    }
+    if (vm.state === "shutting-down") {
+      changed = true
+      logs.push(`${vm.name} is terminated.`)
+      return { ...vm, state: "terminated" }
+    }
+    return vm
   }
-  if (!hasPending(state)) return { state }
+  if (!hasTransition(state)) return { state }
   const next: LabState = {
     ...state,
     aws: { ...state.aws, instances: state.aws.instances.map((vm) => lift(vm, "aws")) },
@@ -368,8 +380,8 @@ function launchAws(
   const cleaned = requested ? cleanName(requested, false) : ""
   if (requested && !cleaned) return err("Instance name may use letters, numbers, dots, and hyphens.")
   const name = cleaned || ""
-  const key = state.aws.keyPairs.find((item) => item.name === action.keyName)
-  if (!key) return err(`Key pair ${action.keyName || "(missing)"} does not exist. Create one first.`)
+  const key = action.proceedWithoutKey ? null : state.aws.keyPairs.find((item) => item.name === action.keyName)
+  if (!action.proceedWithoutKey && !key) return err(`Key pair ${action.keyName || "(missing)"} does not exist. Create one first.`)
   const vm = makeVm({
     id: `i-${hex(17)}`,
     name,
@@ -377,7 +389,7 @@ function launchAws(
     size,
     region: state.aws.region,
     username: image.username,
-    keyName: key.name,
+    keyName: key?.name ?? "(none)",
     hourlyUsd: size.hourlyUsd,
     billsWhileStopped: false,
     now,
@@ -484,23 +496,23 @@ function launchDo(
 
 function stopVm(state: LabState, platform: PlatformId, id: string, now: number): ReduceResult {
   return updateVm(state, platform, id, now, (vm) => {
-    if (vm.state === "pending") return "Wait until the machine is running."
+    if (vm.state === "pending" || vm.state === "stopping") return "Wait until the machine is running."
     if (vm.state === "stopped") return "It is already stopped."
-    if (vm.state === "terminated") return "It has already been removed."
+    if (vm.state === "terminated" || vm.state === "shutting-down") return "It has already been removed."
     let billedMs = vm.billedMs
     let meterFrom = vm.meterFrom
     if (!vm.billsWhileStopped && meterFrom != null) {
       billedMs += Math.max(0, now - meterFrom)
       meterFrom = null
     }
-    return { ...vm, state: "stopped", billedMs, meterFrom }
+    return { ...vm, state: "stopping", billedMs, meterFrom }
   }, (vm) => `Stopped ${vm.name}.`)
 }
 
 function startVm(state: LabState, platform: PlatformId, id: string, now: number): ReduceResult {
   return updateVm(state, platform, id, now, (vm) => {
     if (vm.state === "running" || vm.state === "pending") return "It is already on."
-    if (vm.state === "terminated") return "This one is gone. Launch a new machine."
+    if (vm.state === "terminated" || vm.state === "shutting-down") return "This one is gone. Launch a new machine."
     return {
       ...vm,
       state: "running",
@@ -518,13 +530,13 @@ function terminateVm(
   verb: string
 ): ReduceResult {
   return updateVm(state, platform, id, now, (vm) => {
-    if (vm.state === "terminated") return "It is already gone."
+    if (vm.state === "terminated" || vm.state === "shutting-down") return "It is already gone."
     let billedMs = vm.billedMs
     if (isMetering(vm) && vm.meterFrom != null) billedMs += Math.max(0, now - vm.meterFrom)
     if (vm.state === "running" && vm.meterFrom != null && !vm.billsWhileStopped) {
       billedMs = vm.billedMs + Math.max(0, now - vm.meterFrom)
     }
-    return { ...vm, state: "terminated", billedMs, meterFrom: null, publicIp: null }
+    return { ...vm, state: "shutting-down", billedMs, meterFrom: null, publicIp: null }
   }, (vm) => `${verb} ${vm.name}.`)
 }
 
@@ -738,9 +750,9 @@ function keysOf(state: LabState, platform: PlatformId): KeyMaterial[] {
   return state.do.keys
 }
 
-function hasPending(state: LabState): boolean {
+function hasTransition(state: LabState): boolean {
   return [state.aws.instances, state.azure.vms, state.do.droplets].some((list) =>
-    list.some((vm) => vm.state === "pending")
+    list.some((vm) => vm.state === "pending" || vm.state === "stopping" || vm.state === "shutting-down")
   )
 }
 

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { FluentProvider, webLightTheme } from "@fluentui/react-components"
 import { ConsoleSelect } from "@/components/console-select"
 import { flash } from "@/lib/flash"
 import { AccountForm, SignInCard } from "@/components/account-form"
@@ -61,6 +62,7 @@ export function AzureConsole() {
   }
 
   return (
+    <FluentProvider theme={webLightTheme}>
     <ConsoleFrame
       theme="azure"
       product="Azure portal"
@@ -102,12 +104,7 @@ export function AzureConsole() {
       ) : null}
       {stage === "create" ? <CreateVm onDone={() => setView("vms")} /> : null}
       {stage === "groups" ? <Groups onDelete={setGroupToDelete} /> : null}
-      {stage === "shell" ? (
-        <div className="grid h-full bg-[#012456]">
-          <div className="flex h-9 items-center bg-[#012456] px-3 text-[13px] text-white">Azure Cloud Shell</div>
-          <div className="p-3"><Terminal platform="azure" /></div>
-        </div>
-      ) : null}
+      {stage === "shell" ? <AzureCloudShell /> : null}
       {stage === "billing" ? (
         <div className="bg-[#faf9f8] p-6">
           <BillingPanel
@@ -128,13 +125,62 @@ export function AzureConsole() {
             <DialogTitle>Delete {groupToDelete}?</DialogTitle>
             <DialogDescription>Deleting a resource group is irreversible. All resources in the group will be deleted.</DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setGroupToDelete(null)}>Cancel</Button>
-            <Button type="button" variant="destructive" onClick={() => { if (!groupToDelete) return; tell(dispatch({ type: "azure/delete-group", name: groupToDelete })); setGroupToDelete(null) }}>Delete resource group</Button>
+          <DialogFooter className="flex-col items-stretch sm:flex-col">
+            <label className="grid gap-1 text-[13px]">Type the resource group name
+              <Input id="confirm-group" onChange={(event) => { event.currentTarget.dataset.match = event.target.value === groupToDelete ? "yes" : "no" }} />
+            </label>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setGroupToDelete(null)}>Cancel</Button>
+              <Button type="button" variant="destructive" onClick={(event) => {
+                const input = event.currentTarget.closest("[data-slot='dialog-content']")?.querySelector("input")
+                if (!groupToDelete || input?.value !== groupToDelete) return
+                tell(dispatch({ type: "azure/delete-group", name: groupToDelete }))
+                setGroupToDelete(null)
+              }}>Delete</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </ConsoleFrame>
+    </FluentProvider>
+  )
+}
+
+function AzureCloudShell() {
+  const [step, setStep] = useState<"pick" | "storage" | "wait" | "ready">("pick")
+  const [shell, setShell] = useState<"Bash" | "PowerShell">("Bash")
+  useEffect(() => {
+    if (step !== "wait") return
+    const timer = window.setTimeout(() => setStep("ready"), 900)
+    return () => window.clearTimeout(timer)
+  }, [step])
+  return (
+    <div className="flex h-full min-h-[420px] flex-col border-t border-[#edebe9] bg-[#012456] text-white">
+      <div className="flex flex-wrap items-center gap-2 bg-[#001b33] px-3 py-2 text-[13px]">
+        <span>Azure Cloud Shell</span>
+        {step === "ready" ? <button type="button" className="rounded bg-white/10 px-2 py-1" onClick={() => setShell(shell === "Bash" ? "PowerShell" : "Bash")}>{shell === "Bash" ? "Switch to PowerShell" : "Switch to Bash"}</button> : null}
+        <span className="text-white/70">Restart · Settings · Editor · New session</span>
+      </div>
+      {step === "pick" ? (
+        <div className="grid gap-3 bg-white p-6 text-[#323130]">
+          <h2 className="text-[18px] font-semibold">Welcome to Azure Cloud Shell</h2>
+          <p>Select Bash or PowerShell.</p>
+          <div className="flex gap-2">
+            <button type="button" className={PRIMARY} onClick={() => { setShell("Bash"); setStep("storage") }}>Bash</button>
+            <button type="button" className={PRIMARY} onClick={() => { setShell("PowerShell"); setStep("storage") }}>PowerShell</button>
+          </div>
+        </div>
+      ) : null}
+      {step === "storage" ? (
+        <div className="grid gap-3 bg-white p-6 text-[#323130]">
+          <h2 className="text-[18px] font-semibold">Getting started</h2>
+          <button type="button" className={PRIMARY} onClick={() => setStep("wait")}>Mount storage account</button>
+          <button type="button" className="h-8 w-fit border border-[#8a8886] px-3" onClick={() => setStep("wait")}>No storage account required</button>
+        </div>
+      ) : null}
+      {step === "wait" ? <p className="px-4 py-6">Requesting a Cloud Shell…</p> : null}
+      {step === "ready" ? <div className="p-3"><Terminal platform="azure" /></div> : null}
+    </div>
   )
 }
 
@@ -331,6 +377,7 @@ function CreateVm({ onDone }: { onDone: () => void }) {
   const [ports, setPorts] = useState("SSH (22)")
   const [imagesOpen, setImagesOpen] = useState(false)
   const [sizesOpen, setSizesOpen] = useState(false)
+  const [sizeQuery, setSizeQuery] = useState("")
   const [error, setError] = useState<string | null>(null)
   const image = AZURE_IMAGES.find((item) => item.id === imageId)
 
@@ -344,13 +391,71 @@ function CreateVm({ onDone }: { onDone: () => void }) {
     }
   }
 
+  const [phase, setPhase] = useState<"form" | "key" | "deploy" | "done" | "overview">("form")
+  const [disk, setDisk] = useState("Premium SSD (locally-redundant storage)")
+  const [boot, setBoot] = useState("Enable with managed storage account (recommended)")
+  const [shutdown, setShutdown] = useState(false)
+  const [tagName, setTagName] = useState("")
+  const [tagValue, setTagValue] = useState("")
+
   function launch() {
-    const outcome = dispatch({ type: "azure/launch", name, group, imageId, sizeId, keyName, username })
-    if (outcome.error) setError(outcome.error)
-    else {
-      flash(outcome.message ?? "Creating the virtual machine.")
-      onDone()
+    if (!azure.keyPairs.some((key) => key.name === keyName)) {
+      setPhase("key")
+      return
     }
+    beginDeploy()
+  }
+
+  function beginDeploy(overrideKey?: string) {
+    const outcome = dispatch({ type: "azure/launch", name, group, imageId, sizeId, keyName: overrideKey ?? keyName, username })
+    if (outcome.error) {
+      setError(outcome.error)
+      setPhase("form")
+      return
+    }
+    setError(null)
+    setPhase("deploy")
+    window.dispatchEvent(new CustomEvent("skybench-note", { detail: { title: "Deployment started", body: name || "virtual machine" } }))
+    window.setTimeout(() => {
+      setPhase("done")
+      window.dispatchEvent(new CustomEvent("skybench-note", { detail: { title: "Deployment succeeded", body: name || "virtual machine" } }))
+    }, 1600)
+  }
+
+  if (phase === "deploy" || phase === "done") {
+    return (
+      <div className="bg-white px-6 py-5">
+        <h1 className="text-[24px] font-semibold">{phase === "done" ? "Your deployment is complete" : "Deployment is in progress"}</h1>
+        <p className="mt-2 text-[13px] text-[#605e5c]">Deployment name: {name || "vm"}. Resource group: {group}.</p>
+        <ul className="mt-4 grid max-w-xl gap-2 text-[14px]">
+          {[`${name || "vm"}`, `${name || "vm"}-ip`, `${name || "vm"}-nsg`, `${name || "vm"}-vnet`].map((resource) => (
+            <li key={resource} className="flex items-center gap-2 border border-[#edebe9] px-3 py-2">
+              <StateBadge state={phase === "done" ? "running" : "pending"} provider="azure" />
+              <span>{resource}</span>
+            </li>
+          ))}
+        </ul>
+        {phase === "done" ? <button type="button" className={cn(PRIMARY, "mt-4")} onClick={() => setPhase("overview")}>Go to resource</button> : null}
+      </div>
+    )
+  }
+  if (phase === "overview") {
+    const vm = azure.vms.find((item) => item.name === name)
+    return (
+      <div className="bg-white px-6 py-5">
+        <h1 className="text-[24px] font-semibold">{name}</h1>
+        <h2 className="mt-4 text-[16px] font-semibold">Essentials</h2>
+        <dl className="mt-3 grid max-w-3xl gap-3 text-[14px] sm:grid-cols-2">
+          <div><dt className="text-[#605e5c]">Resource group</dt><dd>{group}</dd></div>
+          <div><dt className="text-[#605e5c]">Status</dt><dd><StateBadge state={vm?.state ?? "pending"} provider="azure" /></dd></div>
+          <div><dt className="text-[#605e5c]">Location</dt><dd>{location}</dd></div>
+          <div><dt className="text-[#605e5c]">Size</dt><dd>{sizeId}</dd></div>
+          <div><dt className="text-[#605e5c]">Public IP address</dt><dd className="font-mono">{vm?.publicIp ?? "Assigning…"}</dd></div>
+          <div><dt className="text-[#605e5c]">Subscription</dt><dd>Azure subscription 1</dd></div>
+        </dl>
+        <button type="button" className="mt-4 text-[13px] text-[#0078d4] hover:underline" onClick={onDone}>Back to virtual machines</button>
+      </div>
+    )
   }
 
   return (
@@ -414,13 +519,17 @@ function CreateVm({ onDone }: { onDone: () => void }) {
                 <ConsoleSelect id="az-size" label="Size" theme="azure" value={sizeId} onChange={setSizeId} options={AZURE_SIZES.map((item) => ({ value: item.id, label: `${item.id} - ${item.vcpu} vcpu, ${item.ram} memory` }))} className="max-w-none" />
                 <button type="button" className="mt-1 text-left text-[13px] text-[#0078d4] hover:underline" onClick={() => setSizesOpen((open) => !open)}>See all sizes</button>
                 {sizesOpen ? (
-                  <ul className="mt-2 border border-[#edebe9] bg-white">
-                    {AZURE_SIZES.map((item) => (
-                      <li key={item.id}>
-                        <button type="button" className="w-full px-3 py-2 text-left text-[13px] hover:bg-[#f3f2f1]" onClick={() => { setSizeId(item.id); setSizesOpen(false) }}>{item.id} - {item.vcpu} vcpu, {item.ram} memory</button>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="mt-2 border border-[#edebe9] bg-white p-3">
+                    <p className="text-[14px] font-semibold">Select a VM size</p>
+                    <input aria-label="Filter sizes" value={sizeQuery} onChange={(event) => setSizeQuery(event.target.value)} placeholder="Filter" className="mt-2 h-8 w-full rounded-sm border border-[#8a8886] px-2 text-[13px]" />
+                    <ul className="mt-2">
+                      {AZURE_SIZES.filter((item) => `${item.id} ${item.ram}`.toLowerCase().includes(sizeQuery.trim().toLowerCase())).map((item) => (
+                        <li key={item.id}>
+                          <button type="button" className="w-full px-3 py-2 text-left text-[13px] hover:bg-[#f3f2f1]" onClick={() => { setSizeId(item.id); setSizesOpen(false) }}>{item.id} - {item.vcpu} vcpu, {item.ram} memory</button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ) : null}
               </div>
             </BladeField>
@@ -461,12 +570,47 @@ function CreateVm({ onDone }: { onDone: () => void }) {
             </div>
           </div>
         ) : null}
-        {tab === "Disks" ? <StaticBlade title="Disks" rows={[["OS disk type", "Premium SSD (locally-redundant storage)"], ["Delete with VM", "Yes"], ["Encryption type", "(Default) Encryption at-rest with a platform-managed key"], ["Ultra disk compatibility", "No"], ["Data disks", "None"]]} /> : null}
-        {tab === "Networking" ? <StaticBlade title="Networking" rows={[["Virtual network", `(new) ${name || "vm"}-vnet`], ["Subnet", "default (10.0.0.0/24)"], ["Public IP", `(new) ${name || "vm"}-ip`], ["NIC network security group", "Basic"], ["Public inbound ports", ports], ["Accelerated networking", "Off"], ["Load balancing", "None"], ["Delete public IP and NIC when VM is deleted", "Yes"]]} /> : null}
-        {tab === "Management" ? <StaticBlade title="Management" rows={[["Boot diagnostics", "Enable with managed storage account (recommended)"], ["System assigned managed identity", "Off"], ["Auto-shutdown", "Off"], ["Patch orchestration options", "Image Default"]]} /> : null}
-        {tab === "Monitoring" ? <StaticBlade title="Monitoring" rows={[["Recommended alert rules", "Disabled"], ["Boot diagnostics", "Enabled"]]} /> : null}
-        {tab === "Advanced" ? <StaticBlade title="Advanced" rows={[["Extensions", "None"], ["VM generation", "Gen 2"], ["Custom data and cloud init", ""], ["Proximity placement group", "None"], ["Capacity reservation", "None"]]} /> : null}
-        {tab === "Tags" ? <StaticBlade title="Tags" rows={[]} /> : null}
+        {tab === "Disks" ? (
+          <div className="grid max-w-xl gap-3">
+            <BladeField label="OS disk type"><ConsoleSelect theme="azure" label="OS disk type" value={disk} onChange={setDisk} options={["Premium SSD (locally-redundant storage)", "Standard SSD", "Standard HDD"].map((item) => ({ value: item, label: item }))} /></BladeField>
+            <BladeField label="Encryption type"><FakeSelect value="(Default) Encryption at-rest with a platform-managed key" /></BladeField>
+            <label className="flex items-center gap-2 text-[13px]"><input type="checkbox" defaultChecked /> Delete with VM</label>
+          </div>
+        ) : null}
+        {tab === "Networking" ? (
+          <div className="grid max-w-xl gap-3">
+            <BladeField label="Virtual network"><FakeSelect value={`(new) ${name || "vm"}-vnet`} /></BladeField>
+            <BladeField label="Subnet"><FakeSelect value="default (10.0.0.0/24)" /></BladeField>
+            <BladeField label="Public IP"><FakeSelect value={`(new) ${name || "vm"}-ip`} /></BladeField>
+            <BladeField label="NIC network security group"><FakeSelect value="Basic" /></BladeField>
+            <p className="text-[13px]">Public inbound ports: {ports}</p>
+          </div>
+        ) : null}
+        {tab === "Management" ? (
+          <div className="grid max-w-xl gap-3">
+            <BladeField label="Boot diagnostics"><ConsoleSelect theme="azure" label="Boot diagnostics" value={boot} onChange={setBoot} options={["Enable with managed storage account (recommended)", "Disable"].map((item) => ({ value: item, label: item }))} /></BladeField>
+            <label className="flex items-center gap-2 text-[13px]"><input type="checkbox" checked={shutdown} onChange={(event) => setShutdown(event.target.checked)} /> Enable auto-shutdown</label>
+          </div>
+        ) : null}
+        {tab === "Monitoring" ? (
+          <div className="grid max-w-xl gap-3 text-[13px]">
+            <label className="flex items-center gap-2"><input type="checkbox" /> Enable recommended alert rules</label>
+            <p>Boot diagnostics: {boot}</p>
+          </div>
+        ) : null}
+        {tab === "Advanced" ? (
+          <div className="grid max-w-xl gap-3">
+            <BladeField label="Extensions"><FakeSelect value="None" /></BladeField>
+            <BladeField label="VM generation"><FakeSelect value="Gen 2" /></BladeField>
+            <BladeField label="Custom data"><Input aria-label="Custom data" className="h-8 rounded-[2px]" /></BladeField>
+          </div>
+        ) : null}
+        {tab === "Tags" ? (
+          <div className="flex max-w-xl flex-wrap gap-2">
+            <Input aria-label="Tag name" value={tagName} onChange={(event) => setTagName(event.target.value)} placeholder="Name" className="h-8 max-w-48 rounded-[2px]" />
+            <Input aria-label="Tag value" value={tagValue} onChange={(event) => setTagValue(event.target.value)} placeholder="Value" className="h-8 max-w-48 rounded-[2px]" />
+          </div>
+        ) : null}
         {tab === "Review + create" ? (
           <div className="max-w-3xl bg-white p-4">
             <div className="flex items-center gap-2 bg-[#dff6dd] px-3 py-2 text-[13px] font-semibold text-[#0e700e]">
@@ -488,13 +632,32 @@ function CreateVm({ onDone }: { onDone: () => void }) {
                 <div key={label} className="border-b border-[#f3f2f1] py-1"><dt className="text-[#605e5c]">{label}</dt><dd>{value}</dd></div>
               ))}
             </dl>
+            <button type="button" className="mt-3 text-[13px] text-[#0078d4] hover:underline">Download a template for automation</button>
           </div>
         ) : null}
         {error ? <p role="alert" className="max-w-3xl border border-[#a4262c] bg-[#fdf6f6] px-3 py-2 text-[13px] text-[#a4262c]">{error}</p> : null}
+        <Dialog open={phase === "key"} onOpenChange={(open) => !open && setPhase("form")}>
+          <DialogContent className="rounded-[2px] bg-white text-[#323130] sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Generate new key pair</DialogTitle>
+              <DialogDescription>Download the private key and create the virtual machine.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <button type="button" className={PRIMARY} onClick={() => {
+                const pair = keyName || "myKey"
+                const outcome = dispatch({ type: "azure/key", name: pair })
+                if (outcome.error) { setError(outcome.error); setPhase("form"); return }
+                if (!keyName) setKeyName(pair)
+                downloadPem(pair)
+                beginDeploy(pair)
+              }}>Download private key and create resource</button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
       <div className="sticky bottom-0 flex items-center gap-2 border-t border-[#edebe9] bg-white px-6 py-3">
         <button type="button" className={PRIMARY} onClick={() => tab === "Review + create" ? launch() : setTab("Review + create")}>{tab === "Review + create" ? "Create" : "Review + create"}</button>
-        <button type="button" className="h-8 px-3 text-[13px] text-[#a19f9d]" disabled>Previous</button>
+        <button type="button" className="h-8 px-3 text-[13px]" onClick={() => setTab(TABS[Math.max(0, TABS.indexOf(tab) - 1)] ?? "Basics")}>Previous</button>
         <button type="button" className="h-8 px-3 text-[13px] text-[#0078d4]" onClick={() => setTab(TABS[Math.min(TABS.length - 1, TABS.indexOf(tab) + 1)] ?? "Review + create")}>Next</button>
       </div>
     </div>
@@ -502,16 +665,23 @@ function CreateVm({ onDone }: { onDone: () => void }) {
 }
 
 function ServiceBlade({ title }: { title: string }) {
+  const [query, setQuery] = useState("")
   const noun = title === "All services" ? "services" : title.toLowerCase()
   return (
     <div>
       <div className="border-b border-[#edebe9] px-6 py-3 text-[12px] text-[#605e5c]">Home <span className="px-1">›</span> <span className="text-[#323130]">{title}</span></div>
       <h1 className="px-6 pt-4 text-[28px] font-semibold">{title}</h1>
-      <div className="mt-3 flex border-y border-[#edebe9] bg-[#faf9f8] px-4 py-1">
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-y border-[#edebe9] bg-[#faf9f8] px-4 py-1">
         <button type="button" className={COMMAND}><span className="text-[#0078d4]">+</span> Create</button>
         <button type="button" className={COMMAND}>Refresh</button>
+        <input aria-label={`Filter ${noun}`} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Filter" className="ml-auto h-8 w-full max-w-xs rounded-sm border border-[#8a8886] bg-white px-2 text-[13px]" />
       </div>
-      <p className="px-6 py-16 text-center text-[#605e5c]">No {noun} to display</p>
+      <table className="w-full text-left text-[13px]">
+        <thead className="border-b border-[#edebe9] text-[#605e5c]"><tr>{["Name", "Type", "Resource group", "Location"].map((heading) => <th key={heading} className="px-6 py-2 font-semibold">{heading}</th>)}</tr></thead>
+        <tbody>
+          <tr><td colSpan={4} className="px-6 py-16 text-center text-[#605e5c]">{query.trim() ? `No ${noun} match “${query.trim()}”` : `No ${noun} to display`}</td></tr>
+        </tbody>
+      </table>
     </div>
   )
 }
@@ -521,7 +691,17 @@ function Groups({ onDelete }: { onDelete: (name: string) => void }) {
   const [name, setName] = useState("")
   const [location, setLocation] = useState(azure.location)
   const [open, setOpen] = useState(false)
+  const [phase, setPhase] = useState<"form" | "deploy" | "done">("form")
   const [error, setError] = useState<string | null>(null)
+  if (phase === "deploy" || phase === "done") {
+    return (
+      <div className="p-6">
+        <h1 className="text-[24px] font-semibold">{phase === "done" ? "Your deployment is complete" : "Deployment is in progress"}</h1>
+        <p className="mt-2 text-[13px] text-[#605e5c]">Resource group {name}</p>
+        {phase === "done" ? <button type="button" className={cn(PRIMARY, "mt-4")} onClick={() => { setPhase("form"); setOpen(false) }}>Go to resource</button> : null}
+      </div>
+    )
+  }
   return (
     <div>
       <div className="border-b border-[#edebe9] px-6 py-3 text-[12px] text-[#605e5c]">Home <span className="px-1">›</span> <span className="text-[#323130]">Resource groups</span></div>
@@ -538,8 +718,12 @@ function Groups({ onDelete }: { onDelete: (name: string) => void }) {
             if (outcome.error) setError(outcome.error)
             else {
               setError(null)
-              setOpen(false)
-              flash(outcome.message ?? "Resource group created.")
+              setPhase("deploy")
+              window.dispatchEvent(new CustomEvent("skybench-note", { detail: { title: "Deployment started", body: name } }))
+              window.setTimeout(() => {
+                setPhase("done")
+                window.dispatchEvent(new CustomEvent("skybench-note", { detail: { title: "Deployment succeeded", body: name } }))
+              }, 1200)
             }
           }}
         >
@@ -587,25 +771,6 @@ function BladeField({ label, required, children }: { label: string; required?: b
 
 function FakeSelect({ value }: { value: string }) {
   return <div className="flex h-8 max-w-sm items-center rounded-sm border border-[#8a8886] bg-[#f3f2f1] px-2 text-[13px]">{value}</div>
-}
-
-function StaticBlade({ title, rows }: { title: string; rows: string[][] }) {
-  return (
-    <div className="max-w-3xl bg-white p-4">
-      <h2 className="text-[16px] font-semibold">{title}</h2>
-      {rows.length === 0 ? (
-        <table className="mt-3 w-full text-left text-[13px]">
-          <thead><tr><th className="py-2 font-semibold text-[#605e5c]">Name</th><th className="py-2 font-semibold text-[#605e5c]">Value</th></tr></thead>
-        </table>
-      ) : (
-      <dl className="mt-3 grid gap-2 text-[13px]">
-        {rows.map(([label, value]) => (
-          <div key={label} className="grid border-b border-[#f3f2f1] py-1 sm:grid-cols-[220px_1fr]"><dt className="text-[#605e5c]">{label}</dt><dd>{value}</dd></div>
-        ))}
-      </dl>
-      )}
-    </div>
-  )
 }
 
 function locationLabel(id: string) {

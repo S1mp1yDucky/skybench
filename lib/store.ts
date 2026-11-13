@@ -64,7 +64,7 @@ export function dispatch(action: Action): { error?: string; message?: string } {
 
 export function pendingSignature(lab: LabState): string {
   return [...lab.aws.instances, ...lab.azure.vms, ...lab.do.droplets]
-    .filter((vm) => vm.state === "pending")
+    .filter((vm) => vm.state === "pending" || vm.state === "stopping" || vm.state === "shutting-down")
     .map((vm) => vm.id)
     .join(",")
 }

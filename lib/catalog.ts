@@ -91,7 +91,7 @@ export const AWS_SIZES: SizeOption[] = [
 export const AZURE_IMAGES: ImageOption[] = [
   {
     id: "Ubuntu2204",
-    label: "Ubuntu Server 22.04 LTS - x64 Gen2",
+    label: "Ubuntu Server 22.04 LTS - Gen2",
     username: "azureuser",
     os: "Ubuntu 22.04",
   },

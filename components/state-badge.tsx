@@ -1,13 +1,13 @@
 import type { VmState } from "@/lib/types"
 
 const LABEL: Record<"aws" | "azure" | "do", Record<VmState, string>> = {
-  aws: { pending: "Pending", running: "Running", stopped: "Stopped", terminated: "Terminated" },
-  azure: { pending: "Creating", running: "Running", stopped: "Stopped (deallocated)", terminated: "Deleted" },
-  do: { pending: "New", running: "Active", stopped: "Off", terminated: "Destroyed" },
+  aws: { pending: "Pending", running: "Running", stopping: "Stopping", stopped: "Stopped", "shutting-down": "Shutting-down", terminated: "Terminated" },
+  azure: { pending: "Creating", running: "Running", stopping: "Stopping", stopped: "Stopped (deallocated)", "shutting-down": "Deleting", terminated: "Deleted" },
+  do: { pending: "New", running: "Active", stopping: "Stopping", stopped: "Off", "shutting-down": "Destroying", terminated: "Destroyed" },
 }
 
 export function StateBadge({ state, provider = "aws" }: { state: VmState; provider?: "aws" | "azure" | "do" }) {
-  const spinning = state === "pending"
+  const spinning = state === "pending" || state === "stopping" || state === "shutting-down"
   const color = state === "running" ? "#1d8102" : state === "terminated" ? "#d13212" : state === "stopped" ? "#687078" : "#0073bb"
   return (
     <span className="inline-flex items-center gap-1.5 text-[14px] text-inherit">

@@ -1,6 +1,6 @@
 export type PlatformId = "aws" | "azure" | "do"
 
-export type VmState = "pending" | "running" | "stopped" | "terminated"
+export type VmState = "pending" | "running" | "stopping" | "stopped" | "shutting-down" | "terminated"
 
 export interface Vm {
   id: string
@@ -175,6 +175,7 @@ type LabAction =
       sizeId: string
       keyName: string
       allowHttp: boolean
+      proceedWithoutKey?: boolean
     }
   | { type: "aws/stop"; id: string }
   | { type: "aws/start"; id: string }

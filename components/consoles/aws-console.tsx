@@ -1,6 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import "@cloudscape-design/global-styles/index.css"
+import StatusIndicator from "@cloudscape-design/components/status-indicator"
 import { ConsoleSelect } from "@/components/console-select"
 import { flash } from "@/lib/flash"
 import { AccountForm, SignInCard } from "@/components/account-form"
@@ -8,7 +10,6 @@ import { BrandGlyph } from "@/components/brand-marks"
 import { BillingPanel } from "@/components/billing-panel"
 import { AwsRegionMenu, ConsoleFrame } from "@/components/console-frame"
 import { ConnectDialog, downloadPem } from "@/components/connect-dialog"
-import { StateBadge } from "@/components/state-badge"
 import { Terminal } from "@/components/terminal"
 import { useNow } from "@/components/use-now"
 import { Button } from "@/components/ui/button"
@@ -35,6 +36,7 @@ export function AwsConsole() {
   const lab = useLabState()
   const aws = lab.aws
   const [view, setView] = useState("home")
+  const [detailId, setDetailId] = useState<string | null>(null)
   const [connectId, setConnectId] = useState<string | null>(null)
   const [killId, setKillId] = useState<string | null>(null)
   const stage = !aws.reviewedSite ? "study" : !aws.accountCreated ? "signup" : !aws.signedIn ? "signin" : view
@@ -105,7 +107,10 @@ export function AwsConsole() {
       {stage === "home" ? (
         <Ec2Home region={aws.region} instances={aws.instances} keys={aws.keyPairs.length} onLaunch={() => setView("launch")} onOpenInstances={() => setView("ec2")} />
       ) : null}
-      {stage === "ec2" ? (
+      {stage === "ec2" && detailId ? (
+        <InstanceDetail id={detailId} region={aws.region} onBack={() => setDetailId(null)} />
+      ) : null}
+      {stage === "ec2" && !detailId ? (
         <InstanceTable
           region={aws.region}
           instances={aws.instances}
@@ -114,18 +119,13 @@ export function AwsConsole() {
           onStop={(id) => tell(dispatch({ type: "aws/stop", id }))}
           onStart={(id) => tell(dispatch({ type: "aws/start", id }))}
           onTerminate={setKillId}
+          onOpen={setDetailId}
         />
       ) : null}
       {stage === "launch" ? <LaunchInstance onDone={() => setView("ec2")} /> : null}
       {stage === "keys" ? <KeyPairs keys={aws.keyPairs} /> : null}
       {stage === "s3" ? <Buckets region={aws.region} buckets={aws.buckets} /> : null}
-      {stage === "shell" ? (
-        <div className="grid gap-3 bg-[#0f1b2d] p-4 text-white">
-          <h1 className="text-[16px] font-semibold">CloudShell</h1>
-          <p className="text-[13px] text-[#d5dbdb]">ap-south-1</p>
-          <Terminal platform="aws" />
-        </div>
-      ) : null}
+      {stage === "shell" ? <CloudShellPanel region={aws.region} /> : null}
       {stage === "billing" ? (
         <div className="p-6">
           <BillingPanel
@@ -165,6 +165,67 @@ export function AwsConsole() {
         </DialogContent>
       </Dialog>
     </ConsoleFrame>
+  )
+}
+
+function AwsStatus({ state }: { state: Vm["state"] }) {
+  const type = state === "running" ? "success" : state === "stopped" ? "stopped" : state === "terminated" ? "error" : "loading"
+  const label = state === "pending" ? "Pending" : state === "stopping" ? "Stopping" : state === "shutting-down" ? "Shutting-down" : state === "running" ? "Running" : state === "stopped" ? "Stopped" : "Terminated"
+  return <StatusIndicator type={type}>{label}</StatusIndicator>
+}
+
+function CloudShellPanel({ region }: { region: string }) {
+  const [ready, setReady] = useState(false)
+  const [menu, setMenu] = useState<string | null>(null)
+  useEffect(() => {
+    const timer = window.setTimeout(() => setReady(true), 700)
+    return () => window.clearTimeout(timer)
+  }, [])
+  return (
+    <div className="flex min-h-[520px] flex-col bg-[#161d26] text-white">
+      <div className="flex flex-wrap items-center gap-2 border-b border-white/10 px-3 py-2 text-[13px]">
+        <span className="rounded-t bg-[#232f3e] px-3 py-1">{region}</span>
+        <button type="button" className="rounded px-2 py-1 hover:bg-white/10" onClick={() => setMenu(menu === "actions" ? null : "actions")}>Actions</button>
+        <button type="button" className="rounded px-2 py-1 hover:bg-white/10" onClick={() => setMenu(menu === "prefs" ? null : "prefs")}>Preferences</button>
+        {menu === "actions" ? <span className="text-[#d5dbdb]">New tab · Restart · Delete environment</span> : null}
+        {menu === "prefs" ? <span className="text-[#d5dbdb]">Font size · Tabs layout</span> : null}
+      </div>
+      <p className="px-4 py-2 text-[13px] text-[#d5dbdb]">{ready ? "Environment ready." : "Preparing your CloudShell environment…"}</p>
+      <div className="px-3 pb-3"><Terminal platform="aws" /></div>
+    </div>
+  )
+}
+
+function InstanceDetail({ id, region, onBack }: { id: string; region: string; onBack: () => void }) {
+  const vm = useLabState().aws.instances.find((item) => item.id === id)
+  const [tab, setTab] = useState("Details")
+  if (!vm) return <p className="p-6">This instance is no longer on the list.</p>
+  return (
+    <div className="px-5 py-4">
+      <p className="text-[12px] text-[#545b64]">EC2 <span className="px-1">›</span> <button type="button" className="text-[#0073bb]" onClick={onBack}>Instances</button> <span className="px-1">›</span> {vm.id}</p>
+      <h1 className="mt-1 text-[28px] font-bold">{vm.name || vm.id}</h1>
+      <div className="mt-2"><AwsStatus state={vm.state} /></div>
+      <div className="mt-4 flex gap-4 border-b border-[#d5dbdb] text-[14px]">
+        {["Details", "Tags"].map((item) => (
+          <button key={item} type="button" className={cn("border-b-2 pb-2", tab === item ? "border-[#0073bb] font-bold text-[#0073bb]" : "border-transparent")} onClick={() => setTab(item)}>{item}</button>
+        ))}
+      </div>
+      {tab === "Details" ? (
+        <dl className="mt-4 grid max-w-3xl gap-3 text-[14px] sm:grid-cols-2">
+          <div><dt className="text-[#545b64]">Instance ID</dt><dd className="font-mono">{vm.id}</dd></div>
+          <div><dt className="text-[#545b64]">Instance type</dt><dd>{vm.sizeId}</dd></div>
+          <div><dt className="text-[#545b64]">Public IPv4 address</dt><dd className="font-mono">{vm.publicIp ?? "—"}</dd></div>
+          <div><dt className="text-[#545b64]">Instance owner</dt><dd>438202302102</dd></div>
+          <div><dt className="text-[#545b64]">Launch time</dt><dd>{new Date(vm.createdAt).toUTCString()}</dd></div>
+          <div><dt className="text-[#545b64]">Availability Zone</dt><dd>{region}a</dd></div>
+        </dl>
+      ) : (
+        <table className="mt-4 w-full max-w-xl text-left text-[14px]">
+          <thead><tr className="border-b"><th className="py-2">Key</th><th>Value</th></tr></thead>
+          <tbody><tr><td className="py-2">Name</td><td>{vm.name || "—"}</td></tr></tbody>
+        </table>
+      )}
+    </div>
   )
 }
 
@@ -297,6 +358,7 @@ function InstanceTable({
   onStop,
   onStart,
   onTerminate,
+  onOpen,
 }: {
   region: string
   instances: Vm[]
@@ -305,6 +367,7 @@ function InstanceTable({
   onStop: (id: string) => void
   onStart: (id: string) => void
   onTerminate: (id: string) => void
+  onOpen: (id: string) => void
 }) {
   const [query, setQuery] = useState("")
   const [selected, setSelected] = useState<string | null>(null)
@@ -319,6 +382,11 @@ function InstanceTable({
       <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
         <h1 className="flex items-center gap-2 text-[28px] font-bold">Instances <Info /></h1>
       </div>
+      {visible.some((vm) => vm.state === "pending") ? (
+        <div role="status" className="mt-3 border-l-8 border-[#1d8102] bg-[#f2fcf3] px-3 py-2 text-[14px]">
+          Successfully initiated launch of instance {visible.find((vm) => vm.state === "pending")?.id}.
+        </div>
+      ) : null}
       <div className="mt-3 border border-[#d5dbdb] bg-white">
         <div className="flex flex-wrap items-center gap-2 border-b border-[#eaeded] px-3 py-2">
           <button type="button" className={ORANGE} onClick={onLaunch}>Launch instances</button>
@@ -363,8 +431,8 @@ function InstanceTable({
                   <tr key={vm.id} className={cn("border-b border-[#eaeded] hover:bg-[#fafafa]", selected === vm.id && "bg-[#f2f8fd]")} onClick={() => setSelected(vm.id)}>
                     <td className="px-3 py-2"><input type="checkbox" checked={selected === vm.id} onChange={() => setSelected(vm.id)} aria-label={`Select ${vm.name}`} /></td>
                     <td className="px-3 py-2">{vm.name}</td>
-                    <td className="px-3 py-2 font-mono text-[12px] text-[#0073bb]">{vm.id}</td>
-                    <td className="px-3 py-2"><StateBadge state={vm.state} provider="aws" /></td>
+                    <td className="px-3 py-2 font-mono text-[12px]"><button type="button" className="text-[#0073bb] hover:underline" onClick={(event) => { event.stopPropagation(); onOpen(vm.id) }}>{vm.id}</button></td>
+                    <td className="px-3 py-2"><AwsStatus state={vm.state} /></td>
                     <td className="px-3 py-2">{vm.sizeId}</td>
                     <td className="px-3 py-2">{vm.state === "running" ? "2/2 checks passed" : "—"}</td>
                     <td className="px-3 py-2">{region}a</td>
@@ -398,18 +466,34 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
   const [sizeId, setSizeId] = useState(AWS_SIZES[0].id)
   const [keyName, setKeyName] = useState(aws.keyPairs[0]?.name ?? "")
   const [newKey, setNewKey] = useState("MyKeyPair")
+  const [keyType, setKeyType] = useState("RSA")
+  const [keyFormat, setKeyFormat] = useState(".pem")
+  const [keyMade, setKeyMade] = useState(false)
+  const [proceed, setProceed] = useState(false)
+  const [ack, setAck] = useState(false)
   const [http, setHttp] = useState(false)
+  const [editNet, setEditNet] = useState(false)
+  const [sshFrom, setSshFrom] = useState("Anywhere 0.0.0.0/0")
+  const [firewall, setFirewall] = useState("create")
+  const [storageView, setStorageView] = useState<"simple" | "advanced">("simple")
+  const [volumeSize, setVolumeSize] = useState(8)
+  const [encrypted, setEncrypted] = useState(true)
+  const [extraVolume, setExtraVolume] = useState(false)
+  const [tags, setTags] = useState<{ key: string; value: string }[]>([])
+  const [catalog, setCatalog] = useState(false)
   const [count, setCount] = useState(1)
   const [error, setError] = useState<string | null>(null)
   const size = AWS_SIZES.find((item) => item.id === sizeId)
   const image = AWS_IMAGES.find((item) => item.id === imageId)
   const summary = useMemo(() => [
-    ["Software Image (AMI)", image?.amiTitle ?? image?.label ?? "—"],
+    ["Name and tags", name || "—"],
+    ["Application and OS Images", image?.amiTitle ?? image?.label ?? "—"],
     ["Instance type", sizeId],
-    ["Key pair name", keyName || "—"],
-    ["Firewall (security groups)", http ? "launch-wizard-http" : "launch-wizard-1"],
-    ["Storage (volumes)", "1 volume(s) - 8 GiB"],
-  ], [image, sizeId, keyName, http])
+    ["Key pair (login)", proceed ? "Proceed without a key pair" : keyName || "—"],
+    ["Network settings", http ? "launch-wizard-http" : "launch-wizard-1"],
+    ["Configure storage", `${extraVolume ? 2 : 1} volume(s) - ${volumeSize} GiB`],
+    ["Advanced details", "Shared tenancy"],
+  ], [name, image, sizeId, proceed, keyName, http, extraVolume, volumeSize])
 
   return (
     <form
@@ -420,7 +504,11 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
           setError("You can launch 1 instance at a time from this page.")
           return
         }
-        const outcome = dispatch({ type: "aws/launch", name, imageId, sizeId, keyName, allowHttp: http })
+        if (proceed && !ack) {
+          setError("Acknowledge that you will not be able to connect without a key pair.")
+          return
+        }
+        const outcome = dispatch({ type: "aws/launch", name, imageId, sizeId, keyName: proceed ? "" : keyName, allowHttp: http, proceedWithoutKey: proceed })
         if (outcome.error) setError(outcome.error)
         else {
           flash(outcome.message ?? "Successfully initiated launch of instance.")
@@ -432,13 +520,21 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
       <h1 className="mt-1 flex items-center gap-2 text-[28px] font-bold">Launch an instance <Info /></h1>
       <div className="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
         <div className="grid gap-4">
-          <Card title="Name and tags">
+          <Card id="launch-1" title="Name and tags">
             <Field id="aws-name" label="Name">
               <Input id="aws-name" value={name} onChange={(event) => setName(event.target.value)} className="h-8 max-w-md rounded-sm" />
             </Field>
             <p className="text-[12px] text-[#545b64]">The name is a tag, where the key is Name, and the value is the name that you specify.</p>
+            <button type="button" className="w-fit text-[13px] text-[#0073bb] hover:underline" onClick={() => setTags((current) => [...current, { key: "", value: "" }])}>Add additional tags</button>
+            {tags.map((tag, index) => (
+              <div key={index} className="flex flex-wrap gap-2">
+                <Input aria-label="Tag key" value={tag.key} onChange={(event) => setTags((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, key: event.target.value } : item))} className="h-8 max-w-40 rounded-[2px]" placeholder="Key" />
+                <Input aria-label="Tag value" value={tag.value} onChange={(event) => setTags((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, value: event.target.value } : item))} className="h-8 max-w-40 rounded-[2px]" placeholder="Value" />
+                <span className="self-center text-[12px] text-[#545b64]">Instances, volumes, network interfaces</span>
+              </div>
+            ))}
           </Card>
-          <Card title="Application and OS Images (Amazon Machine Image)">
+          <Card id="launch-2" title="Application and OS Images (Amazon Machine Image)">
             <div className="flex items-stretch gap-4">
               <div className="min-w-0 flex-1">
                 <p className="w-fit border-b-[3px] border-[#0073bb] pb-1.5 text-[14px] font-bold leading-none text-[#0073bb]">Quick Start</p>
@@ -473,25 +569,20 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
             </div>
             <div className="grid gap-1.5">
               <p className="text-[13px] font-bold">Amazon Machine Image (AMI)</p>
-              <div className="flex items-center justify-between gap-4 border border-[#aab7b8] bg-[#fafafa] px-3 py-2">
-                <div className="min-w-0 text-[13px] leading-5 text-[#16191f]">
-                  <p>{image?.amiTitle}</p>
-                  {image?.amiIds ? <p className="text-[12px]">{image.amiIds}</p> : null}
-                  <p className="text-[12px]">Virtualization: hvm<span className="px-4">ENA enabled: true</span>Root device type: ebs</p>
+              <ConsoleSelect id="aws-image" label="Amazon Machine Image (AMI)" theme="aws" value={imageId} onChange={setImageId} options={AWS_IMAGES.map((item) => ({ value: item.id, label: `${item.amiTitle ?? item.label}${item.freeTier ? " — Free tier eligible" : ""}` }))} className="max-w-none" />
+              <p className="text-[12px] text-[#545b64]">Virtualization: hvm · ENA enabled: true · Root device type: ebs{image?.amiIds ? ` · ${image.amiIds}` : ""}</p>
+              <button type="button" className="w-fit text-[13px] font-bold text-[#0073bb]" onClick={() => setCatalog((open) => !open)}>Browse more AMIs</button>
+              {catalog ? (
+                <div className="border border-[#d5dbdb] bg-white">
+                  <p className="border-b border-[#eaeded] px-3 py-2 text-[13px] font-bold">Quickstart AMIs · My AMIs · AWS Marketplace AMIs · Community AMIs</p>
+                  {AWS_IMAGES.map((item) => (
+                    <button key={item.id} type="button" className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[#f2f8fd]" onClick={() => { setImageId(item.id); setCatalog(false) }}>{item.amiTitle ?? item.label}</button>
+                  ))}
                 </div>
-                <div className="flex shrink-0 items-center gap-4 text-[13px] text-[#16191f]">
-                  {image?.freeTier ? <span>Free tier eligible</span> : null}
-                  <svg viewBox="0 0 16 16" className="size-3.5 text-[#0073bb]" aria-hidden><path fill="currentColor" d="M3.2 5.5 8 10.8 12.8 5.5z" /></svg>
-                </div>
-              </div>
-              <select id="aws-image" aria-label="Amazon Machine Image (AMI)" value={imageId} onChange={(event) => setImageId(event.target.value)} className="sr-only">
-                {AWS_IMAGES.map((item) => (
-                  <option key={item.id} value={item.id}>{item.amiTitle}</option>
-                ))}
-              </select>
+              ) : null}
             </div>
           </Card>
-          <Card title="Instance type">
+          <Card id="launch-3" title="Instance type">
             <Field id="aws-size-label" label="Instance type">
               <ConsoleSelect id="aws-size" label="Instance type" theme="aws" value={sizeId} onChange={setSizeId} options={AWS_SIZES.map((item) => ({ value: item.id, label: item.id }))} />
             </Field>
@@ -515,10 +606,10 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
               </div>
             ) : null}
           </Card>
-          <Card title="Key pair (login)">
+          <Card id="launch-4" title="Key pair (login)">
             <p className="text-[13px] leading-5 text-[#545b64]">Amazon EC2 uses public-key cryptography to encrypt and decrypt login information. You must specify a key pair when you launch the instance, and then provide the private key when you connect to it.</p>
             <Field id="aws-key-label" label="Key pair name">
-              <ConsoleSelect id="aws-key" label="Key pair name" theme="aws" value={keyName} onChange={setKeyName} options={[{ value: "", label: "Select a key pair" }, ...aws.keyPairs.map((key) => ({ value: key.name, label: key.name }))]} />
+              <ConsoleSelect id="aws-key" label="Key pair name" theme="aws" value={proceed ? "__none__" : keyName} onChange={(value) => { setProceed(value === "__none__"); setKeyName(value === "__none__" ? "" : value) }} options={[{ value: "", label: "Select a key pair" }, { value: "__none__", label: "Proceed without a key pair (Not recommended)" }, ...aws.keyPairs.map((key) => ({ value: key.name, label: key.name }))]} />
             </Field>
             <div className="flex flex-wrap items-center gap-2">
               <Input aria-label="New key pair name" value={newKey} onChange={(event) => setNewKey(event.target.value)} className="h-8 max-w-52 rounded-sm" />
@@ -530,27 +621,41 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
                   if (outcome.error) setError(outcome.error)
                   else {
                     setKeyName(newKey.trim())
+                    setProceed(false)
                     setError(null)
+                    setKeyMade(true)
                     flash(outcome.message ?? "Successfully created key pair.")
                   }
                 }}
               >
                 Create key pair
               </button>
+              <label className="text-[13px]">Type
+                <select aria-label="Key pair type" value={keyType} onChange={(event) => setKeyType(event.target.value)} className="ml-2 h-8 rounded-[2px] border border-[#7d8998] bg-white px-2"><option>RSA</option><option>ED25519</option></select>
+              </label>
+              <label className="text-[13px]">Format
+                <select aria-label="Private key file format" value={keyFormat} onChange={(event) => setKeyFormat(event.target.value)} className="ml-2 h-8 rounded-[2px] border border-[#7d8998] bg-white px-2"><option>.pem</option><option>.ppk</option></select>
+              </label>
             </div>
-            <p className="text-[12px] text-[#545b64]">Key pair type: RSA. Private key file format: .pem.</p>
+            {proceed ? <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" checked={ack} onChange={(event) => setAck(event.target.checked)} /> I acknowledge that I will not be able to connect to the instance unless I already know how to log in.</label> : null}
+            {keyMade ? <p className="border border-[#1d8102] bg-[#f2fcf3] px-3 py-2 text-[13px]">Created {newKey}. Key pair type {keyType}. Private key file format {keyFormat}. <button type="button" className="text-[#0073bb] hover:underline" onClick={() => downloadPem(newKey)}>Download private key</button></p> : null}
           </Card>
-          <Card title="Network settings">
+          <Card id="launch-5" title="Network settings">
+            <div className="flex justify-end"><button type="button" className="text-[13px] text-[#0073bb] hover:underline" onClick={() => setEditNet((open) => !open)}>{editNet ? "Close" : "Edit"}</button></div>
             <dl className="grid gap-2 text-[13px] sm:grid-cols-2">
-              <div><dt className="text-[#545b64]">Network</dt><dd>vpc-08f2c1a04b7e93d21 (default)</dd></div>
-              <div><dt className="text-[#545b64]">Subnet</dt><dd>No preference (default subnet in any availability zone)</dd></div>
-              <div><dt className="text-[#545b64]">Auto-assign public IP</dt><dd>Enable</dd></div>
-              <div><dt className="text-[#545b64]">Firewall (security groups)</dt><dd>Create security group</dd></div>
+              <div><dt className="text-[#545b64]">Network</dt><dd>{editNet ? <select aria-label="VPC" className="h-8 rounded-[2px] border border-[#7d8998] px-2"><option>vpc-08f2c1a04b7e93d21 (default)</option></select> : "vpc-08f2c1a04b7e93d21 (default)"}</dd></div>
+              <div><dt className="text-[#545b64]">Subnet</dt><dd>{editNet ? <select aria-label="Subnet" className="h-8 rounded-[2px] border border-[#7d8998] px-2"><option>No preference (default subnet in any availability zone)</option></select> : "No preference (default subnet in any availability zone)"}</dd></div>
+              <div><dt className="text-[#545b64]">Auto-assign public IP</dt><dd>{editNet ? <select aria-label="Auto-assign public IP" className="h-8 rounded-[2px] border border-[#7d8998] px-2"><option>Enable</option><option>Disable</option></select> : "Enable"}</dd></div>
+              <div><dt className="text-[#545b64]">Firewall (security groups)</dt><dd>{editNet ? <select aria-label="Firewall" value={firewall} onChange={(event) => setFirewall(event.target.value)} className="h-8 rounded-[2px] border border-[#7d8998] px-2"><option value="create">Create security group</option><option value="existing">Select existing security group</option></select> : firewall === "create" ? "Create security group" : "Select existing security group"}</dd></div>
             </dl>
             <label className="flex flex-wrap items-center gap-2 text-[13px]">
               <input type="checkbox" checked readOnly />
               Allow SSH traffic from
-              <span className="rounded-sm border border-[#aab7b8] bg-white px-2 py-1">Anywhere 0.0.0.0/0</span>
+              <select aria-label="Allow SSH traffic from" value={sshFrom} onChange={(event) => setSshFrom(event.target.value)} className="h-8 rounded-[2px] border border-[#7d8998] bg-white px-2">
+                <option>Anywhere 0.0.0.0/0</option>
+                <option>Custom</option>
+                <option>My IP</option>
+              </select>
             </label>
             <label className="flex items-center gap-2 text-[13px]">
               <input type="checkbox" readOnly />
@@ -561,16 +666,24 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
               Allow HTTP traffic from the internet
             </label>
           </Card>
-          <Card title="Configure storage">
-            <div className="flex flex-wrap items-center gap-2 text-[13px]">
-              <span className="rounded-sm border border-[#aab7b8] bg-white px-2 py-1">1x</span>
-              <span className="rounded-sm border border-[#aab7b8] bg-white px-2 py-1">8</span>
-              <span>GiB</span>
-              <span className="rounded-sm border border-[#aab7b8] bg-white px-2 py-1">gp3</span>
-              <span>Root volume (Encrypted)</span>
+          <Card id="launch-6" title="Configure storage">
+            <div className="flex justify-end gap-2 text-[13px]">
+              <button type="button" className={cn(storageView === "simple" && "font-bold text-[#0073bb]")} onClick={() => setStorageView("simple")}>Simple</button>
+              <button type="button" className={cn(storageView === "advanced" && "font-bold text-[#0073bb]")} onClick={() => setStorageView("advanced")}>Advanced</button>
             </div>
+            <div className="flex flex-wrap items-center gap-2 text-[13px]">
+              <span>1x</span>
+              <input aria-label="Volume size" type="number" min={8} value={volumeSize} onChange={(event) => setVolumeSize(Number(event.target.value))} className="h-8 w-16 rounded-[2px] border border-[#7d8998] px-2" />
+              <span>GiB</span>
+              <select aria-label="Volume type" className="h-8 rounded-[2px] border border-[#7d8998] bg-white px-2"><option>gp3</option><option>gp2</option><option>io1</option></select>
+              <span>Root volume</span>
+              <label className="flex items-center gap-1"><input type="checkbox" checked={encrypted} onChange={(event) => setEncrypted(event.target.checked)} /> Encrypted</label>
+              {storageView === "advanced" ? <label className="flex items-center gap-1"><input type="checkbox" defaultChecked /> Delete on termination</label> : null}
+            </div>
+            {extraVolume ? <p className="text-[13px]">1x 20 GiB gp3 · Data volume</p> : null}
+            <button type="button" className="w-fit text-[13px] text-[#0073bb] hover:underline" onClick={() => setExtraVolume(true)}>Add new volume</button>
           </Card>
-          <details className="border border-[#d5dbdb] bg-white px-4 py-3">
+          <details id="launch-7" className="border border-[#d5dbdb] bg-white px-4 py-3">
             <summary className="cursor-pointer text-[18px] font-bold">Advanced details</summary>
             <dl className="mt-3 grid gap-2 text-[13px] sm:grid-cols-2">
               <div><dt className="text-[#545b64]">Tenancy</dt><dd>Shared - run a shared hardware instance</dd></div>
@@ -587,11 +700,11 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
             Number of instances
             <input type="number" min={1} max={1} value={count} onChange={(event) => setCount(Number(event.target.value))} className="h-8 w-24 rounded-sm border border-[#aab7b8] px-2" />
           </label>
-          <dl className="mt-3 grid gap-2 text-[13px]">
-            {summary.map(([label, value]) => (
-              <div key={label}><dt className="text-[#545b64]">{label}</dt><dd className="break-words">{value}</dd></div>
+          <ol className="mt-3 grid gap-2 text-[13px]">
+            {summary.map(([label, value], index) => (
+              <li key={label}><a href={`#launch-${index + 1}`} className="text-[#0073bb] hover:underline">{index + 1}. {label}</a><p className="break-words text-[#16191f]">{value}</p></li>
             ))}
-          </dl>
+          </ol>
           <button type="submit" className={cn(ORANGE, "mt-4 w-full")}>Launch instance</button>
         </aside>
       </div>
@@ -673,9 +786,9 @@ function Buckets({ region, buckets }: { region: string; buckets: { name: string;
   )
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({ title, children, id }: { title: string; children: React.ReactNode; id?: string }) {
   return (
-    <section className="grid gap-3 border border-[#d5dbdb] bg-white p-4">
+    <section id={id} className="grid gap-3 border border-[#d5dbdb] bg-white p-4">
       <h2 className="text-[18px] font-bold">{title}</h2>
       {children}
     </section>

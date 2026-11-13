@@ -11,6 +11,10 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
+    "@cloudscape-design/components": "^3.0.1413",
+    "@cloudscape-design/global-styles": "^1.0.72",
+    "@fluentui/react-components": "^9.75.2",
+    "@fluentui/react-icons": "^2.0.345",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
     "lucide-react": "^1.72.0",

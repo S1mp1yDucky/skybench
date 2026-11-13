@@ -115,7 +115,7 @@ function AwsChrome({
           <HeaderIcon label="CloudShell" onClick={() => go("shell")}><PromptIcon /></HeaderIcon>
           <HeaderIcon label="Notifications"><BellIcon /></HeaderIcon>
           <SupportMenu />
-          <HeaderIcon label="Settings"><GearIcon /></HeaderIcon>
+          <SettingsMenu />
           {region}
           <AccountMenu theme="aws" account={account} go={go} onSignOut={onSignOut} />
         </div>
@@ -225,6 +225,29 @@ function ServicesFlyout({ onClose, go, nav }: { onClose: () => void; go: (id: st
   )
 }
 
+function PortalMenu({ label, items, children }: { label: string; items: string[]; children: React.ReactNode }) {
+  return (
+    <details className="relative">
+      <summary aria-label={label} className="grid size-8 cursor-pointer list-none place-items-center rounded-sm hover:bg-[#f3f2f1] [&::-webkit-details-marker]:hidden">{children}</summary>
+      <div className="absolute top-9 right-0 z-50 w-64 border border-[#edebe9] bg-white py-1 text-[13px] text-[#323130] shadow-xl">
+        {items.map((item) => <p key={item} className="px-3 py-1.5 hover:bg-[#f3f2f1]">{item}</p>)}
+      </div>
+    </details>
+  )
+}
+
+function SettingsMenu() {
+  const items = ["Account", "Console settings", "Billing and Cost Management", "Security credentials"]
+  return (
+    <details className="relative">
+      <summary aria-label="Settings" className="grid size-8 cursor-pointer list-none place-items-center rounded-sm hover:bg-white/10 [&::-webkit-details-marker]:hidden"><GearIcon /></summary>
+      <div className="absolute top-9 right-0 z-50 w-64 border border-[#d5dbdb] bg-white py-1 text-[13px] text-[#16191f] shadow-2xl">
+        {items.map((item) => <p key={item} className="px-3 py-1.5 hover:bg-[#f2f8fd]">{item}</p>)}
+      </div>
+    </details>
+  )
+}
+
 function SupportMenu() {
   const items = ["Support Center", "re:Post", "Documentation", "Training", "Resource Center", "Feedback"]
   return (
@@ -256,6 +279,18 @@ function AzureChrome({
   alert?: string | null
   children: React.ReactNode
 }) {
+  const [notesOpen, setNotesOpen] = useState(false)
+  const [notes, setNotes] = useState<{ title: string; body: string }[]>([])
+  useEffect(() => {
+    const onNote = (event: Event) => {
+      const detail = (event as CustomEvent<{ title: string; body: string }>).detail
+      if (!detail?.title) return
+      setNotes((current) => [detail, ...current])
+      setNotesOpen(true)
+    }
+    window.addEventListener("skybench-note", onNote)
+    return () => window.removeEventListener("skybench-note", onNote)
+  }, [])
   return (
     <>
       <header className="flex h-12 shrink-0 items-center gap-2 border-b border-[#e1dfdd] bg-white px-2 text-[#323130]">
@@ -263,7 +298,7 @@ function AzureChrome({
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
         <MicrosoftMark />
-        <span className="hidden text-[16px] font-semibold sm:inline">Microsoft Azure</span>
+        <span className="text-[16px] font-semibold"><span className="hidden sm:inline">Microsoft </span>Azure</span>
         <label className="relative mx-3 hidden min-w-0 flex-1 md:block">
           <span className="sr-only">Search resources, services, and docs</span>
           <Search className="pointer-events-none absolute top-2 left-3 size-4 text-[#605e5c]" />
@@ -275,15 +310,27 @@ function AzureChrome({
         </button>
         <div className="ml-auto flex items-center gap-0.5">
           <HeaderIcon label="Cloud Shell" dark={false} onClick={() => go("shell")}><span className="font-mono text-[14px] leading-none">&gt;_</span></HeaderIcon>
-          <HeaderIcon label="Notifications" dark={false}><BellIcon dark /></HeaderIcon>
-          <HeaderIcon label="Settings" dark={false}><GearIcon dark /></HeaderIcon>
-          <HeaderIcon label="Support + troubleshooting" dark={false}><CircleHelp className="size-4" /></HeaderIcon>
+          <HeaderIcon label="Notifications" dark={false} onClick={() => setNotesOpen((value) => !value)}><BellIcon dark /></HeaderIcon>
+          <PortalMenu label="Settings" items={["Appearance", "Language + region", "My permissions", "Default subscription"]}>
+            <GearIcon dark />
+          </PortalMenu>
+          <PortalMenu label="Support + troubleshooting" items={["Help + support", "New support request", "Service Health", "Privacy"]}>
+            <CircleHelp className="size-4" />
+          </PortalMenu>
           <HeaderIcon label="Feedback" dark={false}><FeedbackIcon /></HeaderIcon>
           <AccountMenu theme="azure" account={account} go={go} onSignOut={onSignOut} />
         </div>
       </header>
       {alert ? <p role="alert" className="shrink-0 border-l-4 border-[#a4262c] bg-[#fdf6f6] px-4 py-2 text-[14px]">{alert}</p> : null}
       <FlashBar theme="azure" />
+      {notesOpen ? (
+        <aside className="absolute top-12 right-0 z-40 h-[calc(100%-3rem)] w-80 overflow-auto border-l border-[#edebe9] bg-white p-4 shadow-xl">
+          <div className="flex items-center justify-between"><h2 className="text-[16px] font-semibold">Notifications</h2><button type="button" aria-label="Close notifications" onClick={() => setNotesOpen(false)}>×</button></div>
+          {notes.length === 0 ? <p className="mt-4 text-[13px] text-[#605e5c]">No new notifications</p> : notes.map((note) => (
+            <p key={`${note.title}-${note.body}`} className="mt-3 border border-[#edebe9] px-3 py-2 text-[13px]"><span className="block font-semibold">{note.title}</span>{note.body}</p>
+          ))}
+        </aside>
+      ) : null}
       <div className="flex min-h-0 flex-1">
         <aside className={cn("z-30 w-[260px] shrink-0 overflow-auto border-r border-[#edebe9] bg-white py-2 md:static md:block", open ? "absolute top-12 bottom-0 left-0 block shadow-xl" : "hidden md:block")}>
           <AzureMenu active={active} go={go} />
@@ -384,6 +431,7 @@ function DoChrome({
           <button type="button" className="grid size-8 place-items-center rounded-sm text-[#031b4e] md:hidden" aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open} onClick={() => setOpen((value) => !value)}>
             {open ? <X className="size-4" /> : <Menu className="size-4" />}
           </button>
+          <span className="text-[14px] font-semibold text-[#031b4e] md:hidden">DigitalOcean</span>
           <p className="hidden text-[13px] text-[#031b4e] sm:block">Signup Credit: $5.00</p>
           <label className="relative hidden min-w-0 flex-1 md:block">
             <span className="sr-only">Search</span>
