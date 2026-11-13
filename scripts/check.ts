@@ -12,7 +12,7 @@ function assert(condition: unknown, message: string) {
   if (!condition) throw new Error(message)
 }
 
-const secret = "SUPERSECRET99"
+const secret = "lab-placeholder-99"
 assert(redact(`aws configure set aws_secret_access_key ${secret}`).includes("****"), "redact hides the secret")
 assert(!redact(`aws configure set aws_secret_access_key ${secret}`).includes(secret), "redact removes the secret")
 
@@ -30,9 +30,9 @@ shell = runCommand("aws", state, `aws configure set aws_secret_access_key ${secr
 assert(!JSON.stringify(shell).includes(secret), "shell result drops the secret")
 state = applyAll(state, shell.actions)
 assert(!JSON.stringify(state).includes(secret), "state drops the secret")
-shell = runCommand("aws", state, "aws configure set aws_access_key_id AKIASIMULATED")
+shell = runCommand("aws", state, "aws configure set aws_access_key_id labaccess")
 state = applyAll(state, shell.actions)
-assert(!JSON.stringify(state).includes("AKIASIMULATED"), "access key is not stored")
+assert(!JSON.stringify(state).includes("labaccess"), "access key is not stored")
 
 shell = runCommand("aws", state, "aws ec2 create-key-pair --key-name skybench")
 state = applyAll(state, shell.actions)
@@ -101,10 +101,10 @@ state = apply(state, { type: "do/signup", email: "hassan@student.skybench.test" 
 state = apply(state, { type: "do/signin" })
 shell = runCommand("do", state, "sudo snap install doctl")
 state = applyAll(state, shell.actions)
-shell = runCommand("do", state, "doctl auth init --access-token tokensecret")
-assert(!JSON.stringify(shell).includes("tokensecret"), "token not echoed")
+shell = runCommand("do", state, "doctl auth init --access-token labtoken")
+assert(!JSON.stringify(shell).includes("labtoken"), "token not echoed")
 state = applyAll(state, shell.actions)
-assert(!JSON.stringify(state).includes("tokensecret"), "token not stored")
+assert(!JSON.stringify(state).includes("labtoken"), "token not stored")
 shell = runCommand("do", state, 'ssh-keygen -t ed25519 -f ~/.ssh/skybench -N ""')
 state = applyAll(state, shell.actions)
 shell = runCommand("do", state, "doctl compute droplet create droplet-lab --image ubuntu-22-04-x64 --size s-1vcpu-1gb --region blr1 --ssh-keys skybench")

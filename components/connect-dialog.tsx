@@ -81,12 +81,10 @@ export function ConnectDialog({
 
 export function downloadPem(name: string) {
   const body = [
-    "-----BEGIN OPENSSH PRIVATE KEY-----",
-    "SKYBENCH SIMULATED KEY — NOT A REAL PRIVATE KEY",
+    "Skybench prop file",
     `name: ${name}`,
     "This file exists so a screen recording can show a download.",
-    "Do not use it with a real server.",
-    "-----END OPENSSH PRIVATE KEY-----",
+    "It is not a private key. Do not use it with a real server.",
     "",
   ].join("\n")
   const blob = new Blob([body], { type: "text/plain" })

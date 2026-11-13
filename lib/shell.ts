@@ -255,10 +255,9 @@ function awsCommand(platform: PlatformId, state: LabState, argv: string[]): Shel
     const name = typeof flags["key-name"] === "string" ? flags["key-name"] : ""
     return {
       lines: [
-        out("-----BEGIN OPENSSH PRIVATE KEY-----"),
-        out("SKYBENCH SIMULATED KEY. NOT A REAL PRIVATE KEY."),
-        out("-----END OPENSSH PRIVATE KEY-----"),
-        info("Download a prop .pem from the console if the recording needs a file. Do not use it on a real server."),
+        out(`Simulated key pair ${name || "(unnamed)"}.`),
+        out("No private key is printed. A real CLI would show key material here."),
+        info("Download the prop file from Key pairs if a recording needs a file. It will not open a real server."),
       ],
       actions: [{ type: "aws/key", name }],
     }
