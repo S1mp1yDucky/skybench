@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Bell, ChevronDown, CircleHelp, Globe, Menu, Search, Settings, TerminalSquare, X } from "lucide-react"
+import { ChevronDown, CircleHelp, Globe, Menu, Search, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export interface ConsoleNavItem {
@@ -111,10 +111,10 @@ function AwsChrome({
           <kbd className="pointer-events-none absolute top-1.5 right-2 rounded-sm border border-[#8d9eae] px-1 text-[10px] text-[#d5dbdb]">Alt+S</kbd>
         </label>
         <div className="ml-auto flex items-center">
-          <HeaderIcon label="CloudShell" onClick={() => go("shell")}><TerminalSquare className="size-4" /></HeaderIcon>
-          <HeaderIcon label="Notifications"><Bell className="size-4" /></HeaderIcon>
-          <HeaderIcon label="Help"><CircleHelp className="size-4" /></HeaderIcon>
-          <HeaderIcon label="Settings"><Settings className="size-4" /></HeaderIcon>
+          <HeaderIcon label="CloudShell" onClick={() => go("shell")}><PromptIcon /></HeaderIcon>
+          <HeaderIcon label="Notifications"><BellIcon /></HeaderIcon>
+          <SupportMenu />
+          <HeaderIcon label="Settings"><GearIcon /></HeaderIcon>
           {region}
           <AccountMenu theme="aws" account={account} go={go} onSignOut={onSignOut} />
         </div>
@@ -127,8 +127,18 @@ function AwsChrome({
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <main id="main" className="min-h-0 flex-1 overflow-auto">{children}</main>
-          <footer className="shrink-0 border-t border-[#e6e6e6] bg-white px-4 py-2 text-[11px] text-[#545b64]">
-            © 2026, Amazon Web Services, Inc. or its affiliates. <span className="text-[#0073bb]">Privacy</span> · <span className="text-[#0073bb]">Terms</span> · <span className="text-[#0073bb]">Cookie preferences</span>
+          <footer className="flex shrink-0 items-center gap-3 border-t border-[#e6e6e6] bg-white px-3 py-1.5 text-[12px] text-[#545b64]">
+            <button type="button" onClick={() => go("shell")} className="inline-flex h-7 items-center gap-1.5 rounded-sm bg-[#232f3e] px-2 text-white hover:bg-[#1a2533]">
+              <PromptIcon />
+              CloudShell
+            </button>
+            <span className="ml-auto inline-flex items-center gap-3">
+              <span className="text-[#0073bb]">Feedback</span>
+              <span>© 2026, Amazon Web Services, Inc. or its affiliates.</span>
+              <span className="text-[#0073bb]">Privacy</span>
+              <span className="text-[#0073bb]">Terms</span>
+              <span className="text-[#0073bb]">Cookie preferences</span>
+            </span>
           </footer>
         </div>
       </div>
@@ -141,10 +151,9 @@ function AwsServiceNav({ active, go }: { active: string; go: (id: string) => voi
     <nav aria-label="EC2" className="text-[14px]">
       <SideLink label="EC2 Dashboard" active={active === "home"} onClick={() => go("home")} />
       <SideLink label="EC2 Global View" />
-      <SideLink label="Events" />
       <Group title="Instances">
         <SideLink label="Instances" nested active={active === "ec2"} onClick={() => go("ec2")} />
-        <SideLink label="Instance types" nested />
+        <SideLink label="Instance Types" nested />
         <SideLink label="Launch Templates" nested />
         <SideLink label="Spot Requests" nested />
         <SideLink label="Savings Plans" nested />
@@ -171,6 +180,7 @@ function AwsServiceNav({ active, go }: { active: string; go: (id: string) => voi
       <Group title="Load Balancing">
         <SideLink label="Load Balancers" nested />
         <SideLink label="Target Groups" nested />
+        <SideLink label="Trust Stores" nested />
       </Group>
       <Group title="Auto Scaling">
         <SideLink label="Auto Scaling Groups" nested />
@@ -182,29 +192,46 @@ function AwsServiceNav({ active, go }: { active: string; go: (id: string) => voi
 
 function ServicesFlyout({ onClose, go, nav }: { onClose: () => void; go: (id: string) => void; nav: ConsoleNavItem[] }) {
   const items = [
-    ["Recently visited", [["EC2", "home"], ["S3", "s3"]]],
-    ["Compute", [["EC2", "home"]]],
-    ["Storage", [["S3", "s3"]]],
-    ["Management & Governance", [["Billing and Cost Management", "billing"]]],
-    ["Developer tools", [["CloudShell", "shell"]]],
+    ["Recently visited", [["EC2", "home"], ["S3", "s3"], ["CloudShell", "shell"]]],
+    ["Compute", [["EC2", "home"], ["Lightsail", ""], ["Lambda", ""], ["Batch", ""], ["Elastic Beanstalk", ""], ["EC2 Image Builder", ""]]],
+    ["Storage", [["S3", "s3"], ["EFS", ""], ["FSx", ""], ["Storage Gateway", ""], ["AWS Backup", ""]]],
+    ["Database", [["RDS", ""], ["DynamoDB", ""], ["ElastiCache", ""], ["Neptune", ""], ["Amazon Redshift", ""]]],
+    ["Networking & Content Delivery", [["VPC", ""], ["CloudFront", ""], ["Route 53", ""], ["API Gateway", ""], ["Direct Connect", ""]]],
+    ["Security, Identity, & Compliance", [["IAM", ""], ["Cognito", ""], ["Secrets Manager", ""], ["GuardDuty", ""], ["Security Hub", ""], ["WAF", ""]]],
+    ["Management & Governance", [["CloudWatch", ""], ["CloudFormation", ""], ["CloudTrail", ""], ["Systems Manager", ""], ["Billing and Cost Management", "billing"], ["Service Quotas", ""]]],
+    ["Developer Tools", [["CloudShell", "shell"], ["CodeCommit", ""], ["CodeBuild", ""], ["CodePipeline", ""], ["Cloud9", ""]]],
   ] as const
   return (
-    <div className="absolute top-12 left-0 z-40 max-h-[70vh] w-[320px] overflow-auto border border-[#d5dbdb] bg-white p-3 text-[#16191f] shadow-2xl">
-      <div className="mb-2 flex items-center justify-between">
-        <p className="text-sm font-bold">All services</p>
+    <div className="absolute top-12 left-0 z-40 max-h-[70vh] w-[min(920px,calc(100vw-16px))] overflow-auto border border-[#d5dbdb] bg-white p-4 text-[#16191f] shadow-2xl">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-[16px] font-bold">All services</p>
         <button type="button" onClick={onClose} aria-label="Close services" className="grid size-7 place-items-center rounded-sm hover:bg-[#f2f3f3]"><X className="size-4" /></button>
       </div>
-      {items.map(([group, links]) => (
-        <div key={group} className="mb-3">
-          <p className="px-2 py-1 text-[11px] font-bold tracking-wide text-[#545b64] uppercase">{group}</p>
-          {links.map(([label, id]) => (
-            <button key={label} type="button" disabled={!nav.some((item) => item.id === id)} onClick={() => go(id)} className="block w-full rounded-sm px-2 py-1.5 text-left text-[13px] hover:bg-[#f2f8fd] hover:text-[#0073bb] disabled:opacity-40">
-              {label}
-            </button>
-          ))}
-        </div>
-      ))}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {items.map(([group, links]) => (
+          <div key={group}>
+            <p className="px-2 py-1 text-[11px] font-bold tracking-wide text-[#545b64] uppercase">{group}</p>
+            {links.map(([label, id]) => (
+              <button key={`${group}-${label}`} type="button" disabled={!id || !nav.some((item) => item.id === id)} onClick={() => id && go(id)} className="block w-full rounded-sm px-2 py-1 text-left text-[13px] hover:bg-[#f2f8fd] hover:text-[#0073bb] disabled:cursor-default disabled:opacity-100 disabled:hover:bg-transparent disabled:hover:text-[#16191f]">
+                {label}
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
+  )
+}
+
+function SupportMenu() {
+  const items = ["Support Center", "re:Post", "Documentation", "Training", "Resource Center", "Feedback"]
+  return (
+    <details className="relative">
+      <summary aria-label="Support" className="grid size-8 cursor-pointer list-none place-items-center rounded-sm hover:bg-white/10 [&::-webkit-details-marker]:hidden"><CircleHelp className="size-4" /></summary>
+      <div className="absolute top-9 right-0 z-50 w-52 border border-[#d5dbdb] bg-white py-1 text-[13px] text-[#16191f] shadow-2xl">
+        {items.map((item) => <p key={item} className="px-3 py-1.5 hover:bg-[#f2f8fd]">{item}</p>)}
+      </div>
+    </details>
   )
 }
 
@@ -235,22 +262,27 @@ function AzureChrome({
         </button>
         <MicrosoftMark />
         <span className="hidden text-[16px] font-semibold sm:inline">Microsoft Azure</span>
-        <label className="relative mx-2 hidden min-w-0 flex-1 md:block">
+        <label className="relative mx-3 hidden min-w-0 flex-1 md:block">
           <span className="sr-only">Search resources, services, and docs</span>
           <Search className="pointer-events-none absolute top-2 left-3 size-4 text-[#605e5c]" />
-          <input readOnly placeholder="Search resources, services, and docs (G+/)" className="h-8 w-full max-w-[560px] rounded-sm border border-[#8a8886] bg-white pr-3 pl-9 text-[13px] outline-none placeholder:text-[#605e5c] focus:border-[#0078d4]" />
+          <input readOnly placeholder="Search resources, services, and docs (G+/)" className="h-8 w-full max-w-[640px] rounded-sm border border-[#8a8886] bg-white pr-3 pl-9 text-[13px] outline-none placeholder:text-[#605e5c] focus:border-[#0078d4]" />
         </label>
+        <button type="button" className="mr-1 hidden h-8 items-center gap-1 rounded-sm px-2 text-[13px] hover:bg-[#f3f2f1] md:inline-flex" aria-label="Copilot">
+          <SparkIcon />
+          Copilot
+        </button>
         <div className="ml-auto flex items-center gap-0.5">
-          <HeaderIcon label="Cloud Shell" dark={false} onClick={() => go("shell")}><span className="font-mono text-[13px]">&gt;_</span></HeaderIcon>
-          <HeaderIcon label="Notifications" dark={false}><Bell className="size-4" /></HeaderIcon>
-          <HeaderIcon label="Settings" dark={false}><Settings className="size-4" /></HeaderIcon>
-          <HeaderIcon label="Help" dark={false}><CircleHelp className="size-4" /></HeaderIcon>
+          <HeaderIcon label="Cloud Shell" dark={false} onClick={() => go("shell")}><span className="font-mono text-[14px] leading-none">&gt;_</span></HeaderIcon>
+          <HeaderIcon label="Notifications" dark={false}><BellIcon dark /></HeaderIcon>
+          <HeaderIcon label="Settings" dark={false}><GearIcon dark /></HeaderIcon>
+          <HeaderIcon label="Support + troubleshooting" dark={false}><CircleHelp className="size-4" /></HeaderIcon>
+          <HeaderIcon label="Feedback" dark={false}><FeedbackIcon /></HeaderIcon>
           <AccountMenu theme="azure" account={account} go={go} onSignOut={onSignOut} />
         </div>
       </header>
       {alert ? <p role="alert" className="shrink-0 border-l-4 border-[#a4262c] bg-[#fdf6f6] px-4 py-2 text-[13px]">{alert}</p> : null}
       <div className="flex min-h-0 flex-1">
-        <aside className={cn("z-30 w-[260px] shrink-0 overflow-auto border-r border-[#edebe9] bg-white py-2 md:static", open ? "absolute top-12 bottom-0 left-0 block shadow-xl" : "hidden")}>
+        <aside className={cn("z-30 w-[260px] shrink-0 overflow-auto border-r border-[#edebe9] bg-white py-2 md:static md:block", open ? "absolute top-12 bottom-0 left-0 block shadow-xl" : "hidden md:block")}>
           <AzureMenu active={active} go={go} />
         </aside>
         <main id="main" className="min-h-0 min-w-0 flex-1 overflow-auto bg-white">{children}</main>
@@ -262,27 +294,32 @@ function AzureChrome({
 function AzureMenu({ active, go }: { active: string; go: (id: string) => void }) {
   const favorites = [
     ["Virtual machines", "vms"],
+    ["App Service", "appservice"],
+    ["Function App", "functions"],
+    ["Storage accounts", "storage"],
+    ["Virtual networks", "vnet"],
     ["Resource groups", "groups"],
-    ["Storage accounts", ""],
-    ["Virtual networks", ""],
-    ["Cost Management", "billing"],
+    ["Microsoft Entra ID", "entra"],
+    ["Monitor", "monitor"],
+    ["Cost Management + Billing", "billing"],
+    ["All resources", "more"],
   ] as const
   return (
     <nav aria-label="Portal menu" className="text-[13px]">
-      <button type="button" onClick={() => go("create")} className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-[#f3f2f1]">
-        <span className="grid size-5 place-items-center rounded-sm bg-[#0078d4] text-sm text-white">+</span>
+      <button type="button" onClick={() => go("create")} className={cn("flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-[#f3f2f1]", active === "create" && "bg-[#f3f2f1] font-semibold")}>
+        <span className="grid size-5 place-items-center text-[#0078d4]"><PlusIcon /></span>
         Create a resource
       </button>
-      <button type="button" onClick={() => go("portal")} className={cn("flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-[#f3f2f1]", active === "portal" && "bg-[#f3f2f1] font-semibold")}>
+      <button type="button" onClick={() => go("portal")} className={cn("flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-[#f3f2f1]", active === "portal" && "bg-[#f3f2f1] font-semibold")}>
         <HomeGlyph /> Home
       </button>
-      <button type="button" className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-[#f3f2f1]"><DashGlyph /> Dashboard</button>
-      <button type="button" className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-[#f3f2f1]"><GridGlyph /> All services</button>
-      <p className="px-4 pt-4 pb-1 text-[11px] font-semibold tracking-wide text-[#605e5c]">FAVORITES</p>
+      <button type="button" className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-[#f3f2f1]"><DashGlyph /> Dashboard</button>
+      <button type="button" onClick={() => go("more")} className={cn("flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-[#f3f2f1]", active === "more" && "bg-[#f3f2f1] font-semibold")}><GridGlyph /> All services</button>
+      <p className="px-3 pt-4 pb-1 text-[12px] font-semibold text-[#323130]">Favorites</p>
       {favorites.map(([label, id]) => (
-        <button key={label} type="button" onClick={() => id && go(id)} className={cn("flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-[#f3f2f1]", id && active === id && "bg-[#f3f2f1] font-semibold")}>
+        <button key={label} type="button" onClick={() => go(id)} className={cn("flex w-full items-center gap-3 px-3 py-1.5 text-left hover:bg-[#f3f2f1]", active === id && "bg-[#f3f2f1] font-semibold")}>
           <FavoriteGlyph label={label} />
-          {label}
+          <span className="truncate">{label}</span>
         </button>
       ))}
     </nav>
@@ -309,31 +346,34 @@ function DoChrome({
   children: React.ReactNode
 }) {
   const dropletActive = active === "droplets" || active === "create"
+  const [createOpen, setCreateOpen] = useState(false)
   return (
     <div className="flex min-h-0 flex-1">
-      <aside className={cn("z-30 w-[240px] shrink-0 overflow-auto bg-[#031b4e] text-white md:static md:flex md:flex-col", open ? "absolute inset-y-0 left-0 flex flex-col" : "hidden md:flex")}>
+      <aside className={cn("z-30 w-[248px] shrink-0 overflow-auto bg-[#031b4e] text-white md:static md:flex md:flex-col", open ? "absolute inset-y-0 left-0 flex flex-col" : "hidden md:flex")}>
         <div className="flex items-center gap-2 px-4 py-4">
           <DoLogo />
         </div>
         <nav aria-label="Control panel" className="px-2 pb-6 text-[13px]">
-          <DoItem label="Home" icon="home" active={active === "home"} onClick={() => go("home")} />
-          <DoItem label="Projects" icon="folder" />
-          <p className="mt-4 px-2 pb-1 text-[11px] font-semibold tracking-[0.08em] text-[#8ea0c8]">MANAGE</p>
+          <p className="px-2 pb-1 text-[11px] font-semibold tracking-[0.08em] text-[#8ea0c8]">PROJECTS</p>
+          <DoItem label="first-project" icon="folder" active={active === "home"} onClick={() => go("home")} />
+          <p className="mt-4 px-2 pb-1 text-[11px] font-semibold tracking-[0.08em] text-[#8ea0c8]">CORE CLOUD</p>
           <DoItem label="Droplets" icon="drop" active={dropletActive} onClick={() => go("droplets")} />
           <DoItem label="GPU Droplets" icon="drop" />
           <DoItem label="Kubernetes" icon="k8s" />
           <DoItem label="App Platform" icon="app" />
+          <DoItem label="Functions" icon="code" />
           <DoItem label="Databases" icon="db" />
           <DoItem label="Spaces" icon="box" active={active === "spaces"} onClick={() => go("spaces")} />
-          <DoItem label="Functions" icon="code" />
-          <DoItem label="Volumes" icon="box" />
+          <DoItem label="Volumes Block Storage" icon="box" />
+          <DoItem label="Container Registry" icon="box" />
           <DoItem label="Networking" icon="net" />
-          <DoItem label="Monitoring" icon="help" />
+          <DoItem label="Backups" icon="box" />
+          <DoItem label="Marketplace" icon="bag" />
+          <p className="mt-4 px-2 pb-1 text-[11px] font-semibold tracking-[0.08em] text-[#8ea0c8]">ACCOUNT</p>
           <DoItem label="Billing" icon="card" active={active === "billing"} onClick={() => go("billing")} />
           <DoItem label="Settings" icon="gear" active={active === "keys"} onClick={() => go("keys")} />
           <DoItem label="API" icon="code" />
           <DoItem label="Support" icon="help" />
-          <DoItem label="Marketplace" icon="bag" />
         </nav>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col bg-[#f4f7fb]">
@@ -341,15 +381,34 @@ function DoChrome({
           <button type="button" className="grid size-8 place-items-center rounded-sm text-[#031b4e] md:hidden" aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open} onClick={() => setOpen((value) => !value)}>
             {open ? <X className="size-4" /> : <Menu className="size-4" />}
           </button>
-          <label className="relative hidden min-w-0 flex-1 sm:block">
+          <p className="hidden text-[13px] text-[#031b4e] sm:block">Signup Credit: $5.00</p>
+          <label className="relative hidden min-w-0 flex-1 md:block">
             <span className="sr-only">Search</span>
             <Search className="pointer-events-none absolute top-2 left-3 size-4 text-[#7b879c]" />
-            <input readOnly placeholder="Search resources, pages, or public IP (Ctrl+K)" className="h-9 w-full max-w-lg rounded-md border border-[#d5deea] bg-[#f7f9fc] pr-3 pl-9 text-[13px] outline-none placeholder:text-[#7b879c]" />
+            <input readOnly placeholder="Search for resources" className="h-9 w-full max-w-lg rounded-md border border-[#d5deea] bg-[#f7f9fc] pr-14 pl-9 text-[13px] outline-none placeholder:text-[#7b879c]" />
+            <kbd className="pointer-events-none absolute top-2 right-2 rounded border border-[#d5deea] px-1 text-[10px] text-[#7b879c]">Ctrl+K</kbd>
           </label>
-          <button type="button" onClick={() => go("create")} className="ml-auto inline-flex h-8 items-center gap-1 rounded-md bg-[#0069ff] px-3 text-[13px] font-medium text-white hover:bg-[#0058d6]">
-            Create <ChevronDown className="size-3.5" />
-          </button>
-          <span className="hidden text-[13px] font-medium sm:inline">My Team</span>
+          <div className="relative ml-auto">
+            <button type="button" aria-expanded={createOpen} onClick={() => setCreateOpen((value) => !value)} className="inline-flex h-8 items-center gap-1 rounded-md bg-[#0069ff] px-3 text-[13px] font-medium text-white hover:bg-[#0058d6]">
+              Create <ChevronDown className="size-3.5" />
+            </button>
+            {createOpen ? (
+              <div className="absolute top-10 right-0 z-50 w-64 rounded-md border border-[#e1e7f0] bg-white py-2 text-[13px] text-[#031b4e] shadow-xl">
+                <p className="px-3 py-1 text-[11px] font-semibold tracking-wide text-[#5b6785]">AI</p>
+                <CreateRow>GPU Droplets</CreateRow>
+                <p className="mt-1 px-3 py-1 text-[11px] font-semibold tracking-wide text-[#5b6785]">CORE CLOUD</p>
+                <CreateRow onClick={() => { setCreateOpen(false); go("create") }}>Droplet</CreateRow>
+                <CreateRow>Kubernetes</CreateRow>
+                <CreateRow>App Platform</CreateRow>
+                <CreateRow>Functions</CreateRow>
+                <CreateRow>Databases</CreateRow>
+                <CreateRow>Load Balancers</CreateRow>
+                <CreateRow>Spaces</CreateRow>
+                <CreateRow>Volumes</CreateRow>
+                <CreateRow>Container Registry</CreateRow>
+              </div>
+            ) : null}
+          </div>
           <AccountMenu theme="do" account={account} go={go} onSignOut={onSignOut} />
         </header>
         {alert ? <p role="alert" className="border-l-4 border-[#d92d20] bg-[#fff4f2] px-4 py-2 text-[13px]">{alert}</p> : null}
@@ -426,6 +485,10 @@ function AccountMenu({
   )
 }
 
+function CreateRow({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
+  return <button type="button" onClick={onClick} className="block w-full px-3 py-1.5 text-left hover:bg-[#f4f7fb]">{children}</button>
+}
+
 function MenuRow({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
   return (
     <button type="button" onClick={onClick} className="block w-full px-4 py-1.5 text-left hover:bg-[#f2f3f3]">
@@ -436,10 +499,13 @@ function MenuRow({ children, onClick }: { children: React.ReactNode; onClick?: (
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mt-3">
-      <p className="px-4 py-1 text-[12px] font-bold text-[#545b64]">{title}</p>
+    <details open className="mt-2">
+      <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-1 text-[12px] font-bold text-[#545b64] [&::-webkit-details-marker]:hidden">
+        {title}
+        <ChevronDown className="size-3" />
+      </summary>
       {children}
-    </div>
+    </details>
   )
 }
 
@@ -472,13 +538,13 @@ function DoGlyph({ name }: { name: string }) {
   const common = "size-4 shrink-0"
   const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 1.4, strokeLinecap: "round" as const, strokeLinejoin: "round" as const }
   if (name === "Home") return <svg viewBox="0 0 16 16" className={common} {...stroke}><path d="M2.5 7.2 8 2.8l5.5 4.4V13a1 1 0 0 1-1 1h-3.2V9.2H6.7V14H3.5a1 1 0 0 1-1-1V7.2Z" /></svg>
-  if (name === "Projects") return <svg viewBox="0 0 16 16" className={common} {...stroke}><path d="M2 4.5h4l1.2 1.5H14V12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4.5Z" /></svg>
+  if (name === "Projects" || name === "first-project") return <svg viewBox="0 0 16 16" className={common} {...stroke}><path d="M2 4.5h4l1.2 1.5H14V12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4.5Z" /></svg>
   if (name === "Droplets" || name === "GPU Droplets") return <svg viewBox="0 0 16 16" className={common} fill="currentColor"><path d="M8 1.6c2.6 3.2 4.2 5.3 4.2 7.6A4.2 4.2 0 1 1 3.8 9.2C3.8 6.9 5.4 4.8 8 1.6Z" /></svg>
   if (name === "Kubernetes") return <svg viewBox="0 0 16 16" className={common} {...stroke}><circle cx="8" cy="8" r="2" /><path d="M8 2.5v2.2M8 11.3v2.2M2.5 8h2.2M11.3 8h2.2M4.1 4.1l1.6 1.6M10.3 10.3l1.6 1.6M11.9 4.1 10.3 5.7M5.7 10.3 4.1 11.9" /></svg>
   if (name === "App Platform") return <svg viewBox="0 0 16 16" className={common} {...stroke}><rect x="2.5" y="3" width="11" height="8" rx="1" /><path d="M6 13.5h4" /></svg>
   if (name === "Databases") return <svg viewBox="0 0 16 16" className={common} {...stroke}><ellipse cx="8" cy="4" rx="4.5" ry="1.8" /><path d="M3.5 4v8c0 1 2 1.8 4.5 1.8s4.5-.8 4.5-1.8V4" /></svg>
-  if (name === "Spaces Object Storage") return <svg viewBox="0 0 16 16" className={common} {...stroke}><path d="M3 5.5 8 3l5 2.5v6L8 14l-5-2.5v-6Z" /><path d="M3 5.5 8 8l5-2.5M8 8v6" /></svg>
-  if (name === "Volumes") return <svg viewBox="0 0 16 16" className={common} {...stroke}><rect x="2.5" y="4" width="11" height="8" rx="1.2" /><path d="M5 4V3M8 4V3M11 4V3" /></svg>
+  if (name === "Spaces" || name === "Spaces Object Storage" || name === "Container Registry") return <svg viewBox="0 0 16 16" className={common} {...stroke}><path d="M3 5.5 8 3l5 2.5v6L8 14l-5-2.5v-6Z" /><path d="M3 5.5 8 8l5-2.5M8 8v6" /></svg>
+  if (name === "Volumes" || name === "Volumes Block Storage" || name === "Backups") return <svg viewBox="0 0 16 16" className={common} {...stroke}><rect x="2.5" y="4" width="11" height="8" rx="1.2" /><path d="M5 4V3M8 4V3M11 4V3" /></svg>
   if (name === "Networking") return <svg viewBox="0 0 16 16" className={common} {...stroke}><circle cx="4" cy="8" r="1.6" /><circle cx="12" cy="4.5" r="1.6" /><circle cx="12" cy="11.5" r="1.6" /><path d="M5.5 7.4 10.4 5.2M5.5 8.6l4.9 2.2" /></svg>
   if (name === "Billing") return <svg viewBox="0 0 16 16" className={common} {...stroke}><rect x="2" y="3.5" width="12" height="9" rx="1.2" /><path d="M2 6.5h12" /></svg>
   if (name === "Settings") return <svg viewBox="0 0 16 16" className={common} {...stroke}><circle cx="8" cy="8" r="2" /><path d="M8 2.4v1.6M8 12v1.6M2.4 8h1.6M12 8h1.6M4 4l1.1 1.1M10.9 10.9 12 12M12 4l-1.1 1.1M5.1 10.9 4 12" /></svg>
@@ -491,12 +557,68 @@ function DoGlyph({ name }: { name: string }) {
 function AwsLogo() {
   return (
     <span className="px-1" aria-label="Amazon Web Services">
-      <svg viewBox="0 0 86 42" className="h-8 w-[72px]" aria-hidden>
-        <text x="6" y="26" fill="#ffffff" fontFamily="Arial, Helvetica, sans-serif" fontSize="26" fontWeight="700">aws</text>
-        <path d="M24 31c12 8 30 8 42 0" fill="none" stroke="#ff9900" strokeWidth="3" strokeLinecap="round" />
-        <path d="M62 28.2 69 33.4l-7.4 1.1z" fill="#ff9900" />
+      <svg viewBox="0 0 86 40" className="h-8 w-[78px]" aria-hidden>
+        <text x="6" y="22" fill="#ffffff" fontFamily="Arial, Helvetica, sans-serif" fontSize="22" fontWeight="700">aws</text>
+        <path d="M20 27c12 7 32 7 46 0" fill="none" stroke="#ff9900" strokeWidth="2.4" strokeLinecap="round" />
+        <path d="M62 24.6 70 29.4l-8.2.8z" fill="#ff9900" />
       </svg>
     </span>
+  )
+}
+
+function PromptIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
+      <path d="M3 4.5h10M3 8h6" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M3 11.5h3.2l1.6-1.8" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function BellIcon({ dark = false }: { dark?: boolean }) {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
+      <path d="M8 2.2a3.6 3.6 0 0 0-3.6 3.6v2.2L3 10.2h10l-1.4-2.2V5.8A3.6 3.6 0 0 0 8 2.2Z" fill="none" stroke={dark ? "#323130" : "currentColor"} strokeWidth="1.3" />
+      <path d="M6.7 11.4a1.3 1.3 0 0 0 2.6 0" fill="none" stroke={dark ? "#323130" : "currentColor"} strokeWidth="1.3" />
+    </svg>
+  )
+}
+
+function GearIcon({ dark = false }: { dark?: boolean }) {
+  const color = dark ? "#323130" : "currentColor"
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
+      <circle cx="8" cy="8" r="2" fill="none" stroke={color} strokeWidth="1.3" />
+      <path d="M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.4 3.4l1.2 1.2M11.4 11.4l1.2 1.2M12.6 3.4l-1.2 1.2M4.6 11.4l-1.2 1.2" fill="none" stroke={color} strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function SparkIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
+      <path fill="#0078d4" d="M8 1.2 9.2 6 14 7.2 9.2 8.4 8 13.2 6.8 8.4 2 7.2 6.8 6Z" />
+    </svg>
+  )
+}
+
+function FeedbackIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
+      <circle cx="8" cy="8" r="5.2" fill="none" stroke="#323130" strokeWidth="1.3" />
+      <path d="M5.6 9.2c.6.8 1.4 1.2 2.4 1.2s1.8-.4 2.4-1.2" fill="none" stroke="#323130" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="6.2" cy="6.6" r=".6" fill="#323130" />
+      <circle cx="9.8" cy="6.6" r=".6" fill="#323130" />
+    </svg>
+  )
+}
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
+      <circle cx="8" cy="8" r="6" fill="none" stroke="#0078d4" strokeWidth="1.3" />
+      <path d="M8 5v6M5 8h6" stroke="#0078d4" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
   )
 }
 
@@ -514,9 +636,9 @@ function MicrosoftMark() {
 function DoLogo() {
   return (
     <span className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
-      <svg viewBox="0 0 28 28" className="size-6" aria-hidden>
-        <circle cx="14" cy="14" r="14" fill="#0069ff" />
-        <path d="M8.2 16.4c1.6-5.2 3.8-8 5.8-8s4.2 2.8 5.8 8c-1.6 1.8-3.6 2.7-5.8 2.7s-4.2-.9-5.8-2.7Z" fill="white" />
+      <svg viewBox="0 0 24 24" className="size-6" aria-hidden>
+        <circle cx="12" cy="12" r="12" fill="#0080ff" />
+        <path fill="#fff" d="M12.5 6.2c2.2 0 3.9 1.2 4.7 3.2-1.5-.7-2.8-.4-3.7.5-.5.5-1 1.2-1.4 2 .8-.1 1.6.1 2.3.7 1.6 1.3 1.4 3.3-.2 4.5-1.3 1-3.1 1.2-4.7.4-2.4-1.2-3.2-3.8-2.2-6.4.8-2.1 2.6-4.9 5.2-4.9Z" />
       </svg>
       DigitalOcean
     </span>
@@ -524,12 +646,17 @@ function DoLogo() {
 }
 
 function FavoriteGlyph({ label }: { label: string }) {
-  const color = label === "Storage accounts" ? "#107c10" : label === "Cost Management" ? "#0078d4" : "#0078d4"
-  if (label === "Virtual machines") return <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke={color} strokeWidth="1.3"><rect x="2" y="3" width="12" height="8" rx="1" /><path d="M6 13h4M8 11v2" /></svg>
-  if (label === "Resource groups") return <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke={color} strokeWidth="1.3"><path d="M2 5h5l1 1.4H14V12H2z" /></svg>
+  if (label === "Virtual machines") return <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="#0078d4" strokeWidth="1.3"><rect x="2" y="3" width="12" height="8" rx="1" /><path d="M6 13h4M8 11v2" /></svg>
+  if (label === "App Service") return <svg viewBox="0 0 16 16" className="size-4"><rect x="2" y="2" width="12" height="12" rx="2" fill="#0078d4" /><path d="M5 9.2c1.2-2 4.8-2 6 0" fill="none" stroke="#fff" strokeWidth="1.2" /></svg>
+  if (label === "Function App") return <svg viewBox="0 0 16 16" className="size-4"><rect x="2" y="2" width="12" height="12" rx="2" fill="#f2c811" /><path d="M9 3.2 6.2 8H9l-1 4.8L11.6 7H9l.8-3.8Z" fill="#323130" /></svg>
+  if (label === "Resource groups") return <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="#0078d4" strokeWidth="1.3"><path d="M2 5h5l1 1.4H14V12H2z" /></svg>
   if (label === "Storage accounts") return <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="#107c10" strokeWidth="1.3"><ellipse cx="8" cy="4.5" rx="4" ry="1.5" /><path d="M4 4.5v7c0 .8 1.8 1.5 4 1.5s4-.7 4-1.5v-7" /></svg>
-  if (label === "Virtual networks") return <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke={color} strokeWidth="1.3"><circle cx="4" cy="8" r="1.4" /><circle cx="12" cy="4" r="1.4" /><circle cx="12" cy="12" r="1.4" /><path d="M5.3 7.3 10.6 4.7M5.3 8.7l5.3 2.6" /></svg>
-  return <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke={color} strokeWidth="1.3"><path d="M3 12V6l5-3 5 3v6" /><path d="M6.5 12v-3h3v3" /></svg>
+  if (label === "Virtual networks") return <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="#0078d4" strokeWidth="1.3"><circle cx="4" cy="8" r="1.4" /><circle cx="12" cy="4" r="1.4" /><circle cx="12" cy="12" r="1.4" /><path d="M5.3 7.3 10.6 4.7M5.3 8.7l5.3 2.6" /></svg>
+  if (label === "Microsoft Entra ID") return <svg viewBox="0 0 16 16" className="size-4"><path fill="#0078d4" d="M8 1.5 13.5 5 8 14.5 2.5 5Z" /></svg>
+  if (label === "Monitor") return <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="#0078d4" strokeWidth="1.3"><path d="M2 12.5 5.2 8l2.2 2.2L12 4" /><path d="M9.5 4H12v2.5" /></svg>
+  if (label === "Cost Management + Billing") return <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="#0078d4" strokeWidth="1.3"><path d="M3 12V7M7 12V4M11 12V6" /><path d="M2 13h12" /></svg>
+  if (label === "All resources") return <svg viewBox="0 0 16 16" className="size-4" fill="#0078d4"><rect x="2" y="2" width="5" height="5" /><rect x="9" y="2" width="5" height="5" /><rect x="2" y="9" width="5" height="5" /><rect x="9" y="9" width="5" height="5" /></svg>
+  return <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="#0078d4" strokeWidth="1.3"><path d="M3 12V6l5-3 5 3v6" /><path d="M6.5 12v-3h3v3" /></svg>
 }
 
 function HomeGlyph() {

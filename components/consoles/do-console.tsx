@@ -159,7 +159,7 @@ function DoWelcome({
     <div className="grid gap-5 p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="mt-1 text-[28px] font-semibold tracking-tight text-[#031b4e]">Welcome to DigitalOcean</h1>
+          <h1 className="mt-1 text-[28px] font-semibold tracking-tight text-[#031b4e]">Welcome aboard!</h1>
         </div>
         {continueLabel && onContinue ? <button type="button" className={BLUE} onClick={onContinue}>{continueLabel}</button> : null}
       </div>
@@ -316,15 +316,12 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
             </button>
           ))}
         </div>
-      </Section>
-
-      <Section title="VPC Network">
-        <p className="text-[13px] text-[#031b4e]">default-{region}</p>
+        <p className="text-[13px] text-[#5b6785]">VPC network <span className="font-medium text-[#031b4e]">default-{region}</span></p>
       </Section>
 
       <Section title="Choose an image">
         <div className="flex gap-5 border-b border-[#e1e7f0] text-[13px]">
-          {["OS", "Solutions", "Agents", "Custom images"].map((tab, index) => (
+          {["OS", "Solutions", "Agents", "Custom images", "Backups", "Snapshots"].map((tab, index) => (
             <span key={tab} className={cn("pb-2", index === 0 ? "border-b-2 border-[#0069ff] font-semibold text-[#0069ff]" : "text-[#5b6785]")}>{tab}</span>
           ))}
         </div>
@@ -381,13 +378,32 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
         </div>
       </Section>
 
+      <Section title="Additional Storage">
+        <p className="text-[13px] text-[#031b4e]">Add additional storage</p>
+        <p className="text-[13px] text-[#5b6785]">Volumes are NVMe network block storage. You can move them between Droplets by detaching and attaching them.</p>
+        <div className="flex gap-2 text-[13px]">
+          <span className="rounded-md border border-[#d5deea] bg-white px-3 py-1.5">Create new</span>
+          <span className="rounded-md border border-[#d5deea] bg-white px-3 py-1.5">Attach Existing</span>
+        </div>
+      </Section>
+
+      <Section title="Enable automated backups">
+        <p className="text-[13px] text-[#5b6785]">Restore your Droplet quickly if it fails. Weekly backups are kept for 28 days. Daily backups are kept for 7 days.</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div className="rounded-md border border-[#d5deea] bg-white p-3 text-[13px]"><p className="font-semibold">Weekly Backups</p><p className="text-[#5b6785]">20% of the cost of the Droplet</p></div>
+          <div className="rounded-md border border-[#d5deea] bg-white p-3 text-[13px]"><p className="font-semibold">Daily Backups</p><p className="text-[#5b6785]">30% of the cost of the Droplet</p></div>
+        </div>
+      </Section>
+
       <Section title="Choose Authentication Method">
         <div className="grid gap-2 sm:grid-cols-2">
           <button type="button" onClick={() => setAuth("ssh")} className={cn("rounded-md border bg-white p-3 text-left", auth === "ssh" ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea]")}>
-            <span className="block font-semibold">SSH Key</span>
+            <span className="block font-semibold">SSH key</span>
+            <span className="mt-1 block text-[12px] text-[#5b6785]">An SSH key pair is a more secure way to connect to your Droplet.</span>
           </button>
           <button type="button" onClick={() => setAuth("password")} className={cn("rounded-md border bg-white p-3 text-left", auth === "password" ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea]")}>
             <span className="block font-semibold">Password</span>
+            <span className="mt-1 block text-[12px] text-[#5b6785]">Create a root password. Using passwords for authentication in production is not secure.</span>
           </button>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -396,9 +412,9 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
             const outcome = dispatch({ type: "do/key", name: keyName })
             if (outcome.error) setError(outcome.error)
             else { setError(null); toast.success(outcome.message ?? "Key added.") }
-          }}>New SSH Key</button>
+          }}>Add an SSH Key</button>
         </div>
-        {ocean.keys.length === 0 ? <p className="text-[13px] text-[#b54708]">No SSH keys on the account. Add one before you create the Droplet.</p> : (
+        {ocean.keys.length === 0 ? <p className="text-[13px] text-[#b54708]">Select an SSH Key to create this Droplet.</p> : (
           <ul className="grid gap-1 text-[13px]">
             {ocean.keys.map((key) => (
               <li key={key.name} className="flex items-center gap-2"><input type="checkbox" checked={key.name === keyName} readOnly /> {key.name} <span className="font-mono text-[11px] text-[#5b6785]">{key.fingerprint}</span></li>
@@ -407,19 +423,30 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
         )}
       </Section>
 
-      <Section title="We recommend these options">
-        <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" defaultChecked /> <span><span className="font-medium">Monitoring</span><span className="block text-[#5b6785]">Improved metrics and monitoring</span></span></label>
-        <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" /> <span><span className="font-medium">Backups</span><span className="block text-[#5b6785]">Automated backups</span></span></label>
+      <Section title="Networking">
+        <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" checked readOnly /> <span><span className="font-medium">Public IPv4 address</span><span className="block text-[#5b6785]">Allows your Droplet to send and receive traffic from the public internet.</span></span></label>
+        <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" readOnly /> <span><span className="font-medium">Public IPv6 address</span><span className="block text-[#5b6785]">Built-in authentication and privacy support.</span></span></label>
+      </Section>
+
+      <Section title="Monitoring">
+        <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" defaultChecked /> <span><span className="font-medium">Improved Metrics and monitoring (free)</span><span className="block text-[#5b6785]">Installs the metrics agent for graphs and alert policies.</span></span></label>
+      </Section>
+
+      <Section title="Additional Options">
+        <p className="text-[13px]"><span className="font-medium">Startup scripts (free)</span><span className="block text-[#5b6785]">Add scripts to run on initial Droplet boot.</span></p>
       </Section>
 
       <Section title="Finalize Details">
         <label className="grid max-w-sm gap-1 text-[13px] font-medium">Quantity
-          <input value="1 Droplet" readOnly className="h-9 rounded-md border border-[#d5deea] bg-[#f7f9fc] px-2 font-normal" />
+          <input value="1" readOnly className="h-9 rounded-md border border-[#d5deea] bg-[#f7f9fc] px-2 font-normal" />
         </label>
-        <label className="grid max-w-sm gap-1 text-[13px] font-medium" htmlFor="do-name">Hostname
+        <label className="grid max-w-sm gap-1 text-[13px] font-medium" htmlFor="do-name">Give your Droplet a name
           <Input id="do-name" value={name} onChange={(event) => setName(event.target.value)} className="h-9 rounded-md font-normal" />
         </label>
-        <p className="text-[13px] text-[#5b6785]">Project: My Team</p>
+        <label className="grid max-w-sm gap-1 text-[13px] font-medium">Tags
+          <input placeholder="Add a tag" readOnly className="h-9 rounded-md border border-[#d5deea] bg-white px-2 font-normal" />
+        </label>
+        <p className="text-[13px] text-[#031b4e]">Select a project <span className="font-semibold">first-project</span></p>
       </Section>
 
       {error ? <p role="alert" className="mt-4 text-[13px] text-[#d92d20]">{error}</p> : null}

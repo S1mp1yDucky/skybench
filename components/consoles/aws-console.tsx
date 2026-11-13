@@ -158,12 +158,20 @@ export function AwsConsole() {
                 setKillId(null)
               }}
             >
-              Terminate
+              Terminate (delete)
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </ConsoleFrame>
+  )
+}
+
+function MenuAction({ children, disabled, onClick }: { children: React.ReactNode; disabled?: boolean; onClick?: () => void }) {
+  return (
+    <button type="button" disabled={disabled} onClick={onClick} className="block w-full px-3 py-1.5 text-left text-[13px] hover:bg-[#f2f8fd] disabled:text-[#aab7b8]">
+      {children}
+    </button>
   )
 }
 
@@ -246,7 +254,7 @@ function Ec2Home({
           <div className="grid gap-4 md:grid-cols-2">
             <section className="border border-[#d5dbdb] bg-white p-4">
               <h2 className="text-[18px] font-bold">Launch instance</h2>
-              <p className="mt-2 text-[13px] leading-5 text-[#545b64]">Amazon Elastic Compute Cloud (Amazon EC2) provides on-demand, scalable computing capacity in the Amazon Web Services (AWS) Cloud.</p>
+              <p className="mt-2 text-[13px] leading-5 text-[#545b64]">To get started, launch an Amazon EC2 instance, which is a virtual server in the cloud.</p>
               {onContinue ? null : <button type="button" className={cn(ORANGE, "mt-3")} onClick={onLaunch}>Launch instance</button>}
             </section>
             <section className="border border-[#d5dbdb] bg-white p-4">
@@ -264,7 +272,7 @@ function Ec2Home({
           <div className="px-4 py-3">
             <p className="text-[12px] font-bold text-[#545b64]">Settings</p>
             <ul className="mt-2 grid gap-1.5 text-[13px] text-[#0073bb]">
-              {["Allowed AMIs", "EC2 Serial Console", "Default credit specification"].map((item) => (
+              {["Allowed AMIs", "Data protection and security", "EC2 Serial Console", "Default credit specification", "EC2 console preferences"].map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
@@ -314,9 +322,24 @@ function InstanceTable({
         <div className="flex flex-wrap items-center gap-2 border-b border-[#eaeded] px-3 py-2">
           <button type="button" className={ORANGE} onClick={onLaunch}>Launch instances</button>
           <button type="button" className={GHOST} disabled={active?.state !== "running"} onClick={() => active && onConnect(active.id)}>Connect</button>
-          <button type="button" className={GHOST} disabled={active?.state !== "running"} onClick={() => active && onStop(active.id)}>Stop instance</button>
-          <button type="button" className={GHOST} disabled={active?.state !== "stopped"} onClick={() => active && onStart(active.id)}>Start instance</button>
-          <button type="button" className={GHOST} disabled={!active} onClick={() => active && onTerminate(active.id)}>Terminate instance</button>
+          <details className="relative">
+            <summary className={`${GHOST} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>Instance state</summary>
+            <div className="absolute top-9 left-0 z-20 w-64 border border-[#d5dbdb] bg-white py-1 shadow-xl">
+              <MenuAction disabled={active?.state !== "running"} onClick={() => active && onStop(active.id)}>Stop instance</MenuAction>
+              <MenuAction disabled={active?.state !== "stopped"} onClick={() => active && onStart(active.id)}>Start instance</MenuAction>
+              <MenuAction disabled>Reboot instance</MenuAction>
+              <MenuAction disabled>Hibernate instance</MenuAction>
+              <MenuAction disabled={!active} onClick={() => active && onTerminate(active.id)}>Terminate (delete) instance</MenuAction>
+            </div>
+          </details>
+          <details className="relative">
+            <summary className={`${GHOST} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>Actions</summary>
+            <div className="absolute top-9 left-0 z-20 w-56 border border-[#d5dbdb] bg-white py-1 text-[13px] shadow-xl">
+              {["Instance settings", "Networking", "Security", "Image and templates", "Monitor and troubleshoot"].map((item) => (
+                <p key={item} className="px-3 py-1.5 text-[#16191f]">{item}</p>
+              ))}
+            </div>
+          </details>
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Add filter" className="ml-auto h-8 w-full max-w-sm rounded-sm border border-[#aab7b8] px-2 text-[13px] outline-none focus:border-[#0073bb]" />
         </div>
         <div className="overflow-x-auto">

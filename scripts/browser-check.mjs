@@ -114,12 +114,12 @@ try {
   })
   await page.waitForFunction(() => !document.querySelector("[data-slot='dialog-content']"))
 
-  await clickText("Terminate instance")
+  await clickText("Terminate (delete) instance")
   await page.waitForFunction(() => document.body.innerText.includes("On termination"))
   await page.evaluate(() => {
     const dialogs = [...document.querySelectorAll("[data-slot='dialog-content']")]
     const dialog = dialogs.find((item) => item.textContent?.includes("On termination"))
-    const button = [...(dialog?.querySelectorAll("button") ?? [])].find((item) => item.textContent?.trim() === "Terminate")
+    const button = [...(dialog?.querySelectorAll("button") ?? [])].find((item) => item.textContent?.trim() === "Terminate (delete)")
     if (!(button instanceof HTMLElement)) throw new Error("Terminate confirmation was not found")
     button.click()
   })

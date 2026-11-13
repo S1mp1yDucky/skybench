@@ -69,9 +69,16 @@ export function AzureConsole() {
         { id: "portal", label: "Home" },
         { id: "create", label: "Create a resource" },
         { id: "vms", label: "Virtual machines" },
+        { id: "appservice", label: "App Service" },
+        { id: "functions", label: "Function App" },
+        { id: "storage", label: "Storage accounts" },
+        { id: "vnet", label: "Virtual networks" },
         { id: "groups", label: "Resource groups" },
+        { id: "entra", label: "Microsoft Entra ID" },
+        { id: "monitor", label: "Monitor" },
+        { id: "more", label: "All services" },
         { id: "shell", label: "Cloud Shell" },
-        { id: "billing", label: "Cost Management" },
+        { id: "billing", label: "Cost Management + Billing" },
       ]}
       active={stage}
       onNavigate={setView}
@@ -103,7 +110,7 @@ export function AzureConsole() {
       {stage === "billing" ? (
         <div className="bg-[#faf9f8] p-6">
           <BillingPanel
-            title="Cost Management"
+            title="Cost Management + Billing"
             note="Compute is billed while the virtual machine is running. Stopped (deallocated) virtual machines are not billed for compute. Managed disks continue to incur charges."
             budget={azure.budgetUsd}
             vms={azure.vms}
@@ -157,6 +164,8 @@ const SERVICE_BLADES: Record<string, string> = {
   aks: "Kubernetes services",
   vnet: "Virtual networks",
   more: "All services",
+  entra: "Microsoft Entra ID",
+  monitor: "Monitor",
 }
 
 function AzureHome({
