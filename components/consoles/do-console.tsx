@@ -174,9 +174,9 @@ function DoWelcome({
         <h2 className="text-[32px] font-semibold tracking-tight text-[#031b4e]">Welcome aboard!</h2>
         <p className="mt-2 text-[15px] text-[#5b6785]">Spin up your first cloud resources to get your project off the ground.</p>
         <div className="mt-6 grid gap-4 lg:grid-cols-3">
-          <WelcomeCard title="Deploy a virtual machine" product="Droplets" action="Create Droplet" onClick={onCreate} />
-          <WelcomeCard title="Build a web app" product="App Platform" action="Launch App" />
-          <WelcomeCard title="Store and manage data" product="Spaces Object Storage" action="Create Space" onClick={onOpen} />
+          <WelcomeCard kind="droplet" title="Deploy a virtual machine" product="Droplets" action="Create Droplet" onClick={onCreate} />
+          <WelcomeCard kind="app" title="Build a web app" product="App Platform" action="Launch App" />
+          <WelcomeCard kind="spaces" title="Store and manage data" product="Spaces Object Storage" action="Create Space" onClick={onOpen} />
         </div>
       </div>
       <div>
@@ -207,13 +207,45 @@ function DoWelcome({
   )
 }
 
-function WelcomeCard({ title, product, action, onClick }: { title: string; product: string; action: string; onClick?: () => void }) {
+function WelcomeCard({ kind, title, product, action, onClick }: { kind: "droplet" | "app" | "spaces"; title: string; product: string; action: string; onClick?: () => void }) {
   return (
-    <div className="flex flex-col rounded-md border border-[#e1e7f0] bg-white p-5">
-      <p className="text-[16px] font-semibold text-[#031b4e]">{title}</p>
-      <p className="mt-1 text-[13px] text-[#5b6785]">{product}</p>
-      <button type="button" onClick={onClick} className="mt-4 h-8 w-fit rounded-md bg-[#0069ff] px-3 text-[13px] font-semibold text-white hover:bg-[#0058d6]">{action}</button>
+    <div className="flex h-full flex-col rounded-md border border-[#e1e7f0] bg-white p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[16px] font-semibold text-[#031b4e]">{title}</p>
+          <p className="mt-1 text-[13px] text-[#5b6785]">{product}</p>
+        </div>
+        <WelcomeArt kind={kind} />
+      </div>
+      <button type="button" onClick={onClick} className="mt-4 h-8 w-full rounded-md bg-[#0069ff] px-3 text-[13px] font-semibold text-white hover:bg-[#0058d6]">{action}</button>
     </div>
+  )
+}
+
+function WelcomeArt({ kind }: { kind: "droplet" | "app" | "spaces" }) {
+  if (kind === "droplet") {
+    return (
+      <svg viewBox="0 0 72 72" className="size-10 shrink-0" aria-hidden>
+        <path d="M36 8c12 16 20 26 20 36a20 20 0 1 1-40 0c0-10 8-20 20-36Z" fill="#0069ff" />
+        <path d="M28 42c2 6 6 10 12 12" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" />
+      </svg>
+    )
+  }
+  if (kind === "app") {
+    return (
+      <svg viewBox="0 0 72 72" className="size-10 shrink-0" aria-hidden>
+        <rect x="10" y="16" width="52" height="38" rx="6" fill="#0069ff" />
+        <path d="M10 26h52" stroke="white" strokeWidth="3" />
+        <circle cx="20" cy="21" r="2" fill="white" />
+        <path d="M28 40h16M32 46h8" stroke="white" strokeWidth="3" strokeLinecap="round" />
+      </svg>
+    )
+  }
+  return (
+    <svg viewBox="0 0 72 72" className="size-10 shrink-0" aria-hidden>
+      <path d="M36 10 62 24v24L36 62 10 48V24Z" fill="#0069ff" />
+      <path d="M36 36 62 24M36 36 10 24M36 36v26" fill="none" stroke="white" strokeWidth="2.4" />
+    </svg>
   )
 }
 
