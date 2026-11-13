@@ -234,19 +234,38 @@ function AzureHome({
   onContinue?: () => void
 }) {
   const visible = vms.filter((vm) => vm.state !== "terminated")
+  const [hover, setHover] = useState<string | null>(null)
   return (
-    <div className="bg-white px-6 py-5">
+    <div className="bg-white px-8 py-6">
       <section>
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-[20px] font-semibold">Azure services</h2>
           {continueLabel && onContinue ? <button type="button" className={PRIMARY} onClick={onContinue}>{continueLabel}</button> : null}
         </div>
-        <div className="mt-3 flex gap-1 overflow-x-auto pb-2">
+        <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
           {SERVICES.map((service) => (
-            <button key={service.label} type="button" onClick={() => onOpen(service.id)} className="grid w-[92px] shrink-0 justify-items-center gap-2 px-1 text-center text-[12px] leading-4 text-[#0078d4] hover:underline">
-              <ServiceGlyph kind={service.glyph} />
-              {service.label}
-            </button>
+            <div key={service.label} className="relative" onMouseEnter={() => setHover(service.label)} onMouseLeave={() => setHover(null)}>
+              <button type="button" onClick={() => onOpen(service.id)} className="grid w-[104px] shrink-0 justify-items-center gap-2 px-1 py-2 text-center text-[12px] leading-4 text-[#0078d4] hover:bg-[#f3f2f1]">
+                <ServiceGlyph kind={service.glyph} />
+                {service.label}
+              </button>
+              {hover === service.label && service.label === "Virtual machines" ? (
+                <div className="absolute top-0 left-full z-30 w-72 border border-[#edebe9] bg-white p-4 text-left text-[#323130] shadow-xl">
+                  <div className="flex items-center gap-2">
+                    <ServiceGlyph kind="vm" />
+                    <p className="text-[16px] font-semibold">Virtual machines</p>
+                  </div>
+                  <div className="mt-3 flex gap-4 text-[13px] text-[#0078d4]">
+                    <button type="button" onClick={() => onOpen("create")}>+ Create</button>
+                    <button type="button" onClick={() => onOpen("vms")}>View</button>
+                  </div>
+                  <p className="mt-3 text-[12px] font-semibold text-[#605e5c]">Description</p>
+                  <p className="mt-1 text-[13px]">Create a virtual machine that runs Linux or Windows. Select an image from the marketplace or use your own customized image.</p>
+                  <p className="mt-3 text-[13px] text-[#0078d4]">Learn more with Copilot</p>
+                  <p className="mt-2 text-[12px] text-[#605e5c]">Free training from Microsoft</p>
+                </div>
+              ) : null}
+            </div>
           ))}
         </div>
       </section>
@@ -255,42 +274,31 @@ function AzureHome({
           <h2 className="text-[20px] font-semibold">Resources</h2>
           <span className="text-[12px] text-[#605e5c]">Subscription: Azure subscription 1</span>
         </div>
-        <div className="mt-3 flex gap-4 border-b border-[#edebe9] text-[13px]">
+        <div className="mt-3 flex gap-6 border-b border-[#edebe9] text-[14px]">
           <span className="border-b-2 border-[#0078d4] pb-2 font-semibold text-[#0078d4]">Recent</span>
-          <span className="pb-2 text-[#605e5c]">Favorite</span>
+          <span className="pb-2 text-[#323130]">Favorite</span>
         </div>
+        <div className="mt-2 grid grid-cols-[1fr_auto] text-[13px] text-[#605e5c]">
+          <span>Name</span>
+          <span>Last Viewed</span>
+        </div>
+        {visible.length === 0 ? (
+          <p className="py-10 text-center text-[14px] text-[#605e5c]">No resources have been viewed recently</p>
+        ) : (
         <table className="mt-1 w-full text-left text-[13px]">
-          <thead className="text-[#605e5c]">
-            <tr>
-              <th className="py-2 font-semibold">Name</th>
-              <th className="py-2 font-semibold">Type</th>
-              <th className="py-2 font-semibold">Resource group</th>
-              <th className="py-2 font-semibold">Location</th>
-            </tr>
-          </thead>
           <tbody>
-            {visible.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="py-16 text-center text-[#605e5c]">
-                  <span className="mx-auto mb-3 grid size-16 place-items-center rounded-sm border border-[#edebe9] text-[#c8c6c4]">
-                    <ServiceGlyph kind="vm" />
-                  </span>
-                  No resources to display
-                </td>
+            {visible.map((vm) => (
+              <tr key={vm.id} className="border-t border-[#edebe9]">
+                <td className="py-2 text-[#0078d4]">{vm.name}</td>
+                <td className="py-2 text-right text-[#605e5c]">Just now</td>
               </tr>
-            ) : (
-              visible.map((vm) => (
-                <tr key={vm.id} className="border-t border-[#edebe9]">
-                  <td className="py-2 text-[#0078d4]">{vm.name}</td>
-                  <td className="py-2">Virtual machine</td>
-                  <td className="py-2">{vm.resourceGroup}</td>
-                  <td className="py-2">{locationLabel(vm.region)}</td>
-                </tr>
-              ))
-            )}
+            ))}
           </tbody>
         </table>
-        <button type="button" onClick={() => onOpen("vms")} className="mt-3 text-[13px] text-[#0078d4] hover:underline">View all resources</button>
+        )}
+        <div className="mt-2 flex justify-center">
+          <button type="button" onClick={() => onOpen("vms")} className="h-8 rounded-sm border border-[#8a8886] bg-white px-4 text-[13px]">View all resources</button>
+        </div>
         <p className="sr-only">{account}</p>
       </section>
     </div>
@@ -313,20 +321,32 @@ function VmList({
   const [filter, setFilter] = useState("")
   const visible = vms.filter((vm) => vm.state !== "terminated" && `${vm.name} ${vm.resourceGroup ?? ""}`.toLowerCase().includes(filter.trim().toLowerCase()))
   return (
-    <div>
-      <div className="border-b border-[#edebe9] px-6 py-3 text-[12px] text-[#605e5c]">Home <span className="px-1">›</span> <span className="text-[#323130]">Virtual machines</span></div>
-      <div className="flex flex-wrap items-end justify-between gap-3 px-6 pt-4">
-        <h1 className="text-[28px] font-semibold">Virtual machines</h1>
-        <span className="text-[12px] text-[#605e5c]">Subscription equals all</span>
+    <div className="bg-[#faf9f8]">
+      <div className="border-b border-[#edebe9] bg-white px-6 py-3 text-[12px] text-[#605e5c]">Home <span className="px-1">›</span> Compute infrastructure</div>
+      <div className="bg-white px-6 pt-4">
+        <h1 className="text-[28px] font-semibold">Compute infrastructure | Virtual machines</h1>
+        <p className="text-[12px] text-[#605e5c]">Microsoft | Default Directory</p>
+        <div className="mt-3 flex gap-6 text-[14px]">
+          <span className="border-b-2 border-[#0078d4] pb-2 font-semibold">Virtual machines</span>
+          <span className="pb-2 text-[#0078d4]">Get started</span>
+        </div>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-1 border-y border-[#edebe9] bg-[#faf9f8] px-4 py-1">
+      <div className="mt-2 flex flex-wrap items-center gap-1 border-y border-[#edebe9] bg-white px-4 py-1">
         <button type="button" className={COMMAND} onClick={onCreate}><span className="text-[#0078d4]">+</span> Create</button>
+        <button type="button" className={COMMAND}>Reservations</button>
+        <button type="button" className={COMMAND}>Manage view</button>
         <button type="button" className={COMMAND}>Refresh</button>
         <button type="button" className={COMMAND}>Export to CSV</button>
-        <button type="button" className={COMMAND}>Open query</button>
+        <span className="ml-auto text-[13px] text-[#323130]">Group by none</span>
       </div>
       <div className="px-6 py-3">
-        <input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Filter for any field..." className="h-8 w-full max-w-sm rounded-sm border border-[#8a8886] px-2 text-[13px] outline-none focus:border-[#0078d4]" />
+        <input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Filter for any field..." className="h-8 w-full max-w-sm rounded-sm border border-[#8a8886] bg-white px-2 text-[13px] outline-none focus:border-[#0078d4]" />
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px]">
+          {["Subscription equals Azure subscription 1", "Type equals all", "Resource group equals all", "Location equals all"].map((chip) => (
+            <span key={chip} className="rounded-full bg-[#deecf9] px-3 py-1 text-[#0078d4]">{chip}</span>
+          ))}
+          <button type="button" className="text-[#0078d4]">Add Filter</button>
+        </div>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[860px] text-left text-[13px]">
             <caption className="sr-only">Azure virtual machines</caption>
@@ -339,7 +359,11 @@ function VmList({
             </thead>
             <tbody>
               {visible.length === 0 ? (
-                <tr><td colSpan={8} className="px-2 py-12 text-center text-[#605e5c]">No virtual machines to display</td></tr>
+                <tr><td colSpan={8} className="px-2 py-16 text-center">
+                  <div className="mx-auto grid size-24 place-items-center text-[#c8c6c4]"><ServiceGlyph kind="vm" /></div>
+                  <p className="mt-2 text-[18px] font-semibold text-[#323130]">No virtual machines to display</p>
+                  <p className="mx-auto mt-1 max-w-md text-[13px] text-[#605e5c]">Create a virtual machine that runs Linux or Windows. Select an image from the marketplace or use your own.</p>
+                </td></tr>
               ) : visible.map((vm) => (
                 <tr key={vm.id} className="border-b border-[#f3f2f1] hover:bg-[#f3f2f1]">
                   <td className="px-2 py-2 text-[#0078d4]">{vm.name}</td>
@@ -447,30 +471,58 @@ function CreateVm({ onDone }: { onDone: () => void }) {
   if (phase === "overview") {
     const vm = azure.vms.find((item) => item.name === name)
     return (
-      <div className="bg-white px-6 py-5">
-        <h1 className="text-[24px] font-semibold">{name}</h1>
-        <h2 className="mt-4 text-[16px] font-semibold">Essentials</h2>
-        <dl className="mt-3 grid max-w-3xl gap-3 text-[14px] sm:grid-cols-2">
-          <div><dt className="text-[#605e5c]">Resource group</dt><dd>{group}</dd></div>
-          <div><dt className="text-[#605e5c]">Status</dt><dd><StateBadge state={vm?.state ?? "pending"} provider="azure" /></dd></div>
-          <div><dt className="text-[#605e5c]">Location</dt><dd>{location}</dd></div>
-          <div><dt className="text-[#605e5c]">Size</dt><dd>{sizeId}</dd></div>
-          <div><dt className="text-[#605e5c]">Public IP address</dt><dd className="font-mono">{vm?.publicIp ?? "Assigning…"}</dd></div>
-          <div><dt className="text-[#605e5c]">Subscription</dt><dd>Azure subscription 1</dd></div>
-        </dl>
-        <button type="button" className="mt-4 text-[13px] text-[#0078d4] hover:underline" onClick={onDone}>Back to virtual machines</button>
+      <div className="bg-white">
+        <div className="border-b border-[#edebe9] px-6 py-3 text-[12px] text-[#605e5c]">Home <span className="px-1">›</span> {name}</div>
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6 pt-4">
+          <h1 className="text-[24px] font-semibold">{name}</h1>
+          <button type="button" className="text-[13px] text-[#0078d4]" onClick={onDone}>Back to virtual machines</button>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1 border-y border-[#edebe9] bg-[#faf9f8] px-4 py-1 text-[13px]">
+          <button type="button" className={COMMAND}>Connect</button>
+          <button type="button" className={COMMAND}>Stop</button>
+          <button type="button" className={COMMAND}>Refresh</button>
+          <button type="button" className={COMMAND}>Delete</button>
+        </div>
+        <div className="grid gap-6 px-6 py-4 lg:grid-cols-[180px_1fr]">
+          <nav className="text-[13px]">
+            {["Overview", "Activity log", "Access control (IAM)", "Tags", "Networking", "Settings"].map((item, index) => (
+              <p key={item} className={cn("px-2 py-1.5", index === 0 && "border-l-2 border-[#0078d4] font-semibold")}>{item}</p>
+            ))}
+          </nav>
+          <div>
+            <h2 className="text-[16px] font-semibold">Essentials</h2>
+            <dl className="mt-3 grid gap-x-8 gap-y-2 text-[13px] sm:grid-cols-2">
+              <div className="flex gap-4"><dt className="w-36 text-[#605e5c]">Resource group</dt><dd className="text-[#0078d4]">{group}</dd></div>
+              <div className="flex gap-4"><dt className="w-36 text-[#605e5c]">Size</dt><dd>{sizeId}</dd></div>
+              <div className="flex gap-4"><dt className="w-36 text-[#605e5c]">Status</dt><dd><StateBadge state={vm?.state ?? "pending"} provider="azure" /></dd></div>
+              <div className="flex gap-4"><dt className="w-36 text-[#605e5c]">Public IP address</dt><dd className="font-mono">{vm?.publicIp ?? "Assigning…"}</dd></div>
+              <div className="flex gap-4"><dt className="w-36 text-[#605e5c]">Location</dt><dd>{locationLabel(location)}</dd></div>
+              <div className="flex gap-4"><dt className="w-36 text-[#605e5c]">Subscription</dt><dd>Azure subscription 1</dd></div>
+              <div className="flex gap-4"><dt className="w-36 text-[#605e5c]">Operating system</dt><dd>{image?.label}</dd></div>
+              <div className="flex gap-4"><dt className="w-36 text-[#605e5c]">Virtual machine</dt><dd>{name}</dd></div>
+            </dl>
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="flex min-h-full flex-col bg-[#faf9f8]">
-      <div className="border-b border-[#edebe9] bg-white px-6 py-3 text-[12px] text-[#605e5c]">Home <span className="px-1">›</span> Create a resource <span className="px-1">›</span> <span className="text-[#323130]">Virtual machine</span></div>
-      <div className="bg-white px-6 pt-4">
-        <h1 className="text-[24px] font-semibold">Create a virtual machine</h1>
-        <div className="mt-3 flex gap-1 overflow-x-auto border-b border-[#edebe9] text-[13px]">
+      <div className="flex items-start justify-between border-b border-[#edebe9] bg-white px-6 py-3">
+        <div>
+          <p className="text-[12px] text-[#605e5c]">Home <span className="px-1">›</span> Compute infrastructure | Virtual machines</p>
+          <h1 className="mt-1 text-[24px] font-semibold">Create a virtual machine</h1>
+        </div>
+        <button type="button" aria-label="Close" className="grid size-8 place-items-center text-[20px]" onClick={onDone}>×</button>
+      </div>
+      <div className="bg-white px-6 pt-2">
+        <div className="flex gap-1 overflow-x-auto border-b border-[#edebe9] text-[13px]">
           {TABS.map((item) => (
-            <button key={item} type="button" onClick={() => setTab(item)} className={cn("shrink-0 border-b-2 px-3 py-2", tab === item ? "border-[#0078d4] font-semibold text-[#0078d4]" : "border-transparent text-[#323130] hover:bg-[#f3f2f1]")}>{item}</button>
+            <button key={item} type="button" onClick={() => setTab(item)} className={cn("inline-flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2", tab === item ? "border-[#0078d4] font-semibold text-[#0078d4]" : "border-transparent text-[#323130] hover:bg-[#f3f2f1]")}>
+              {item === "Basics" && (!name.trim() || !group.trim()) ? <span className="grid size-4 place-items-center rounded-full bg-[#a4262c] text-[11px] leading-none text-white" aria-hidden>×</span> : null}
+              {item}
+            </button>
           ))}
         </div>
       </div>
@@ -576,10 +628,16 @@ function CreateVm({ onDone }: { onDone: () => void }) {
           </div>
         ) : null}
         {tab === "Disks" ? (
-          <div className="grid max-w-xl gap-3">
+          <div className="grid max-w-3xl gap-4 text-[13px] leading-5">
+            <div className="border border-[#c7e0f4] bg-[#f3f9fd] px-3 py-2">This is a preview of a new Create-VM experience. Features are limited in this experience and all feedback is appreciated.</div>
+            <p>Azure VMs have one operating system disk and a temporary disk for short-term storage. You can attach additional data disks. The size of the VM determines the type of storage you can use and the number of data disks allowed.</p>
+            <p className="text-[#605e5c]">There is a charge for the underlying storage resources consumed by your virtual machine.</p>
+            <div>
+              <h2 className="text-[16px] font-semibold">VM disk encryption</h2>
+              <p className="mt-2">Azure disk storage encryption automatically encrypts your data stored on Azure managed disks (OS and data disks) at rest by default when persisting it to the cloud.</p>
+            </div>
+            <label className="flex items-center gap-2">Encryption at host <input type="checkbox" /></label>
             <BladeField label="OS disk type"><ConsoleSelect theme="azure" label="OS disk type" value={disk} onChange={setDisk} options={["Premium SSD (locally-redundant storage)", "Standard SSD", "Standard HDD"].map((item) => ({ value: item, label: item }))} /></BladeField>
-            <BladeField label="Encryption type"><FakeSelect value="(Default) Encryption at-rest with a platform-managed key" /></BladeField>
-            <label className="flex items-center gap-2 text-[13px]"><input type="checkbox" defaultChecked /> Delete with VM</label>
           </div>
         ) : null}
         {tab === "Networking" ? (
@@ -664,10 +722,11 @@ function CreateVm({ onDone }: { onDone: () => void }) {
           </DialogContent>
         </Dialog>
       </div>
-      <div className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t border-[#edebe9] bg-white px-6 py-3">
+      <div className="sticky bottom-0 flex flex-wrap items-center gap-2 border-t border-[#edebe9] bg-white px-6 py-3">
+        <button type="button" className="h-8 rounded-sm border border-[#8a8886] bg-white px-4 text-[13px]" onClick={() => setTab(TABS[Math.max(0, TABS.indexOf(tab) - 1)] ?? "Basics")}>Previous</button>
+        <button type="button" className="h-8 rounded-sm border border-[#8a8886] bg-white px-4 text-[13px]" onClick={() => setTab(TABS[Math.min(TABS.length - 1, TABS.indexOf(tab) + 1)] ?? "Review + create")}>Next</button>
         <button type="button" className={PRIMARY} onClick={() => tab === "Review + create" ? launch() : setTab("Review + create")}>{tab === "Review + create" ? "Create" : "Review + create"}</button>
-        <button type="button" className="h-8 rounded-[2px] border border-[#8a8886] bg-white px-4 text-[13px]" onClick={() => setTab(TABS[Math.max(0, TABS.indexOf(tab) - 1)] ?? "Basics")}>Previous</button>
-        <button type="button" className="h-8 px-3 text-[13px] text-[#0078d4]" onClick={() => setTab(TABS[Math.min(TABS.length - 1, TABS.indexOf(tab) + 1)] ?? "Review + create")}>Next</button>
+        <button type="button" className="ml-auto text-[13px] text-[#0078d4]">Give feedback</button>
       </div>
     </div>
   )

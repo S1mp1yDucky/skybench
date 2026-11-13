@@ -225,10 +225,10 @@ function ServicesFlyout({ onClose, go, nav }: { onClose: () => void; go: (id: st
   )
 }
 
-function PortalMenu({ label, items, children }: { label: string; items: string[]; children: React.ReactNode }) {
+function PortalMenu({ label, items, children, onDark = false }: { label: string; items: string[]; children: React.ReactNode; onDark?: boolean }) {
   return (
     <details className="relative">
-      <summary aria-label={label} className="grid size-8 cursor-pointer list-none place-items-center rounded-sm hover:bg-[#f3f2f1] [&::-webkit-details-marker]:hidden">{children}</summary>
+      <summary aria-label={label} className={cn("grid size-8 cursor-pointer list-none place-items-center rounded-sm [&::-webkit-details-marker]:hidden", onDark ? "text-white hover:bg-white/15" : "hover:bg-[#f3f2f1]")}>{children}</summary>
       <div className="absolute top-9 right-0 z-50 w-64 border border-[#edebe9] bg-white py-1 text-[13px] text-[#323130] shadow-xl">
         {items.map((item) => <p key={item} className="px-3 py-1.5 hover:bg-[#f3f2f1]">{item}</p>)}
       </div>
@@ -293,8 +293,8 @@ function AzureChrome({
   }, [])
   return (
     <>
-      <header className="flex h-12 shrink-0 items-center gap-2 border-b border-[#e1dfdd] bg-white px-2 text-[#323130]">
-        <button type="button" className="grid size-8 place-items-center rounded-sm hover:bg-[#f3f2f1]" aria-expanded={open} aria-label={open ? "Close navigation" : "Open navigation"} onClick={() => setOpen((value) => !value)}>
+      <header className="flex h-12 shrink-0 items-center gap-2 bg-[#0078d4] px-2 text-white">
+        <button type="button" className="grid size-8 place-items-center rounded-sm hover:bg-white/15" aria-expanded={open} aria-label={open ? "Close navigation" : "Open navigation"} onClick={() => setOpen((value) => !value)}>
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
         <MicrosoftMark />
@@ -302,22 +302,21 @@ function AzureChrome({
         <label className="relative mx-3 hidden min-w-0 flex-1 md:block">
           <span className="sr-only">Search resources, services, and docs</span>
           <Search className="pointer-events-none absolute top-2 left-3 size-4 text-[#605e5c]" />
-          <input readOnly placeholder="Search resources, services, and docs (G+/)" className="h-8 w-full max-w-[640px] rounded-sm border border-[#8a8886] bg-white pr-3 pl-9 text-[13px] outline-none placeholder:text-[#605e5c] focus:border-[#0078d4]" />
+          <input readOnly placeholder="Search resources, services, and docs (G+/)" className="h-8 w-full max-w-[560px] rounded-sm border-0 bg-white pr-3 pl-9 text-[13px] text-[#323130] outline-none placeholder:text-[#605e5c]" />
         </label>
-        <button type="button" className="mr-1 hidden h-8 items-center gap-1 rounded-sm px-2 text-[13px] hover:bg-[#f3f2f1] md:inline-flex" aria-label="Copilot">
-          <SparkIcon />
-          Copilot
-        </button>
         <div className="ml-auto flex items-center gap-0.5">
-          <HeaderIcon label="Cloud Shell" dark={false} onClick={() => go("shell")}><span className="font-mono text-[14px] leading-none">&gt;_</span></HeaderIcon>
-          <HeaderIcon label="Notifications" dark={false} onClick={() => setNotesOpen((value) => !value)}><BellIcon dark /></HeaderIcon>
-          <PortalMenu label="Settings" items={["Appearance", "Language + region", "My permissions", "Default subscription"]}>
-            <GearIcon dark />
+          <button type="button" className="mr-1 hidden h-8 items-center gap-1 rounded-sm px-2 text-[13px] hover:bg-white/15 md:inline-flex" aria-label="Copilot">
+            <SparkIcon />
+            Copilot
+          </button>
+          <HeaderIcon label="Cloud Shell" onClick={() => go("shell")}><span className="font-mono text-[14px] leading-none">&gt;_</span></HeaderIcon>
+          <HeaderIcon label="Notifications" onClick={() => setNotesOpen((value) => !value)}><BellIcon /></HeaderIcon>
+          <PortalMenu onDark label="Settings" items={["Appearance", "Language + region", "My permissions", "Default subscription"]}>
+            <GearIcon />
           </PortalMenu>
-          <PortalMenu label="Support + troubleshooting" items={["Help + support", "New support request", "Service Health", "Privacy"]}>
+          <PortalMenu onDark label="Support + troubleshooting" items={["Help + support", "New support request", "Service Health", "Privacy"]}>
             <CircleHelp className="size-4" />
           </PortalMenu>
-          <HeaderIcon label="Feedback" dark={false}><FeedbackIcon /></HeaderIcon>
           <AccountMenu theme="azure" account={account} go={go} onSignOut={onSignOut} />
         </div>
       </header>
@@ -332,12 +331,33 @@ function AzureChrome({
         </aside>
       ) : null}
       <div className="flex min-h-0 flex-1">
-        <aside className={cn("z-30 w-[260px] shrink-0 overflow-auto border-r border-[#edebe9] bg-white py-2 md:static md:block", open ? "absolute top-12 bottom-0 left-0 block shadow-xl" : "hidden md:block")}>
-          <AzureMenu active={active} go={go} />
-        </aside>
+        {active === "create" ? null : (
+          <aside className={cn("z-30 w-[248px] shrink-0 overflow-auto border-r border-[#edebe9] bg-white py-2 md:static md:block", open ? "absolute top-12 bottom-0 left-0 block shadow-xl" : "hidden md:block")}>
+            {active === "vms" ? <ComputeMenu go={go} /> : <AzureMenu active={active} go={go} />}
+          </aside>
+        )}
         <main id="main" className="min-h-0 min-w-0 flex-1 overflow-auto bg-white">{children}</main>
       </div>
     </>
+  )
+}
+
+function ComputeMenu({ go }: { go: (id: string) => void }) {
+  const items = ["Virtual machines", "Virtual Machine Scale Set (VMSS)", "Compute Fleet", "Arc Machines", "Container instances", "Disks + images", "Capacity + placement", "Related services"]
+  return (
+    <nav aria-label="Compute infrastructure" className="px-2 text-[13px]">
+      <label className="relative mb-2 block px-1">
+        <span className="sr-only">Search</span>
+        <Search className="pointer-events-none absolute top-2 left-3 size-4 text-[#605e5c]" />
+        <input readOnly placeholder="Search" className="h-8 w-full rounded-sm border border-[#8a8886] bg-white pr-2 pl-8 text-[13px]" />
+      </label>
+      <button type="button" onClick={() => go("portal")} className="block w-full rounded-sm px-2 py-1.5 text-left hover:bg-[#f3f2f1]">Overview</button>
+      <button type="button" onClick={() => go("more")} className="block w-full rounded-sm px-2 py-1.5 text-left hover:bg-[#f3f2f1]">All resources</button>
+      <p className="px-2 pt-3 pb-1 text-[12px] font-semibold">Infrastructure</p>
+      {items.map((item) => (
+        <button key={item} type="button" onClick={() => item === "Virtual machines" && go("vms")} className={cn("block w-full rounded-sm px-2 py-1.5 text-left hover:bg-[#f3f2f1]", item === "Virtual machines" && "bg-[#f3f2f1] font-semibold")}>{item}</button>
+      ))}
+    </nav>
   )
 }
 
@@ -440,7 +460,7 @@ function DoChrome({
             <kbd className="pointer-events-none absolute top-2 right-2 rounded border border-[#d5deea] px-1 text-[10px] text-[#7b879c]">Ctrl+K</kbd>
           </label>
           <div className="relative ml-auto">
-            <button type="button" aria-expanded={createOpen} onClick={() => setCreateOpen((value) => !value)} className="inline-flex h-8 items-center gap-1 rounded-md bg-[#0069ff] px-3 text-[13px] font-medium text-white hover:bg-[#0058d6]">
+            <button type="button" aria-expanded={createOpen} onClick={() => setCreateOpen((value) => !value)} className="inline-flex h-8 items-center gap-1 rounded-md bg-[#00853f] px-3 text-[13px] font-medium text-white hover:bg-[#006b32]">
               Create <ChevronDown className="size-3.5" />
             </button>
             {createOpen ? (
@@ -485,8 +505,14 @@ function AccountMenu({
   const initials = account.toLowerCase().startsWith("033") || account.includes("talal") ? "TM" : letter
   return (
     <details className="relative">
-      <summary className={cn("flex cursor-pointer list-none items-center gap-2 rounded-sm px-2 py-1 [&::-webkit-details-marker]:hidden", theme === "aws" ? "hover:bg-white/10" : "hover:bg-black/5")} aria-label="Account">
-        <span className={cn("grid size-7 place-items-center rounded-full text-[11px] font-semibold", theme === "aws" && "bg-[#ff9900] text-[#232f3e]", theme === "azure" && "bg-[#0078d4] text-white", theme === "do" && "bg-[#0069ff] text-white")}>{theme === "aws" ? letter : initials}</span>
+      <summary className={cn("flex cursor-pointer list-none items-center gap-2 rounded-sm px-2 py-1 [&::-webkit-details-marker]:hidden", theme === "do" ? "hover:bg-black/5" : "hover:bg-white/10")} aria-label="Account">
+        {theme === "azure" ? (
+          <span className="hidden text-right leading-tight sm:block">
+            <span className="block max-w-[180px] truncate text-[12px]">{account}</span>
+            <span className="block text-[10px] tracking-wide">DEFAULT DIRECTORY</span>
+          </span>
+        ) : null}
+        <span className={cn("grid size-7 place-items-center rounded-full text-[11px] font-semibold", theme === "aws" && "bg-[#ff9900] text-[#232f3e]", theme === "azure" && "bg-white/25 text-white", theme === "do" && "bg-[#0069ff] text-white")}>{theme === "aws" ? letter : initials}</span>
         {theme === "aws" ? <span className="hidden max-w-[120px] truncate text-[13px] sm:inline">Talal</span> : null}
         {theme !== "azure" ? <ChevronDown className="size-3 opacity-80" /> : null}
       </summary>
@@ -671,18 +697,7 @@ function GearIcon({ dark = false }: { dark?: boolean }) {
 function SparkIcon() {
   return (
     <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
-      <path fill="#0078d4" d="M8 1.2 9.2 6 14 7.2 9.2 8.4 8 13.2 6.8 8.4 2 7.2 6.8 6Z" />
-    </svg>
-  )
-}
-
-function FeedbackIcon() {
-  return (
-    <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
-      <circle cx="8" cy="8" r="5.2" fill="none" stroke="#323130" strokeWidth="1.3" />
-      <path d="M5.6 9.2c.6.8 1.4 1.2 2.4 1.2s1.8-.4 2.4-1.2" fill="none" stroke="#323130" strokeWidth="1.3" strokeLinecap="round" />
-      <circle cx="6.2" cy="6.6" r=".6" fill="#323130" />
-      <circle cx="9.8" cy="6.6" r=".6" fill="#323130" />
+      <path fill="currentColor" d="M8 1.2 9.2 6 14 7.2 9.2 8.4 8 13.2 6.8 8.4 2 7.2 6.8 6Z" />
     </svg>
   )
 }
