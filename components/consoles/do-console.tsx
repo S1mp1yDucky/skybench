@@ -1,10 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { ConsoleSelect } from "@/components/console-select"
 import { flash } from "@/lib/flash"
 import { AccountForm, SignInCard } from "@/components/account-form"
-import { BrandGlyph } from "@/components/brand-marks"
+import { DoCreate, DoHome, DoNewProject, DoProject } from "@/components/consoles/do-screens"
 import { BillingPanel } from "@/components/billing-panel"
 import { ConsoleFrame } from "@/components/console-frame"
 import { ConnectDialog, downloadPem } from "@/components/connect-dialog"
@@ -21,25 +20,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { DO_IMAGES, DO_SIZES, STUDENT } from "@/lib/catalog"
+import { STUDENT } from "@/lib/catalog"
 import { usd } from "@/lib/format"
 import { isMetering, platformCost } from "@/lib/simulator"
 import { dispatch, useLabState } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import type { Vm } from "@/lib/types"
 
-const BLUE = "inline-flex h-8 items-center justify-center rounded-[3px] bg-[#0069ff] px-4 text-[14px] font-semibold text-white hover:bg-[#0058d6] disabled:opacity-50"
-
-const DISKS: Record<string, string> = {
-  "s-1vcpu-512mb-10gb": "10 GB",
-  "s-1vcpu-1gb": "25 GB",
-  "s-1vcpu-2gb": "50 GB",
-}
-const TRANSFER: Record<string, string> = {
-  "s-1vcpu-512mb-10gb": "500 GiB",
-  "s-1vcpu-1gb": "1,000 GiB",
-  "s-1vcpu-2gb": "2,000 GiB",
-}
+const BLUE = "inline-flex h-8 items-center justify-center rounded-full bg-[#7ebac2] px-4 text-[14px] font-semibold text-[#102226] disabled:opacity-50"
 
 export function DoConsole() {
   const lab = useLabState()
@@ -74,6 +62,8 @@ export function DoConsole() {
       onSignOut={ocean.signedIn ? () => dispatch({ type: "do/signout" }) : undefined}
       nav={[
         { id: "home", label: "Home" },
+        { id: "project", label: "first-project" },
+        { id: "new-project", label: "New Project" },
         { id: "droplets", label: "Droplets" },
         { id: "create", label: "Create Droplet" },
         { id: "keys", label: "Settings" },
@@ -87,9 +77,11 @@ export function DoConsole() {
       alert={alert}
     >
       {stage === "study" && !ocean.reviewedSite ? (
-        <DoWelcome onCreate={() => undefined} continueLabel="Sign up" onContinue={() => dispatch({ type: "do/review" })} />
+        <DoHome onCreate={() => undefined} onProject={() => undefined} onBilling={() => undefined} onSignUp={() => dispatch({ type: "do/review" })} />
       ) : null}
-      {stage === "home" ? <DoWelcome onCreate={() => setView("create")} droplets={ocean.droplets} onOpen={() => setView("droplets")} /> : null}
+      {stage === "home" ? <DoHome onCreate={() => setView("create")} onProject={() => setView("new-project")} onBilling={() => setView("billing")} /> : null}
+      {stage === "project" ? <DoProject droplets={ocean.droplets} onCreate={() => setView("create")} /> : null}
+      {stage === "new-project" ? <DoNewProject onCancel={() => setView("project")} /> : null}
       {stage === "droplets" && detailId ? <DropletDetail id={detailId} onBack={() => setDetailId(null)} onConsole={() => setView("shell")} /> : null}
       {stage === "droplets" && !detailId ? (
         <DropletList
@@ -101,7 +93,7 @@ export function DoConsole() {
           onDestroy={setDestroyId}
         />
       ) : null}
-      {stage === "create" ? <CreateDroplet onDone={() => setView("droplets")} /> : null}
+      {stage === "create" ? <DoCreate onDone={() => setView("droplets")} onBack={() => setView("droplets")} /> : null}
       {stage === "keys" ? <Keys /> : null}
       {stage === "spaces" ? <Spaces /> : null}
       {stage === "shell" ? (
@@ -125,7 +117,7 @@ export function DoConsole() {
       ) : null}
       <ConnectDialog platform="do" vm={connectVm} open={connectVm != null} onOpenChange={(open) => !open && setConnectId(null)} />
       <Dialog open={destroyVm != null} onOpenChange={(open) => !open && setDestroyId(null)}>
-        <DialogContent className="rounded-[4px] border border-[#e1e7f0] bg-white text-[#031b4e] shadow-xl sm:max-w-lg">
+        <DialogContent className="rounded-xl border border-[#2c3438] bg-[#171c1e] text-[#e8eeef] shadow-xl sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Destroy {destroyVm?.name}?</DialogTitle>
             <DialogDescription>Destroy is the only action that stops DigitalOcean billing. Power off leaves the Droplet on the invoice.</DialogDescription>
@@ -145,123 +137,19 @@ function tell(outcome: { error?: string; message?: string }) {
   else if (outcome.message) flash(outcome.message)
 }
 
-function DoWelcome({
-  onCreate,
-  onOpen,
-  droplets = [],
-  continueLabel,
-  onContinue,
-}: {
-  onCreate: () => void
-  onOpen?: () => void
-  droplets?: Vm[]
-  continueLabel?: string
-  onContinue?: () => void
-}) {
-  const visible = droplets.filter((vm) => vm.state !== "terminated")
-  return (
-    <div className="grid gap-8 p-6 sm:p-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex items-center gap-2 text-[20px] font-semibold text-[#031b4e]">
-          <span className="text-[#5b6785]" aria-hidden>▣</span> first-project
-        </h1>
-        <div className="flex items-center gap-2">
-          {continueLabel && onContinue ? <button type="button" className={BLUE} onClick={onContinue}>{continueLabel}</button> : null}
-          <button type="button" className="h-8 rounded-md border border-[#d5deea] bg-white px-3 text-[13px]">Project settings</button>
-        </div>
-      </div>
-      <div>
-        <h2 className="text-[32px] font-semibold tracking-tight text-[#031b4e]">Welcome aboard!</h2>
-        <p className="mt-2 text-[15px] text-[#5b6785]">Spin up your first cloud resources to get your project off the ground.</p>
-        <div className="mt-6 grid gap-4 lg:grid-cols-3">
-          <WelcomeCard kind="droplet" title="Deploy a virtual machine" product="Droplets" action="Create Droplet" onClick={onCreate} />
-          <WelcomeCard kind="app" title="Build a web app" product="App Platform" action="Launch App" />
-          <WelcomeCard kind="spaces" title="Store and manage data" product="Spaces Object Storage" action="Create Space" onClick={onOpen} />
-        </div>
-      </div>
-      <div>
-        <h2 className="text-[18px] font-semibold text-[#031b4e]">Explore all products</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {["Kubernetes", "Databases", "Functions", "Volumes", "Networking", "Container Registry", "Backups", "Marketplace"].map((product) => (
-            <div key={product} className="rounded-md border border-[#e1e7f0] bg-white px-4 py-3 text-[14px] font-medium">{product}</div>
-          ))}
-        </div>
-      </div>
-      {visible.length > 0 ? (
-        <div className="rounded-md border border-[#e1e7f0] bg-white">
-          <div className="flex items-center justify-between border-b border-[#eef2f7] px-4 py-3">
-            <h2 className="font-semibold">Droplets</h2>
-            {onOpen ? <button type="button" onClick={onOpen} className="text-[13px] text-[#0069ff]">View all</button> : null}
-          </div>
-          <ul>
-            {visible.slice(0, 4).map((vm) => (
-              <li key={vm.id} className="flex items-center justify-between border-t border-[#eef2f7] px-4 py-3 text-[13px]">
-                <span className="font-medium">{vm.name}</span>
-                <StateBadge state={vm.state} provider="do" />
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
-function WelcomeCard({ kind, title, product, action, onClick }: { kind: "droplet" | "app" | "spaces"; title: string; product: string; action: string; onClick?: () => void }) {
-  return (
-    <div className="flex h-full flex-col rounded-md border border-[#e1e7f0] bg-white p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[16px] font-semibold text-[#031b4e]">{title}</p>
-          <p className="mt-1 text-[13px] text-[#5b6785]">{product}</p>
-        </div>
-        <WelcomeArt kind={kind} />
-      </div>
-      <button type="button" onClick={onClick} className="mt-4 h-8 w-full rounded-md bg-[#0069ff] px-3 text-[13px] font-semibold text-white hover:bg-[#0058d6]">{action}</button>
-    </div>
-  )
-}
-
-function WelcomeArt({ kind }: { kind: "droplet" | "app" | "spaces" }) {
-  if (kind === "droplet") {
-    return (
-      <svg viewBox="0 0 72 72" className="size-10 shrink-0" aria-hidden>
-        <path d="M36 8c12 16 20 26 20 36a20 20 0 1 1-40 0c0-10 8-20 20-36Z" fill="#0069ff" />
-        <path d="M28 42c2 6 6 10 12 12" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" />
-      </svg>
-    )
-  }
-  if (kind === "app") {
-    return (
-      <svg viewBox="0 0 72 72" className="size-10 shrink-0" aria-hidden>
-        <rect x="10" y="16" width="52" height="38" rx="6" fill="#0069ff" />
-        <path d="M10 26h52" stroke="white" strokeWidth="3" />
-        <circle cx="20" cy="21" r="2" fill="white" />
-        <path d="M28 40h16M32 46h8" stroke="white" strokeWidth="3" strokeLinecap="round" />
-      </svg>
-    )
-  }
-  return (
-    <svg viewBox="0 0 72 72" className="size-10 shrink-0" aria-hidden>
-      <path d="M36 10 62 24v24L36 62 10 48V24Z" fill="#0069ff" />
-      <path d="M36 36 62 24M36 36 10 24M36 36v26" fill="none" stroke="white" strokeWidth="2.4" />
-    </svg>
-  )
-}
-
 function DropletDetail({ id, onBack, onConsole }: { id: string; onBack: () => void; onConsole: () => void }) {
   const vm = useLabState().do.droplets.find((item) => item.id === id)
   if (!vm) return <p className="p-6">This Droplet is no longer on the list.</p>
   return (
     <div className="p-6">
-      <button type="button" className="text-[13px] text-[#0069ff]" onClick={onBack}>Droplets</button>
-      <h1 className="mt-2 text-[28px] font-semibold text-[#031b4e]">{vm.name}</h1>
+      <button type="button" className="text-[13px] text-[#7ebac2]" onClick={onBack}>Droplets</button>
+      <h1 className="mt-2 text-[28px] font-semibold text-[#e8eeef]">{vm.name}</h1>
       <p className="mt-2"><StateBadge state={vm.state} provider="do" /></p>
       <dl className="mt-4 grid max-w-xl gap-2 text-[14px]">
-        <div><dt className="text-[#5b6785]">Public IPv4</dt><dd className="font-mono">{vm.publicIp ?? "Assigning…"}</dd></div>
-        <div><dt className="text-[#5b6785]">Image</dt><dd>{vm.imageLabel}</dd></div>
-        <div><dt className="text-[#5b6785]">Size</dt><dd>{vm.sizeLabel}</dd></div>
-        <div><dt className="text-[#5b6785]">Region</dt><dd>{vm.region}</dd></div>
+        <div><dt className="text-[#8b969c]">Public IPv4</dt><dd className="font-mono">{vm.publicIp ?? "Assigning…"}</dd></div>
+        <div><dt className="text-[#8b969c]">Image</dt><dd>{vm.imageLabel}</dd></div>
+        <div><dt className="text-[#8b969c]">Size</dt><dd>{vm.sizeLabel}</dd></div>
+        <div><dt className="text-[#8b969c]">Region</dt><dd>{vm.region}</dd></div>
       </dl>
       <button type="button" className={cn(BLUE, "mt-4")} onClick={onConsole}>Web console</button>
     </div>
@@ -298,44 +186,44 @@ function DropletList({
     <div className="p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-[24px] font-semibold text-[#031b4e]">Droplets</h1>
+          <h1 className="text-[24px] font-semibold text-[#e8eeef]">Droplets</h1>
           <div className="mt-3 flex gap-5 text-[14px]">
             {tabs.map(([label, count]) => (
-              <button key={label} type="button" onClick={() => setTab(label)} className={cn("pb-2", tab === label ? "border-b-2 border-[#0069ff] font-semibold text-[#0069ff]" : "text-[#5b6785]")}>
-                {label} <span className="ml-1 rounded-full bg-[#eef2f7] px-1.5 text-[12px]">{count}</span>
+              <button key={label} type="button" onClick={() => setTab(label)} className={cn("pb-2", tab === label ? "border-b-2 border-[#7ebac2] font-semibold text-[#7ebac2]" : "text-[#8b969c]")}>
+                {label} <span className="ml-1 rounded-full bg-[#243033] px-1.5 text-[12px]">{count}</span>
               </button>
             ))}
           </div>
         </div>
         <button type="button" className={BLUE} onClick={onCreate}>Create Droplet</button>
       </div>
-      <div className="mt-4 rounded-md border border-[#e1e7f0] bg-white">
-        <div className="border-b border-[#eef2f7] px-3 py-2">
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === "Droplets" ? "Search by Droplet name" : `Search ${tab}`} className="h-8 w-full max-w-xs rounded-md border border-[#d5deea] px-2 text-[13px] outline-none" />
+      <div className="mt-4 rounded-md border border-[#2c3438] bg-[#171c1e]">
+        <div className="border-b border-[#2c3438] px-3 py-2">
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === "Droplets" ? "Search by Droplet name" : `Search ${tab}`} className="h-8 w-full max-w-xs rounded-md border border-[#3a4248] px-2 text-[13px] outline-none" />
         </div>
         {tab !== "Droplets" ? (
-          <p className="px-4 py-16 text-center text-[14px] text-[#5b6785]">You don’t have any {tab.toLowerCase()}.</p>
+          <p className="px-4 py-16 text-center text-[14px] text-[#8b969c]">You don’t have any {tab.toLowerCase()}.</p>
         ) : visible.length === 0 ? (
           <div className="px-4 py-16 text-center">
-            <p className="text-[16px] font-semibold text-[#031b4e]">You don’t have any Droplets.</p>
+            <p className="text-[16px] font-semibold text-[#e8eeef]">You don’t have any Droplets.</p>
             <button type="button" className={cn(BLUE, "mt-4")} onClick={onCreate}>Get Started with a Droplet</button>
           </div>
         ) : (
           <ul>
             {visible.map((vm) => (
-              <li key={vm.id} className="flex flex-wrap items-center gap-4 border-b border-[#eef2f7] px-4 py-4 last:border-0">
-                <span className="grid size-8 place-items-center text-[#0069ff]" aria-hidden>◉</span>
+              <li key={vm.id} className="flex flex-wrap items-center gap-4 border-b border-[#2c3438] px-4 py-4 last:border-0">
+                <span className="grid size-8 place-items-center text-[#7ebac2]" aria-hidden>◉</span>
                 <div className="min-w-0 flex-1">
-                  <button type="button" className="font-medium text-[#0069ff] hover:underline" onClick={() => onOpen(vm.id)}>{vm.name}</button>
-                  <p className="font-mono text-[13px] text-[#031b4e]">{vm.publicIp ?? "Assigning…"}</p>
-                  <p className="mt-1 text-[12px] text-[#5b6785]">{vm.sizeLabel} / {vm.region.toUpperCase()} — {vm.imageLabel}</p>
-                  {vm.state === "pending" ? <div className="mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-[#e5eaf2]"><div className="h-full w-2/3 animate-pulse bg-[#0069ff]" /></div> : null}
+                  <button type="button" className="font-medium text-[#7ebac2] hover:underline" onClick={() => onOpen(vm.id)}>{vm.name}</button>
+                  <p className="font-mono text-[13px] text-[#e8eeef]">{vm.publicIp ?? "Assigning…"}</p>
+                  <p className="mt-1 text-[12px] text-[#8b969c]">{vm.sizeLabel} / {vm.region.toUpperCase()} — {vm.imageLabel}</p>
+                  {vm.state === "pending" ? <div className="mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-[#243033]"><div className="h-full w-2/3 animate-pulse bg-[#7ebac2]" /></div> : null}
                   {vm.state !== "running" && vm.state !== "pending" ? <p className="mt-1"><StateBadge state={vm.state} provider="do" /></p> : null}
                 </div>
                 <div className="relative">
-                  <button type="button" className="inline-flex items-center gap-1 rounded-md border border-[#d5deea] px-2 py-1 text-[13px]" onClick={() => setMenu(menu === vm.id ? null : vm.id)} aria-expanded={menu === vm.id}>More <span aria-hidden>▾</span></button>
+                  <button type="button" className="inline-flex items-center gap-1 rounded-md border border-[#3a4248] px-2 py-1 text-[13px]" onClick={() => setMenu(menu === vm.id ? null : vm.id)} aria-expanded={menu === vm.id}>More <span aria-hidden>▾</span></button>
                   {menu === vm.id ? (
-                    <div className="absolute right-0 z-10 mt-1 w-44 rounded-md border border-[#e1e7f0] bg-white py-1 text-left shadow-lg">
+                    <div className="absolute right-0 z-10 mt-1 w-44 rounded-md border border-[#2c3438] bg-[#171c1e] py-1 text-left shadow-lg">
                       <MenuButton disabled={vm.state !== "running"} onClick={() => { setMenu(null); onConnect(vm.id) }}>Access console</MenuButton>
                       <MenuButton disabled={vm.state !== "running"} onClick={() => { setMenu(null); onPower(vm.id, false) }}>Power off</MenuButton>
                       <MenuButton disabled={vm.state !== "stopped"} onClick={() => { setMenu(null); onPower(vm.id, true) }}>Power on</MenuButton>
@@ -355,279 +243,7 @@ function DropletList({
 }
 
 function MenuButton({ children, onClick, disabled }: { children: React.ReactNode; onClick: () => void; disabled?: boolean }) {
-  return <button type="button" disabled={disabled} onClick={onClick} className="block w-full px-3 py-1.5 text-left text-[13px] hover:bg-[#f4f7fb] disabled:text-[#b0b8c6]">{children}</button>
-}
-
-function CreateDroplet({ onDone }: { onDone: () => void }) {
-  const ocean = useLabState().do
-  const [name, setName] = useState("ubuntu-s-1vcpu-1gb-blr1")
-  const [region, setRegion] = useState(ocean.region)
-  const [imageId, setImageId] = useState("ubuntu-26-04-x64")
-  const [sizeId, setSizeId] = useState(DO_SIZES[1].id)
-  const [keyName, setKeyName] = useState(ocean.keys[0]?.name ?? "")
-  const [auth, setAuth] = useState<"ssh" | "password">("ssh")
-  const [config, setConfig] = useState<"bundled" | "v5">("bundled")
-  const [cpu, setCpu] = useState<"shared" | "dedicated">("shared")
-  const [imageTab, setImageTab] = useState("OS")
-  const [vcpus, setVcpus] = useState(1)
-  const [backup, setBackup] = useState<"off" | "weekly" | "daily" | "usage">("off")
-  const [backupDay, setBackupDay] = useState("Sunday")
-  const [backupTime, setBackupTime] = useState("12:00 AM")
-  const [cli, setCli] = useState(false)
-  const [creating, setCreating] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const size = DO_SIZES.find((item) => item.id === sizeId)
-  const monthly = size ? Math.round(size.hourlyUsd * 730) : 0
-
-  const created = creating ? ocean.droplets.find((vm) => vm.name === creating) : null
-  if (creating) {
-    const ready = Boolean(created?.publicIp)
-    return (
-      <div className="p-6">
-        <h1 className="text-[28px] font-semibold text-[#031b4e]">{creating}</h1>
-        <p className="mt-2 text-[14px] text-[#5b6785]">{ready ? "Your Droplet is ready." : "Creating your Droplet…"}</p>
-        <div className="mt-4 h-2 w-full max-w-lg overflow-hidden rounded-full bg-[#e5eaf2]"><div className={cn("h-full bg-[#0069ff] transition-all", ready ? "w-full" : "w-2/3 animate-pulse")} /></div>
-        <p className="mt-3 font-mono text-[14px]">{created?.publicIp ?? "Assigning a public IP address"}</p>
-        {ready ? <button type="button" className={cn(BLUE, "mt-4")} onClick={onDone}>View Droplets</button> : null}
-      </div>
-    )
-  }
-
-  return (
-    <form
-      className="p-6 pb-28"
-      onSubmit={(event) => {
-        event.preventDefault()
-        if (config === "v5") {
-          setError("This lab launches bundled plans. Choose Bundled to create the Droplet.")
-          return
-        }
-        const outcome = dispatch({ type: "do/launch", name, imageId, sizeId, keyName, region })
-        if (outcome.error) setError(outcome.error)
-        else {
-          flash(outcome.message ?? "Creating Droplet.")
-          setCreating(name.trim().toLowerCase())
-        }
-      }}
-    >
-      <h1 className="text-[28px] font-semibold text-[#031b4e]">Create Droplets</h1>
-
-      <Section title="Choose Region">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {[["Asia", ["blr1", "sgp1"]], ["Europe", ["fra1", "lon1"]], ["North America", ["nyc1", "sfo3"]]].map(([label, ids]) => (
-            <div key={String(label)} className="rounded-md border border-[#e1e7f0] bg-white p-3">
-              <p className="text-[13px] font-semibold text-[#031b4e]">{label}</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {(ids as string[]).map((id) => (
-                  <button key={id} type="button" onClick={() => setRegion(id)} className={cn("inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-semibold", region === id ? "border-[#0069ff] bg-[#e8f1ff] text-[#0069ff]" : "border-[#d5deea] text-[#031b4e]")}>
-                    {regionCity(id)} <span className="font-mono font-medium">{id.toUpperCase()}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-        <p className="text-[13px] text-[#5b6785]">Datacenter <span className="font-mono font-medium text-[#031b4e]">{region.toUpperCase()}</span> · VPC network <span className="font-medium text-[#031b4e]">default-{region}</span></p>
-      </Section>
-
-      <Section title="Choose an image">
-        <div className="flex flex-wrap gap-x-5 gap-y-2 border-b border-[#e1e7f0] text-[13px]">
-          {["OS", "Solutions", "Agents", "Custom images", "Backups", "Snapshots"].map((tab) => (
-            <button key={tab} type="button" onClick={() => setImageTab(tab)} className={cn("pb-2", imageTab === tab ? "border-b-2 border-[#0069ff] font-semibold text-[#0069ff]" : "text-[#5b6785]")}>{tab}</button>
-          ))}
-        </div>
-        {imageTab !== "OS" ? <p className="text-[13px] text-[#5b6785]">No {imageTab.toLowerCase()} in this lab yet. Choose an OS image to launch.</p> : null}
-        <div className={cn("flex flex-wrap gap-2", imageTab !== "OS" && "hidden")}>
-          {DISTROS.map((distro) => {
-            const selected = distro.ids.includes(imageId)
-            return (
-              <button key={distro.name} type="button" onClick={() => setImageId(distro.ids[0])} className={cn("grid h-[84px] w-[112px] content-center justify-items-center gap-1.5 rounded-md border bg-white text-[13px]", selected ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea] hover:border-[#0069ff]")}>
-                <BrandGlyph name={distro.glyph} className={cn("size-7", distro.color)} />
-                <span className="font-medium text-[#031b4e]">{distro.name}</span>
-              </button>
-            )
-          })}
-        </div>
-        <label className="grid max-w-sm gap-1.5 text-[13px] font-medium">
-          Version
-          <ConsoleSelect label="Version" theme="do" value={imageId} onChange={setImageId} options={(DISTROS.find((distro) => distro.ids.includes(imageId)) ?? DISTROS[0]).ids.map((id) => ({ value: id, label: DO_IMAGES.find((image) => image.id === id)?.label ?? id }))} />
-        </label>
-      </Section>
-
-      <Section title="Choose configuration type">
-        <div className="grid gap-2 sm:grid-cols-2">
-          <button type="button" onClick={() => setConfig("v5")} className={cn("rounded-md border bg-white p-3 text-left", config === "v5" ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea]")}>
-            <span className="block font-semibold">v5</span>
-            <span className="mt-1 block text-[12px] text-[#5b6785]">Shared or General Purpose. Size vCPU, memory, and boot disk separately.</span>
-          </button>
-          <button type="button" onClick={() => setConfig("bundled")} className={cn("rounded-md border bg-white p-3 text-left", config === "bundled" ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea]")}>
-            <span className="block font-semibold">Bundled</span>
-            <span className="mt-1 block text-[12px] text-[#5b6785]">A fixed plan with set hardware ratios.</span>
-          </button>
-        </div>
-        {config === "v5" ? (
-          <label className="grid max-w-sm gap-2 text-[13px]">
-            <span className="font-medium">vCPU</span>
-            <input type="range" min={1} max={8} value={vcpus} onChange={(event) => setVcpus(Number(event.target.value))} />
-            <span className="text-[#5b6785]">{vcpus} shared vCPU. Memory and a 30 GB boot disk follow the vCPU choice. This lab prices bundled plans.</span>
-          </label>
-        ) : null}
-      </Section>
-
-      <Section title="Choose a Droplet Plan">
-        <div className="flex flex-wrap gap-2 text-[13px]">
-          <button type="button" onClick={() => setCpu("shared")} className={cn("rounded-full px-3 py-1", cpu === "shared" ? "bg-[#e8f1ff] font-semibold text-[#0069ff]" : "bg-white text-[#5b6785] ring-1 ring-[#d5deea]")}>Shared CPU</button>
-          <button type="button" onClick={() => setCpu("dedicated")} className={cn("rounded-full px-3 py-1", cpu === "dedicated" ? "bg-[#e8f1ff] font-semibold text-[#0069ff]" : "bg-white text-[#5b6785] ring-1 ring-[#d5deea]")}>Dedicated CPU</button>
-        </div>
-        {cpu === "dedicated" ? (
-          <div className="grid gap-2 sm:grid-cols-2">
-            {["CPU-Optimized", "General Purpose", "Memory-Optimized", "Storage-Optimized"].map((plan) => (
-              <div key={plan} className="rounded-md border border-[#d5deea] bg-white p-3 text-[13px]">
-                <p className="font-semibold text-[#031b4e]">{plan}</p>
-                <p className="text-[#5b6785]">Not priced in this lab. Choose Shared CPU to launch.</p>
-              </div>
-            ))}
-          </div>
-        ) : null}
-        {cpu === "shared" ? <p className="text-[13px] font-semibold text-[#031b4e]">Basic</p> : null}
-        {cpu === "shared" ? <div className="flex gap-4 text-[13px]">
-          <span className="border-b-2 border-[#0069ff] pb-1 font-semibold text-[#0069ff]">Regular</span>
-          <span className="pb-1 text-[#5b6785]">Premium Intel</span>
-          <span className="pb-1 text-[#5b6785]">Premium AMD</span>
-        </div> : null}
-        {cpu === "shared" ? <div className="overflow-x-auto rounded-md border border-[#e1e7f0] bg-white">
-          <table className="w-full min-w-[680px] text-left text-[13px]">
-            <thead className="text-[#5b6785]">
-              <tr>{["", "Memory", "vCPU", "SSD", "Transfer", "$/mo"].map((heading) => <th key={heading || "r"} className="px-3 py-2 font-medium">{heading}</th>)}</tr>
-            </thead>
-            <tbody>
-              {DO_SIZES.map((item) => (
-                <tr key={item.id} className={cn("cursor-pointer border-t border-[#eef2f7]", sizeId === item.id && "bg-[#f3f8ff]")} onClick={() => setSizeId(item.id)}>
-                  <td className="px-3 py-3"><input type="radio" name="size" checked={sizeId === item.id} onChange={() => setSizeId(item.id)} aria-label={item.label} /></td>
-                  <td className="px-3 py-3 font-medium">{item.ram.replace("MiB", "MB").replace("GiB", "GB")}</td>
-                  <td className="px-3 py-3">{item.vcpu} vCPU</td>
-                  <td className="px-3 py-3">{DISKS[item.id] ?? "25 GB"}</td>
-                  <td className="px-3 py-3">{TRANSFER[item.id] ?? "1,000 GiB"}</td>
-                  <td className="px-3 py-3">${Math.round(item.hourlyUsd * 730)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div> : null}
-      </Section>
-
-      <Section title="Additional Storage">
-        <p className="text-[13px] text-[#031b4e]">Add additional storage</p>
-        <p className="text-[13px] text-[#5b6785]">Volumes are NVMe network block storage. You can move them between Droplets by detaching and attaching them.</p>
-        <div className="flex gap-2 text-[13px]">
-          <span className="rounded-md border border-[#d5deea] bg-white px-3 py-1.5">Create new</span>
-          <span className="rounded-md border border-[#d5deea] bg-white px-3 py-1.5">Attach Existing</span>
-        </div>
-      </Section>
-
-      <Section title="Enable automated backups">
-        <p className="text-[13px] text-[#5b6785]">Restore your Droplet quickly if it fails. Weekly backups are kept for 28 days. Daily backups are kept for 7 days.</p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {([["weekly", "Weekly Backups", "20% of the cost of the Droplet"], ["daily", "Daily Backups", "30% of the cost of the Droplet"], ["usage", "Usage-Based", "Billed per GiB of restorable data"]] as const).map(([id, title, note]) => (
-            <button key={id} type="button" onClick={() => setBackup(backup === id ? "off" : id)} className={cn("rounded-md border bg-white p-3 text-left text-[13px]", backup === id ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea]")}>
-              <p className="font-semibold">{title}</p><p className="text-[#5b6785]">{note}</p>
-            </button>
-          ))}
-        </div>
-        {backup === "weekly" || backup === "daily" ? (
-          <div className="grid max-w-lg gap-3 sm:grid-cols-2">
-            <label className="grid gap-1.5 text-[13px] font-medium">Backup day
-              <select aria-label="Backup day" value={backupDay} onChange={(event) => setBackupDay(event.target.value)} className="h-9 rounded-md border border-[#d5deea] bg-white px-2 font-normal">{["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => <option key={day}>{day}</option>)}</select>
-            </label>
-            <label className="grid gap-1.5 text-[13px] font-medium">Backup window
-              <select aria-label="Backup window" value={backupTime} onChange={(event) => setBackupTime(event.target.value)} className="h-9 rounded-md border border-[#d5deea] bg-white px-2 font-normal">{["12:00 AM", "4:00 AM", "8:00 AM", "12:00 PM", "4:00 PM", "8:00 PM"].map((time) => <option key={time}>{time}</option>)}</select>
-            </label>
-          </div>
-        ) : null}
-      </Section>
-
-      <Section title="Choose Authentication Method">
-        <div className="grid gap-2 sm:grid-cols-2">
-          <button type="button" onClick={() => setAuth("ssh")} className={cn("rounded-md border bg-white p-3 text-left", auth === "ssh" ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea]")}>
-            <span className="block font-semibold">SSH key</span>
-            <span className="mt-1 block text-[12px] text-[#5b6785]">An SSH key pair is a more secure way to connect to your Droplet.</span>
-          </button>
-          <button type="button" onClick={() => setAuth("password")} className={cn("rounded-md border bg-white p-3 text-left", auth === "password" ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea]")}>
-            <span className="block font-semibold">Password</span>
-            <span className="mt-1 block text-[12px] text-[#5b6785]">Create a root password. Using passwords for authentication in production is not secure.</span>
-          </button>
-        </div>
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="grid gap-1.5 text-[13px] font-medium">SSH key name
-            <Input aria-label="SSH key name" value={keyName} onChange={(event) => setKeyName(event.target.value)} className="h-9 w-64 rounded-md font-normal" />
-          </label>
-          <button type="button" className="h-9 rounded-md border border-[#d5deea] bg-white px-3 text-[13px]" onClick={() => {
-            const outcome = dispatch({ type: "do/key", name: keyName })
-            if (outcome.error) setError(outcome.error)
-            else { setError(null); flash(outcome.message ?? "SSH key added.") }
-          }}>Add an SSH Key</button>
-        </div>
-        {ocean.keys.length === 0 ? <p className="text-[13px] text-[#b54708]">Select an SSH Key to create this Droplet.</p> : (
-          <ul className="grid gap-2 text-[13px]">
-            {ocean.keys.map((key) => (
-              <li key={key.name} className="grid gap-1 sm:grid-cols-[12rem_1fr] sm:items-center sm:gap-4">
-                <label className="flex items-center gap-2"><input type="checkbox" checked={key.name === keyName} readOnly /> {key.name}</label>
-                <span className="pl-6 font-mono text-[11px] text-[#5b6785] sm:pl-0">{key.fingerprint}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Section>
-
-      <Section title="Networking">
-        <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" checked readOnly /> <span><span className="font-medium">Public IPv4 address</span><span className="block text-[#5b6785]">Allows your Droplet to send and receive traffic from the public internet.</span></span></label>
-        <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" readOnly /> <span><span className="font-medium">Public IPv6 address</span><span className="block text-[#5b6785]">Built-in authentication and privacy support.</span></span></label>
-      </Section>
-
-      <Section title="Monitoring">
-        <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" defaultChecked /> <span><span className="font-medium">Improved Metrics and monitoring (free)</span><span className="block text-[#5b6785]">Installs the metrics agent for graphs and alert policies.</span></span></label>
-      </Section>
-
-      <Section title="Additional Options">
-        <p className="text-[13px]"><span className="font-medium">Startup scripts (free)</span><span className="block text-[#5b6785]">Add scripts to run on initial Droplet boot.</span></p>
-      </Section>
-
-      <Section title="Finalize Details">
-        <label className="grid max-w-sm gap-1.5 text-[13px] font-medium">Quantity
-          <input value="1" readOnly className="h-9 rounded-md border border-[#d5deea] bg-[#f7f9fc] px-2 font-normal" />
-        </label>
-        <label className="grid max-w-sm gap-1.5 text-[13px] font-medium" htmlFor="do-name">Give your Droplet a name
-          <Input id="do-name" value={name} onChange={(event) => setName(event.target.value)} className="h-9 rounded-md font-normal" />
-        </label>
-        <label className="grid max-w-sm gap-1.5 text-[13px] font-medium">Tags
-          <input placeholder="Add a tag" readOnly className="h-9 rounded-md border border-[#d5deea] bg-white px-2 font-normal" />
-        </label>
-        <p className="text-[13px] text-[#031b4e]">Select a project <span className="font-semibold">first-project</span></p>
-      </Section>
-
-      {error ? <p role="alert" className="mt-4 text-[13px] text-[#d92d20]">{error}</p> : null}
-
-      <div className="fixed right-0 bottom-0 left-0 z-20 flex flex-col gap-3 border-t border-[#e1e7f0] bg-white px-6 py-3 sm:flex-row sm:items-center sm:justify-end md:left-[240px]">
-        <div className="sm:mr-2 sm:text-right">
-          <p className="text-[18px] font-semibold text-[#031b4e]">${monthly.toFixed(2)}/mo</p>
-          <p className="text-[12px] text-[#5b6785]">${size ? size.hourlyUsd.toFixed(4) : "0.0000"}/hour</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <button type="button" className="text-[13px] text-[#0069ff]" onClick={() => setCli((open) => !open)}>Create via command line</button>
-          <button type="submit" className={BLUE}>Create Droplet</button>
-        </div>
-      </div>
-      {cli ? (
-        <pre className="mt-4 overflow-auto rounded-md bg-[#031b4e] p-3 text-[12px] text-white">{`# cURL
-curl -X POST -H "Authorization: Bearer $DIGITALOCEAN_TOKEN" \\
-  -d '{"name":"${name}","region":"${region}","size":"${sizeId}","image":"${imageId}"}' \\
-  https://api.digitalocean.com/v2/droplets
-
-# doctl
-doctl compute droplet create ${name} --image ${imageId} --size ${sizeId} --region ${region}`}</pre>
-      ) : null}
-    </form>
-  )
+  return <button type="button" disabled={disabled} onClick={onClick} className="block w-full px-3 py-1.5 text-left text-[13px] hover:bg-white/5 disabled:text-[#b0b8c6]">{children}</button>
 }
 
 function Keys() {
@@ -636,14 +252,14 @@ function Keys() {
   const [error, setError] = useState<string | null>(null)
   return (
     <div className="p-6">
-      <h1 className="text-[24px] font-semibold text-[#031b4e]">Settings</h1>
-      <div className="mt-4 flex gap-4 border-b border-[#e1e7f0] text-[13px]">
-        <span className="border-b-2 border-[#0069ff] pb-2 font-semibold text-[#0069ff]">Security</span>
-        <span className="pb-2 text-[#5b6785]">Team</span>
-        <span className="pb-2 text-[#5b6785]">Profile</span>
+      <h1 className="text-[24px] font-semibold text-[#e8eeef]">Settings</h1>
+      <div className="mt-4 flex gap-4 border-b border-[#2c3438] text-[13px]">
+        <span className="border-b-2 border-[#7ebac2] pb-2 font-semibold text-[#7ebac2]">Security</span>
+        <span className="pb-2 text-[#8b969c]">Team</span>
+        <span className="pb-2 text-[#8b969c]">Profile</span>
       </div>
       <h2 className="mt-4 text-[16px] font-semibold">SSH keys</h2>
-      <p className="mt-1 max-w-xl text-[13px] text-[#5b6785]">Add an SSH public key to connect to Droplets as root.</p>
+      <p className="mt-1 max-w-xl text-[13px] text-[#8b969c]">Add an SSH public key to connect to Droplets as root.</p>
       <form className="mt-4 flex flex-wrap items-end gap-3" onSubmit={(event) => {
         event.preventDefault()
         const outcome = dispatch({ type: "do/key", name })
@@ -656,16 +272,16 @@ function Keys() {
         <button type="submit" className={BLUE}>Add SSH Key</button>
       </form>
       {error ? <p role="alert" className="mt-2 text-[13px] text-[#d92d20]">{error}</p> : null}
-      <div className="mt-4 overflow-hidden rounded-md border border-[#e1e7f0] bg-white">
-        {keys.length === 0 ? <p className="px-4 py-8 text-[13px] text-[#5b6785]">No SSH keys.</p> : (
+      <div className="mt-4 overflow-hidden rounded-md border border-[#2c3438] bg-[#171c1e]">
+        {keys.length === 0 ? <p className="px-4 py-8 text-[13px] text-[#8b969c]">No SSH keys.</p> : (
           <table className="w-full text-left text-[13px]">
-            <thead className="text-[#5b6785]"><tr><th className="px-4 py-2 font-medium">Name</th><th className="px-4 py-2 font-medium">Fingerprint</th><th /></tr></thead>
+            <thead className="text-[#8b969c]"><tr><th className="px-4 py-2 font-medium">Name</th><th className="px-4 py-2 font-medium">Fingerprint</th><th /></tr></thead>
             <tbody>
               {keys.map((key) => (
-                <tr key={key.name} className="border-t border-[#eef2f7]">
+                <tr key={key.name} className="border-t border-[#2c3438]">
                   <td className="px-4 py-3 font-medium">{key.name}</td>
                   <td className="px-4 py-3 font-mono text-[12px]">{key.fingerprint}</td>
-                  <td className="px-4 py-3 text-right"><button type="button" className="text-[#0069ff]" onClick={() => downloadPem(key.name)}>Download</button></td>
+                  <td className="px-4 py-3 text-right"><button type="button" className="text-[#7ebac2]" onClick={() => downloadPem(key.name)}>Download</button></td>
                 </tr>
               ))}
             </tbody>
@@ -683,9 +299,9 @@ function Spaces() {
   return (
     <div className="p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-[24px] font-semibold text-[#031b4e]">Spaces</h1>
+        <h1 className="text-[24px] font-semibold text-[#e8eeef]">Spaces</h1>
       </div>
-      <p className="mt-1 text-[13px] text-[#5b6785]">Object storage for files and static assets.</p>
+      <p className="mt-1 text-[13px] text-[#8b969c]">Object storage for files and static assets.</p>
       <form className="mt-4 flex flex-wrap items-end gap-3" onSubmit={(event) => {
         event.preventDefault()
         const outcome = dispatch({ type: "do/space", name })
@@ -698,11 +314,11 @@ function Spaces() {
         <button type="submit" className={BLUE}>Create a Space</button>
       </form>
       {error ? <p role="alert" className="mt-2 text-[13px] text-[#d92d20]">{error}</p> : null}
-      <div className="mt-4 rounded-md border border-[#e1e7f0] bg-white">
-        {ocean.spaces.length === 0 ? <p className="px-4 py-10 text-center text-[13px] text-[#5b6785]">You don’t have any Spaces.</p> : (
+      <div className="mt-4 rounded-md border border-[#2c3438] bg-[#171c1e]">
+        {ocean.spaces.length === 0 ? <p className="px-4 py-10 text-center text-[13px] text-[#8b969c]">You don’t have any Spaces.</p> : (
           <ul>
             {ocean.spaces.map((space) => (
-              <li key={space.name} className="flex items-center justify-between border-b border-[#eef2f7] px-4 py-3 last:border-0">
+              <li key={space.name} className="flex items-center justify-between border-b border-[#2c3438] px-4 py-3 last:border-0">
                 <span className="font-medium">{space.name}</span>
                 <button type="button" className="text-[13px] text-[#d92d20]" onClick={() => tell(dispatch({ type: "do/delete-space", name: space.name }))}>Delete</button>
               </li>
@@ -714,32 +330,3 @@ function Spaces() {
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="mt-8 grid gap-3">
-      <h2 className="text-[18px] font-semibold text-[#031b4e]">{title}</h2>
-      {children}
-    </section>
-  )
-}
-
-const DISTROS: { name: string; glyph: string; color: string; ids: string[] }[] = [
-  { name: "Ubuntu", glyph: "ubuntu", color: "text-[#e95420]", ids: ["ubuntu-26-04-x64", "ubuntu-24-04-x64", "ubuntu-22-04-x64"] },
-  { name: "Debian", glyph: "debian", color: "text-[#a80030]", ids: ["debian-13-x64"] },
-  { name: "Fedora", glyph: "fedora", color: "text-[#51a2da]", ids: ["fedora-44-x64", "fedora-43-x64"] },
-  { name: "CentOS", glyph: "centos", color: "text-[#932279]", ids: ["centos-stream-10-x64", "centos-stream-9-x64"] },
-  { name: "AlmaLinux", glyph: "almalinux", color: "text-[#ff4649]", ids: ["almalinux-10-x64", "almalinux-9-x64", "almalinux-8-x64"] },
-  { name: "Rocky Linux", glyph: "rockylinux", color: "text-[#10b981]", ids: ["rockylinux-10-x64", "rockylinux-9-x64", "rockylinux-8-x64"] },
-]
-
-function regionCity(id: string) {
-  const map: Record<string, string> = {
-    blr1: "Bangalore",
-    sgp1: "Singapore",
-    fra1: "Frankfurt",
-    lon1: "London",
-    nyc1: "New York",
-    sfo3: "San Francisco",
-  }
-  return map[id] ?? id
-}

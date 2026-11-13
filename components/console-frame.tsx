@@ -46,7 +46,7 @@ export function ConsoleFrame({
   }
 
   return (
-    <div className={cn("flex h-dvh flex-col overflow-hidden", theme === "aws" && "console-aws bg-[#f2f3f3] text-[#16191f]", theme === "azure" && "console-azure bg-[#faf9f8] text-[#323130]", theme === "do" && "console-do bg-[#f4f7fb] text-[#031b4e]")}>
+    <div className={cn("flex h-dvh flex-col overflow-hidden", theme === "aws" && "console-aws bg-[#f2f3f3] text-[#16191f]", theme === "azure" && "console-azure bg-[#faf9f8] text-[#323130]", theme === "do" && "console-do bg-[#121618] text-[#e8eeef]")}>
       {theme === "aws" ? (
         <AwsChrome account={account} region={region} nav={nav} active={active} open={open} setOpen={setOpen} services={services} setServices={setServices} go={go} onSignOut={onSignOut} alert={alert}>
           {children}
@@ -424,74 +424,86 @@ function DoChrome({
   alert?: string | null
   children: React.ReactNode
 }) {
-  const dropletActive = active === "droplets" || active === "create"
   const [createOpen, setCreateOpen] = useState(false)
+  const [sections, setSections] = useState({ projects: true, cloud: true, account: false })
+  const dropletActive = active === "droplets" || active === "create"
+  function toggle(key: "projects" | "cloud" | "account") {
+    setSections((current) => ({ ...current, [key]: !current[key] }))
+  }
   return (
-    <div className="flex min-h-0 flex-1">
-      <aside className={cn("z-30 w-[248px] shrink-0 overflow-auto bg-[#031b4e] text-white md:static md:flex md:flex-col", open ? "absolute inset-y-0 left-0 flex flex-col" : "hidden md:flex")}>
-        <div className="flex items-center gap-2 px-4 py-4">
-          <DoLogo />
+    <div className="flex min-h-0 flex-1 bg-[#121618] text-[#e8eeef]">
+      <aside className={cn("z-30 w-[228px] shrink-0 overflow-auto border-r border-[#23282c] bg-[#121618] md:static md:block", open ? "absolute inset-y-0 left-0 block" : "hidden md:block")}>
+        <div className="flex items-center px-4 py-3">
+          <DoMark className="size-7" />
         </div>
-        <nav aria-label="Control panel" className="px-2 pb-6 text-[13px]">
-          <p className="px-2 pb-1 text-[11px] font-semibold tracking-[0.08em] text-[#8ea0c8]">PROJECTS</p>
-          <DoItem label="first-project" icon="folder" active={active === "home"} onClick={() => go("home")} />
-          <p className="mt-4 px-2 pb-1 text-[11px] font-semibold tracking-[0.08em] text-[#8ea0c8]">CORE CLOUD</p>
-          <DoItem label="Droplets" icon="drop" active={dropletActive} onClick={() => go("droplets")} />
-          <DoItem label="GPU Droplets" icon="drop" />
-          <DoItem label="Kubernetes" icon="k8s" />
-          <DoItem label="App Platform" icon="app" />
-          <DoItem label="Functions" icon="code" />
-          <DoItem label="Databases" icon="db" />
-          <DoItem label="Spaces" icon="box" active={active === "spaces"} onClick={() => go("spaces")} />
-          <DoItem label="Volumes Block Storage" icon="box" />
-          <DoItem label="Container Registry" icon="box" />
-          <DoItem label="Networking" icon="net" />
-          <DoItem label="Backups" icon="box" />
-          <DoItem label="Marketplace" icon="bag" />
-          <p className="mt-4 px-2 pb-1 text-[11px] font-semibold tracking-[0.08em] text-[#8ea0c8]">ACCOUNT</p>
-          <DoItem label="Billing" icon="card" active={active === "billing"} onClick={() => go("billing")} />
-          <DoItem label="Settings" icon="gear" active={active === "keys"} onClick={() => go("keys")} />
-          <DoItem label="API" icon="code" />
-          <DoItem label="Support" icon="help" />
+        <nav aria-label="Control panel" className="px-2 pb-8 text-[13px]">
+          <DoNav label="Home" active={active === "home"} onClick={() => go("home")} />
+          <DoNav label="Launchpad" onClick={() => go("project")} />
+          <DoGroup label="PROJECTS" open={sections.projects} onToggle={() => toggle("projects")}>
+            <DoNav label="New Project" nested onClick={() => go("new-project")} />
+            <DoNav label="first-project" nested active={active === "project"} onClick={() => go("project")} />
+          </DoGroup>
+          <DoGroup label="FAVORITES" open>
+            <p className="px-3 py-1 text-[12px] text-[#8b969c]">Star your favorite</p>
+          </DoGroup>
+          <DoGroup label="MANAGED AGENTS" />
+          <DoGroup label="INFERENCE ENGINE" />
+          <DoGroup label="DATA & LEARNING" />
+          <DoGroup label="CORE CLOUD" open={sections.cloud} onToggle={() => toggle("cloud")}>
+            <DoNav label="Droplets" nested active={dropletActive} onClick={() => go("droplets")} />
+            <DoNav label="GPU Droplets" nested />
+            <DoNav label="MicroVMs" nested badge="NEW" />
+            <DoNav label="Kubernetes" nested />
+            <DoNav label="App Platform" nested />
+            <DoNav label="Functions" nested />
+            <DoNav label="Networking" nested />
+            <DoNav label="Volumes Block Storage" nested />
+            <DoNav label="Backups & Snapshots" nested />
+            <DoNav label="Container Registry" nested />
+            <DoNav label="Spaces Object Storage" nested active={active === "spaces"} onClick={() => go("spaces")} />
+            <DoNav label="Network File Storage" nested />
+          </DoGroup>
+          <DoNav label="MARKETPLACE" />
+          <DoNav label="Security" badge="NEW" />
+          <DoGroup label="ACCOUNT" open={sections.account} onToggle={() => toggle("account")}>
+            <DoNav label="Billing" nested active={active === "billing"} onClick={() => go("billing")} />
+            <DoNav label="Settings" nested active={active === "keys"} onClick={() => go("keys")} />
+            <DoNav label="API" nested />
+            <DoNav label="Support" nested />
+          </DoGroup>
         </nav>
       </aside>
-      <div className="flex min-w-0 flex-1 flex-col bg-[#f4f7fb]">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[#e5eaf2] bg-white px-3">
-          <button type="button" className="grid size-8 place-items-center rounded-sm text-[#031b4e] md:hidden" aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open} onClick={() => setOpen((value) => !value)}>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[#23282c] bg-[#121618] px-3">
+          <button type="button" className="grid size-8 place-items-center rounded-md md:hidden" aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open} onClick={() => setOpen((value) => !value)}>
             {open ? <X className="size-4" /> : <Menu className="size-4" />}
           </button>
-          <span className="text-[14px] font-semibold text-[#031b4e] md:hidden">DigitalOcean</span>
-          <p className="hidden text-[13px] text-[#031b4e] sm:block">Signup Credit: <span className="font-semibold">$5.00</span></p>
           <label className="relative hidden min-w-0 flex-1 md:block">
-            <span className="sr-only">Search</span>
-            <Search className="pointer-events-none absolute top-2 left-3 size-4 text-[#7b879c]" />
-            <input readOnly placeholder="Search for resources" className="h-9 w-full max-w-lg rounded-md border border-[#d5deea] bg-[#f7f9fc] pr-14 pl-9 text-[13px] outline-none placeholder:text-[#7b879c]" />
-            <kbd className="pointer-events-none absolute top-2 right-2 rounded border border-[#d5deea] px-1 text-[10px] text-[#7b879c]">Ctrl+K</kbd>
+            <span className="sr-only">Search resources, pages, or public IP</span>
+            <Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-[#8b969c]" />
+            <input readOnly placeholder="Search resources, pages, or public IP (Ctrl+K)" className="h-9 w-full max-w-xl rounded-full border border-[#3a4248] bg-[#121618] pr-3 pl-9 text-[13px] outline-none placeholder:text-[#8b969c]" />
           </label>
-          <div className="relative ml-auto">
-            <button type="button" aria-expanded={createOpen} onClick={() => setCreateOpen((value) => !value)} className="inline-flex h-8 items-center gap-1 rounded-md bg-[#00853f] px-3 text-[13px] font-medium text-white hover:bg-[#006b32]">
+          <div className="relative ml-auto flex items-center gap-2">
+            <button type="button" aria-expanded={createOpen} onClick={() => setCreateOpen((value) => !value)} className="inline-flex h-8 items-center gap-1 rounded-full bg-[#7ebac2] px-3 text-[13px] font-semibold text-[#102226]">
               Create <ChevronDown className="size-3.5" />
             </button>
             {createOpen ? (
-              <div className="absolute top-10 right-0 z-50 w-64 rounded-md border border-[#e1e7f0] bg-white py-2 text-[13px] text-[#031b4e] shadow-xl">
-                <p className="px-3 py-1 text-[11px] font-semibold tracking-wide text-[#5b6785]">AI</p>
-                <CreateRow>GPU Droplets</CreateRow>
-                <p className="mt-1 px-3 py-1 text-[11px] font-semibold tracking-wide text-[#5b6785]">CORE CLOUD</p>
-                <CreateRow onClick={() => { setCreateOpen(false); go("create") }}>Droplet</CreateRow>
-                <CreateRow>Kubernetes</CreateRow>
-                <CreateRow>App Platform</CreateRow>
-                <CreateRow>Functions</CreateRow>
-                <CreateRow>Databases</CreateRow>
-                <CreateRow>Load Balancers</CreateRow>
-                <CreateRow>Spaces</CreateRow>
-                <CreateRow>Volumes</CreateRow>
-                <CreateRow>Container Registry</CreateRow>
+              <div className="absolute top-10 left-0 z-50 w-56 rounded-lg border border-[#2c3438] bg-[#1b2124] py-2 text-[13px] shadow-xl">
+                <p className="px-3 py-1 text-[11px] font-semibold tracking-wide text-[#8b969c]">CORE CLOUD</p>
+                <CreateRow dark onClick={() => { setCreateOpen(false); go("create") }}>Droplet</CreateRow>
+                <CreateRow dark onClick={() => { setCreateOpen(false); go("new-project") }}>Project</CreateRow>
+                <CreateRow dark onClick={() => { setCreateOpen(false); go("spaces") }}>Spaces</CreateRow>
+                <CreateRow dark>Kubernetes</CreateRow>
+                <CreateRow dark>App Platform</CreateRow>
               </div>
             ) : null}
+            <span className="hidden size-8 place-items-center rounded-full border border-[#3a4248] text-[#c5cdd0] sm:grid" aria-hidden><BellIcon /></span>
+            <span className="hidden items-center rounded-full border border-[#3a4248] px-2.5 py-1 text-[12px] text-[#c5cdd0] lg:inline-flex">Signup Credit: <span className="ml-1 font-semibold text-[#e8eeef]">$5.00</span></span>
+            <AccountMenu theme="do" account={account} go={go} onSignOut={onSignOut} />
+            <span className="hidden h-8 items-center rounded-full border border-[#7ebac2] px-3 text-[13px] text-[#7ebac2] xl:inline-flex">AI Assistant</span>
           </div>
-          <AccountMenu theme="do" account={account} go={go} onSignOut={onSignOut} />
         </header>
-        {alert ? <p role="alert" className="border-l-4 border-[#d92d20] bg-[#fff4f2] px-4 py-2 text-[14px]">{alert}</p> : null}
+        {alert ? <p role="alert" className="border-l-4 border-[#f0a8a4] bg-[#3a2224] px-4 py-2 text-[14px] text-[#f7d4d1]">{alert}</p> : null}
         <FlashBar theme="do" />
         <main id="main" className="min-h-0 flex-1 overflow-auto">{children}</main>
       </div>
@@ -514,15 +526,16 @@ function AccountMenu({
   const initials = account.toLowerCase().startsWith("033") || account.includes("talal") ? "TM" : letter
   return (
     <details className="relative">
-      <summary className={cn("flex cursor-pointer list-none items-center gap-2 rounded-sm px-2 py-1 [&::-webkit-details-marker]:hidden", theme === "do" ? "hover:bg-black/5" : "hover:bg-white/10")} aria-label="Account">
+      <summary className={cn("flex cursor-pointer list-none items-center gap-2 rounded-full px-1.5 py-1 [&::-webkit-details-marker]:hidden", theme === "do" ? "hover:bg-white/5" : "hover:bg-white/10")} aria-label="Account">
         {theme === "azure" ? (
           <span className="hidden text-right leading-tight sm:block">
             <span className="block max-w-[180px] truncate text-[12px]">{account}</span>
             <span className="block text-[10px] tracking-wide">DEFAULT DIRECTORY</span>
           </span>
         ) : null}
-        <span className={cn("grid size-7 place-items-center rounded-full text-[11px] font-semibold", theme === "aws" && "bg-[#ff9900] text-[#232f3e]", theme === "azure" && "bg-white/25 text-white", theme === "do" && "bg-[#0069ff] text-white")}>{theme === "aws" ? letter : initials}</span>
+        <span className={cn("grid size-7 place-items-center rounded-full text-[11px] font-semibold", theme === "aws" && "bg-[#ff9900] text-[#232f3e]", theme === "azure" && "bg-white/25 text-white", theme === "do" && "bg-gradient-to-br from-[#d946ef] to-[#818cf8] text-white")}>{theme === "aws" ? letter : initials}</span>
         {theme === "aws" ? <span className="hidden max-w-[120px] truncate text-[13px] sm:inline">Talal</span> : null}
+        {theme === "do" ? <span className="hidden text-[13px] sm:inline">My Team</span> : null}
         {theme !== "azure" ? <ChevronDown className="size-3 opacity-80" /> : null}
       </summary>
       {theme === "aws" ? (
@@ -557,29 +570,49 @@ function AccountMenu({
         </div>
       ) : null}
       {theme === "do" ? (
-        <div className="absolute top-10 right-0 z-50 w-[260px] rounded-md border border-[#e1e7f0] bg-white py-2 text-[13px] text-[#031b4e] shadow-xl">
+        <div className="absolute top-10 right-0 z-50 w-[260px] rounded-lg border border-[#2c3438] bg-[#1b2124] py-2 text-[13px] text-[#e8eeef] shadow-xl">
           <div className="px-3 py-2">
-            <p className="font-semibold">Talal Majid</p>
-            <p className="truncate text-[12px] text-[#5b6785]">{account}</p>
+            <p className="font-semibold">My Team</p>
+            <p className="truncate text-[12px] text-[#8b969c]">{account}</p>
           </div>
-          <MenuRow onClick={() => go("keys")}>Settings</MenuRow>
-          <MenuRow onClick={() => go("billing")}>Billing</MenuRow>
-          <MenuRow>API</MenuRow>
-          {onSignOut ? <MenuRow onClick={onSignOut}>Sign out</MenuRow> : null}
+          <MenuRow dark onClick={() => go("keys")}>Settings</MenuRow>
+          <MenuRow dark onClick={() => go("billing")}>Billing</MenuRow>
+          {onSignOut ? <MenuRow dark onClick={onSignOut}>Sign out</MenuRow> : null}
         </div>
       ) : null}
     </details>
   )
 }
 
-function CreateRow({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
-  return <button type="button" onClick={onClick} className="block w-full px-3 py-1.5 text-left hover:bg-[#f4f7fb]">{children}</button>
+function CreateRow({ children, onClick, dark = false }: { children: React.ReactNode; onClick?: () => void; dark?: boolean }) {
+  return <button type="button" onClick={onClick} className={cn("block w-full px-3 py-1.5 text-left", dark ? "hover:bg-white/5" : "hover:bg-[#f4f7fb]")}>{children}</button>
 }
 
-function MenuRow({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
+function MenuRow({ children, onClick, dark = false }: { children: React.ReactNode; onClick?: () => void; dark?: boolean }) {
   return (
-    <button type="button" onClick={onClick} className="block w-full px-4 py-1.5 text-left hover:bg-[#f2f3f3]">
+    <button type="button" onClick={onClick} className={cn("block w-full px-4 py-1.5 text-left", dark ? "hover:bg-white/5" : "hover:bg-[#f2f3f3]")}>
       {children}
+    </button>
+  )
+}
+
+function DoGroup({ label, open = false, onToggle, children }: { label: string; open?: boolean; onToggle?: () => void; children?: React.ReactNode }) {
+  return (
+    <div className="mt-2">
+      <button type="button" onClick={onToggle} className="flex w-full items-center justify-between px-2 py-1 text-[11px] font-semibold tracking-[0.08em] text-[#8b969c]">
+        {label}
+        <ChevronDown className={cn("size-3 transition", open && "rotate-180")} />
+      </button>
+      {open ? children : null}
+    </div>
+  )
+}
+
+function DoNav({ label, active, nested, badge, onClick }: { label: string; active?: boolean; nested?: boolean; badge?: string; onClick?: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className={cn("flex w-full items-center gap-2 rounded-md py-1.5 text-left text-[13px] text-[#d5dcde] hover:bg-white/5", nested ? "pr-2 pl-3" : "px-2", active && "bg-[#243033] font-medium text-white")}>
+      <span className="truncate">{label}</span>
+      {badge ? <span className="rounded bg-[#1d4ed8] px-1 text-[9px] font-semibold text-white">{badge}</span> : null}
     </button>
   )
 }
@@ -612,35 +645,6 @@ function HeaderIcon({ label, children, dark = true, onClick }: { label: string; 
   )
 }
 
-function DoItem({ label, active, onClick }: { label: string; icon: string; active?: boolean; onClick?: () => void }) {
-  return (
-    <button type="button" onClick={onClick} className={cn("flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-white/90 hover:bg-white/10", active && "bg-white/15 font-semibold text-white")}>
-      <DoGlyph name={label} />
-      <span className="truncate">{label}</span>
-    </button>
-  )
-}
-
-function DoGlyph({ name }: { name: string }) {
-  const common = "size-4 shrink-0"
-  const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 1.4, strokeLinecap: "round" as const, strokeLinejoin: "round" as const }
-  if (name === "Home") return <svg viewBox="0 0 16 16" className={common} {...stroke}><path d="M2.5 7.2 8 2.8l5.5 4.4V13a1 1 0 0 1-1 1h-3.2V9.2H6.7V14H3.5a1 1 0 0 1-1-1V7.2Z" /></svg>
-  if (name === "Projects" || name === "first-project") return <svg viewBox="0 0 16 16" className={common} {...stroke}><path d="M2 4.5h4l1.2 1.5H14V12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4.5Z" /></svg>
-  if (name === "Droplets" || name === "GPU Droplets") return <svg viewBox="0 0 16 16" className={common} fill="currentColor"><path d="M8 1.6c2.6 3.2 4.2 5.3 4.2 7.6A4.2 4.2 0 1 1 3.8 9.2C3.8 6.9 5.4 4.8 8 1.6Z" /></svg>
-  if (name === "Kubernetes") return <svg viewBox="0 0 16 16" className={common} {...stroke}><circle cx="8" cy="8" r="2" /><path d="M8 2.5v2.2M8 11.3v2.2M2.5 8h2.2M11.3 8h2.2M4.1 4.1l1.6 1.6M10.3 10.3l1.6 1.6M11.9 4.1 10.3 5.7M5.7 10.3 4.1 11.9" /></svg>
-  if (name === "App Platform") return <svg viewBox="0 0 16 16" className={common} {...stroke}><rect x="2.5" y="3" width="11" height="8" rx="1" /><path d="M6 13.5h4" /></svg>
-  if (name === "Databases") return <svg viewBox="0 0 16 16" className={common} {...stroke}><ellipse cx="8" cy="4" rx="4.5" ry="1.8" /><path d="M3.5 4v8c0 1 2 1.8 4.5 1.8s4.5-.8 4.5-1.8V4" /></svg>
-  if (name === "Spaces" || name === "Spaces Object Storage" || name === "Container Registry") return <svg viewBox="0 0 16 16" className={common} {...stroke}><path d="M3 5.5 8 3l5 2.5v6L8 14l-5-2.5v-6Z" /><path d="M3 5.5 8 8l5-2.5M8 8v6" /></svg>
-  if (name === "Volumes" || name === "Volumes Block Storage" || name === "Backups") return <svg viewBox="0 0 16 16" className={common} {...stroke}><rect x="2.5" y="4" width="11" height="8" rx="1.2" /><path d="M5 4V3M8 4V3M11 4V3" /></svg>
-  if (name === "Networking") return <svg viewBox="0 0 16 16" className={common} {...stroke}><circle cx="4" cy="8" r="1.6" /><circle cx="12" cy="4.5" r="1.6" /><circle cx="12" cy="11.5" r="1.6" /><path d="M5.5 7.4 10.4 5.2M5.5 8.6l4.9 2.2" /></svg>
-  if (name === "Billing") return <svg viewBox="0 0 16 16" className={common} {...stroke}><rect x="2" y="3.5" width="12" height="9" rx="1.2" /><path d="M2 6.5h12" /></svg>
-  if (name === "Settings") return <svg viewBox="0 0 16 16" className={common} {...stroke}><circle cx="8" cy="8" r="2" /><path d="M8 2.4v1.6M8 12v1.6M2.4 8h1.6M12 8h1.6M4 4l1.1 1.1M10.9 10.9 12 12M12 4l-1.1 1.1M5.1 10.9 4 12" /></svg>
-  if (name === "API" || name === "Functions") return <svg viewBox="0 0 16 16" className={common} {...stroke}><path d="M6 5 3 8l3 3M10 5l3 3-3 3" /></svg>
-  if (name === "Monitoring") return <svg viewBox="0 0 16 16" className={common} {...stroke}><path d="M2.5 12.5 6 8l2.2 2.2L13.5 4" /></svg>
-  if (name === "Support") return <svg viewBox="0 0 16 16" className={common} {...stroke}><circle cx="8" cy="8" r="5.2" /><path d="M8 7.2V11M8 5.2h.01" /></svg>
-  return <svg viewBox="0 0 16 16" className={common} {...stroke}><path d="M3 5h10v7H3zM6 5V3.8h4V5" /></svg>
-}
-
 function AwsLogo() {
   return <AwsWordmark className="h-7 w-12" />
 }
@@ -665,7 +669,7 @@ function FlashBar({ theme }: { theme: "aws" | "azure" | "do" }) {
   const box = theme === "azure"
     ? success ? "border-[#107c10] bg-[#dff6dd] text-[#0e700e]" : "border-[#a4262c] bg-[#fde7e9] text-[#a4262c]"
     : theme === "do"
-      ? success ? "border-[#0e8a16] bg-[#eefbf1] text-[#031b4e]" : "border-[#d92d20] bg-[#fff4f2] text-[#d92d20]"
+      ? success ? "border-[#7ebac2] bg-[#173033] text-[#e8eeef]" : "border-[#f0a8a4] bg-[#3a2224] text-[#f7d4d1]"
       : success ? "border-[#1d8102] bg-[#f2fcf3] text-[#16191f]" : "border-[#d13212] bg-[#fdf3f1] text-[#16191f]"
   return (
     <div role="status" className={cn("flex shrink-0 items-center gap-2 border-l-8 px-3 py-2 text-[14px]", box)}>
@@ -728,15 +732,6 @@ function MicrosoftMark() {
       <rect y="12" width="9" height="9" fill="#00a4ef" />
       <rect x="12" y="12" width="9" height="9" fill="#ffb900" />
     </svg>
-  )
-}
-
-function DoLogo() {
-  return (
-    <span className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
-      <DoMark className="size-6" color="#0080ff" />
-      DigitalOcean
-    </span>
   )
 }
 
