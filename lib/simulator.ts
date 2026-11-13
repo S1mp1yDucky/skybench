@@ -282,9 +282,9 @@ export function reduce(state: LabState, action: Action): ReduceResult {
       return ok(
         patchDo(state, { accountCreated: true, email, creditApplied: true }),
         "do",
-        `Account created for ${email}.`,
+        `Account created for ${email}. $5 signup credit applied.`,
         now,
-        "Account created. Sign in to the control panel."
+        "Account created. $5 signup credit applied. Sign in to the control panel."
       )
     }
     case "do/signin":

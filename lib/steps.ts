@@ -121,7 +121,7 @@ export function doSteps(state: LabState): LabStep[] {
     {
       n: 2,
       title: "Create an account",
-      detail: "Verify email, then apply lab credit instead of a card or PayPal.",
+      detail: "Verify email, then apply the $5 signup credit instead of a card or PayPal.",
       done: ocean.accountCreated,
     },
     {

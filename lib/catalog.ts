@@ -285,11 +285,11 @@ export const STUDIES: Record<StudyPack["id"], StudyPack> = {
     dependencies: [
       "doctl, signed in with doctl auth init. The token is discarded.",
       "An SSH key from ssh-keygen, added before the Droplet is created.",
-      "A billing profile. This lab applies a simulated promo credit instead of a card.",
+      "A billing profile. This lab applies a simulated $5 signup credit instead of a card.",
     ],
     pricing: [
       "Hourly billing with a monthly cap. Basic Droplets start near a few dollars a month.",
-      "New accounts often receive promo credit. Check digitalocean.com/pricing for the current offer.",
+      "New accounts receive $5 of signup credit in this lab. Check digitalocean.com/pricing for the current offer.",
       "A Droplet is billed while it is powered off. Destroy it when the practical is over.",
     ],
   },

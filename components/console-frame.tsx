@@ -461,7 +461,7 @@ function DoChrome({
             {open ? <X className="size-4" /> : <Menu className="size-4" />}
           </button>
           <span className="text-[14px] font-semibold text-[#031b4e] md:hidden">DigitalOcean</span>
-          <p className="hidden text-[13px] text-[#031b4e] sm:block">Signup Credit: <span className="font-semibold">$200.00</span></p>
+          <p className="hidden text-[13px] text-[#031b4e] sm:block">Signup Credit: <span className="font-semibold">$5.00</span></p>
           <label className="relative hidden min-w-0 flex-1 md:block">
             <span className="sr-only">Search</span>
             <Search className="pointer-events-none absolute top-2 left-3 size-4 text-[#7b879c]" />

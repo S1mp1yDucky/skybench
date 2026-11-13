@@ -86,7 +86,7 @@ export function ReportView() {
             DigitalOcean, founded in 2011, aims at developers, students, and small teams. It is mostly infrastructure, with a few platform services. Virtual servers are Droplets. The short catalog is Spaces, Volumes, managed PostgreSQL, MySQL and Redis, Kubernetes, App Platform, firewalls, load balancers, and a VPC.
           </p>
           <p>
-            A real account needs email verification and a card or PayPal. Promo credit is common for new accounts. The shell accepts ssh-keygen, sudo snap install doctl, and doctl auth init. The Droplet is Ubuntu in a basic size, and the login is root. The important billing fact, and the one the lab meter copies, is that a powered-off Droplet still costs money until it is destroyed.
+            A real account needs email verification and a card or PayPal. This lab applies a $5 signup credit instead. The shell accepts ssh-keygen, sudo snap install doctl, and doctl auth init. The Droplet is Ubuntu in a basic size, and the login is root. The important billing fact, and the one the lab meter copies, is that a powered-off Droplet still costs money until it is destroyed.
           </p>
         </Section>
 
