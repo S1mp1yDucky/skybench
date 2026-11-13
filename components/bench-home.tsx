@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 import { toast } from "sonner"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -101,7 +101,7 @@ export function BenchHome() {
                     </li>
                   ))}
                 </ol>
-                <Link href={bay.href} className={buttonVariants({ className: "mt-auto h-10" })}>
+                <Link href={bay.href} className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-lg bg-[#221c16]! text-sm font-medium text-[#f7f1e6]! hover:bg-[#3a3128]!">
                   {bay.open}
                 </Link>
               </article>
