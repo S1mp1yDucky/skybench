@@ -225,10 +225,18 @@ function ServicesFlyout({ onClose, go, nav }: { onClose: () => void; go: (id: st
   )
 }
 
+function MenuIcon({ label, children, onDark = true }: { label: string; children: React.ReactNode; onDark?: boolean }) {
+  return (
+    <summary aria-label={label} style={{ width: "2rem", height: "2rem" }} className={cn("icon-hit relative size-8 cursor-pointer list-none rounded-sm [&::-webkit-details-marker]:hidden", onDark ? "hover:bg-white/10" : "hover:bg-[#f3f2f1]")}>
+      <span className="pointer-events-none absolute inset-0 grid place-items-center">{children}</span>
+    </summary>
+  )
+}
+
 function PortalMenu({ label, items, children, onDark = false }: { label: string; items: string[]; children: React.ReactNode; onDark?: boolean }) {
   return (
     <details className="relative">
-      <summary aria-label={label} className={cn("grid size-8 cursor-pointer list-none place-items-center rounded-sm [&::-webkit-details-marker]:hidden", onDark ? "text-white hover:bg-white/15" : "hover:bg-[#f3f2f1]")}>{children}</summary>
+      <MenuIcon label={label} onDark={onDark}>{children}</MenuIcon>
       <div className="absolute top-9 right-0 z-50 w-64 border border-[#edebe9] bg-white py-1 text-[13px] text-[#323130] shadow-xl">
         {items.map((item) => <p key={item} className="px-3 py-1.5 hover:bg-[#f3f2f1]">{item}</p>)}
       </div>
@@ -240,7 +248,7 @@ function SettingsMenu() {
   const items = ["Account", "Console settings", "Billing and Cost Management", "Security credentials"]
   return (
     <details className="relative">
-      <summary aria-label="Settings" className="grid size-8 cursor-pointer list-none place-items-center rounded-sm hover:bg-white/10 [&::-webkit-details-marker]:hidden"><CogIcon /></summary>
+      <MenuIcon label="Settings"><CogIcon /></MenuIcon>
       <div className="absolute top-9 right-0 z-50 w-64 border border-[#d5dbdb] bg-white py-1 text-[13px] text-[#16191f] shadow-2xl">
         {items.map((item) => <p key={item} className="px-3 py-1.5 hover:bg-[#f2f8fd]">{item}</p>)}
       </div>
@@ -252,7 +260,7 @@ function SupportMenu() {
   const items = ["Support Center", "re:Post", "Documentation", "Training", "Resource Center", "Feedback"]
   return (
     <details className="relative">
-      <summary aria-label="Support" className="grid size-8 cursor-pointer list-none place-items-center rounded-sm hover:bg-white/10 [&::-webkit-details-marker]:hidden"><CircleHelp className="size-4" /></summary>
+      <MenuIcon label="Support"><CircleHelp className="size-4" /></MenuIcon>
       <div className="absolute top-9 right-0 z-50 w-52 border border-[#d5dbdb] bg-white py-1 text-[13px] text-[#16191f] shadow-2xl">
         {items.map((item) => <p key={item} className="px-3 py-1.5 hover:bg-[#f2f8fd]">{item}</p>)}
       </div>
@@ -722,7 +730,7 @@ function AzureShellIcon() {
 function CogIcon() {
   return (
     <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
-      <path fill="currentColor" d="M9.2 1.5 9.7 3.2c.3.1.6.3.9.4l1.6-.6 1.2 2-1.3 1.1c.1.3.1.6 0 .9l1.3 1.1-1.2 2-1.6-.6c-.3.2-.6.3-.9.4l-.5 1.7H6.8l-.5-1.7c-.3-.1-.6-.2-.9-.4l-1.6.6-1.2-2 1.3-1.1a3 3 0 0 1 0-.9L2.6 5l1.2-2 1.6.6c.3-.2.6-.3.9-.4L6.8 1.5h2.4ZM8 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
+      <path fill="currentColor" fillRule="evenodd" d="M6.20 3.66 6.80 1.82 9.20 1.82 9.80 3.66 11.52 2.78 13.22 4.48 12.34 6.20 14.18 6.80 14.18 9.20 12.34 9.80 13.22 11.52 11.52 13.22 9.80 12.34 9.20 14.18 6.80 14.18 6.20 12.34 4.48 13.22 2.78 11.52 3.66 9.80 1.82 9.20 1.82 6.80 3.66 6.20 2.78 4.48 4.48 2.78 6.20 3.66ZM10.05 8A2.05 2.05 0 1 0 5.95 8 2.05 2.05 0 1 0 10.05 8Z" />
     </svg>
   )
 }

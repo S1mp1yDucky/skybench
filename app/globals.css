@@ -199,3 +199,12 @@ summary > svg {
   display: block !important;
   flex: none;
 }
+/* Icon-only menu buttons. summary stays a list item in some browsers, which
+   pins the glyph to the top of the hit target. */
+summary.icon-hit {
+  display: inline-block !important;
+  width: 2rem !important;
+  height: 2rem !important;
+  padding: 0 !important;
+  vertical-align: middle;
+}
