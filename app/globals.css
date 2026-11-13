@@ -178,4 +178,24 @@
 .console-do select:not(.sr-only) {
   width: fit-content;
   max-width: 100%;
+  padding-right: 1.75rem;
+}
+
+/* Cloudscape's reset sets summary { display: list-item } outside a layer,
+   which beats Tailwind and pins the marker on the left or drops the caret. */
+summary {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center;
+  list-style: none !important;
+}
+summary::marker,
+summary::-webkit-details-marker {
+  display: none !important;
+  content: none !important;
+}
+summary > svg {
+  display: block !important;
+  flex: none;
 }
