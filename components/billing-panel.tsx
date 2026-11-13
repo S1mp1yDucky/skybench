@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { toast } from "sonner"
+import { flash } from "@/lib/flash"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -56,7 +56,7 @@ export function BillingPanel({
           if (outcome.error) setError(outcome.error)
           else {
             setError(null)
-            toast.success(outcome.message ?? "Alert updated.")
+            flash(outcome.message ?? "Alert updated.")
           }
         }}
       >

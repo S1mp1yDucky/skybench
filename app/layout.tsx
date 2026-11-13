@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Fraunces, IBM_Plex_Mono, Inter, Outfit } from "next/font/google"
+import { Fraunces, IBM_Plex_Mono, Inter, Outfit, Plus_Jakarta_Sans, Roboto } from "next/font/google"
 import { Providers } from "@/components/providers"
 import { SimBanner } from "@/components/sim-banner"
 import "./globals.css"
@@ -17,6 +17,18 @@ const fraunces = Fraunces({
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-console",
+})
+
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-roboto",
+})
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-jakarta",
 })
 
 const plex = IBM_Plex_Mono({
@@ -38,7 +50,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${outfit.variable} ${fraunces.variable} ${plex.variable} ${inter.variable} h-full antialiased`}
+      className={`${outfit.variable} ${fraunces.variable} ${plex.variable} ${inter.variable} ${roboto.variable} ${jakarta.variable} h-full antialiased`}
     >
       <body className="flex min-h-dvh flex-col">
         <Providers>

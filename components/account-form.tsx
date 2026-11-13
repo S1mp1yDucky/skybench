@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { AwsWordmark, DoMark } from "@/components/brand-marks"
 import { Input } from "@/components/ui/input"
 
 export function AccountForm({
@@ -460,13 +461,9 @@ function useTitle(title: string) {
 function AwsShell({ title, children }: { title: string; children: React.ReactNode }) {
   useTitle(title)
   return (
-    <div className="min-h-dvh bg-[#f2f3f3] font-[family-name:var(--font-console)] text-[#16191f]">
+    <div className="console-aws min-h-dvh bg-[#f2f3f3] text-[#16191f]">
       <header className="flex h-12 items-center bg-[#232f3e] px-5 text-white">
-        <svg viewBox="0 0 86 42" className="h-8 w-[72px]" aria-label="Amazon Web Services">
-          <text x="6" y="26" fill="#ffffff" fontFamily="Arial, Helvetica, sans-serif" fontSize="26" fontWeight="700">aws</text>
-          <path d="M24 31c12 8 30 8 42 0" fill="none" stroke="#ff9900" strokeWidth="3" strokeLinecap="round" />
-          <path d="M62 28.2 69 33.4l-7.4 1.1z" fill="#ff9900" />
-        </svg>
+        <AwsWordmark className="h-8 w-14" />
       </header>
       <main className="mx-auto w-full max-w-[460px] px-4 py-10">
         <div className="bg-white px-8 py-8 shadow-sm">{children}</div>
@@ -478,7 +475,7 @@ function AwsShell({ title, children }: { title: string; children: React.ReactNod
 function MicrosoftShell({ title, children }: { title: string; children: React.ReactNode }) {
   useTitle(title)
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-[#f2f2f2] px-4 font-[family-name:var(--font-console)] text-[#323130]">
+    <div className="console-azure flex min-h-dvh items-center justify-center bg-[#f2f2f2] px-4 text-[#323130]">
       <main className="w-full max-w-[440px] bg-white px-11 py-10 shadow-sm">
         <svg viewBox="0 0 21 21" className="size-6" aria-label="Microsoft">
           <rect width="9" height="9" fill="#f25022" />
@@ -495,13 +492,10 @@ function MicrosoftShell({ title, children }: { title: string; children: React.Re
 function DoShell({ title, children }: { title: string; children: React.ReactNode }) {
   useTitle(title)
   return (
-    <div className="flex min-h-dvh flex-col bg-white font-[family-name:var(--font-console)] text-[#031b4e]">
+    <div className="console-do flex min-h-dvh flex-col bg-white text-[#031b4e]">
       <header className="flex h-16 items-center px-6">
         <span className="flex items-center gap-2 text-[18px] font-semibold">
-          <svg viewBox="0 0 28 28" className="size-7" aria-hidden>
-            <circle cx="14" cy="14" r="14" fill="#0069ff" />
-            <path d="M8.2 16.4c1.6-5.2 3.8-8 5.8-8s4.2 2.8 5.8 8c-1.6 1.8-3.6 2.7-5.8 2.7s-4.2-.9-5.8-2.7Z" fill="white" />
-          </svg>
+          <DoMark className="size-7" />
           DigitalOcean
         </span>
       </header>

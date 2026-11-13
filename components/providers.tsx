@@ -11,7 +11,7 @@ function Promoter() {
 
   useEffect(() => {
     if (!pending) return
-    const timer = window.setTimeout(() => dispatch({ type: "promote" }), 1400)
+    const timer = window.setTimeout(() => dispatch({ type: "promote" }), 2400)
     return () => window.clearTimeout(timer)
   }, [pending])
 

@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { ChevronDown, CircleHelp, Globe, Menu, Search, X } from "lucide-react"
+import { AwsWordmark, DoMark } from "@/components/brand-marks"
 import { cn } from "@/lib/utils"
 
 export interface ConsoleNavItem {
@@ -45,7 +46,7 @@ export function ConsoleFrame({
   }
 
   return (
-    <div className={cn("flex h-dvh flex-col overflow-hidden font-[family-name:var(--font-console)] text-[13px]", theme === "aws" && "bg-[#f2f3f3] text-[#16191f]", theme === "azure" && "bg-[#faf9f8] text-[#323130]", theme === "do" && "bg-[#f4f7fb] text-[#031b4e]")}>
+    <div className={cn("flex h-dvh flex-col overflow-hidden", theme === "aws" && "console-aws bg-[#f2f3f3] text-[#16191f]", theme === "azure" && "console-azure bg-[#faf9f8] text-[#323130]", theme === "do" && "console-do bg-[#f4f7fb] text-[#031b4e]")}>
       {theme === "aws" ? (
         <AwsChrome account={account} region={region} nav={nav} active={active} open={open} setOpen={setOpen} services={services} setServices={setServices} go={go} onSignOut={onSignOut} alert={alert}>
           {children}
@@ -120,7 +121,8 @@ function AwsChrome({
         </div>
       </header>
       {services ? <ServicesFlyout onClose={() => setServices(false)} go={go} nav={nav} /> : null}
-      {alert ? <p role="alert" className="shrink-0 border-l-4 border-[#d13212] bg-[#fdf3f1] px-4 py-2 text-[13px]">{alert}</p> : null}
+      {alert ? <p role="alert" className="shrink-0 border-l-4 border-[#d13212] bg-[#fdf3f1] px-4 py-2 text-[14px]">{alert}</p> : null}
+      <FlashBar theme="aws" />
       <div className="flex min-h-0 flex-1">
         <aside className={cn("z-30 w-[250px] shrink-0 overflow-auto border-r border-[#e6e6e6] bg-white py-2 md:static md:block", open ? "absolute top-12 bottom-0 left-0 block shadow-xl" : "hidden md:block")}>
           <AwsServiceNav active={current} go={go} />
@@ -280,7 +282,8 @@ function AzureChrome({
           <AccountMenu theme="azure" account={account} go={go} onSignOut={onSignOut} />
         </div>
       </header>
-      {alert ? <p role="alert" className="shrink-0 border-l-4 border-[#a4262c] bg-[#fdf6f6] px-4 py-2 text-[13px]">{alert}</p> : null}
+      {alert ? <p role="alert" className="shrink-0 border-l-4 border-[#a4262c] bg-[#fdf6f6] px-4 py-2 text-[14px]">{alert}</p> : null}
+      <FlashBar theme="azure" />
       <div className="flex min-h-0 flex-1">
         <aside className={cn("z-30 w-[260px] shrink-0 overflow-auto border-r border-[#edebe9] bg-white py-2 md:static md:block", open ? "absolute top-12 bottom-0 left-0 block shadow-xl" : "hidden md:block")}>
           <AzureMenu active={active} go={go} />
@@ -411,7 +414,8 @@ function DoChrome({
           </div>
           <AccountMenu theme="do" account={account} go={go} onSignOut={onSignOut} />
         </header>
-        {alert ? <p role="alert" className="border-l-4 border-[#d92d20] bg-[#fff4f2] px-4 py-2 text-[13px]">{alert}</p> : null}
+        {alert ? <p role="alert" className="border-l-4 border-[#d92d20] bg-[#fff4f2] px-4 py-2 text-[14px]">{alert}</p> : null}
+        <FlashBar theme="do" />
         <main id="main" className="min-h-0 flex-1 overflow-auto">{children}</main>
       </div>
     </div>
@@ -555,14 +559,36 @@ function DoGlyph({ name }: { name: string }) {
 }
 
 function AwsLogo() {
+  return <AwsWordmark className="h-7 w-12" />
+}
+
+function FlashBar({ theme }: { theme: "aws" | "azure" | "do" }) {
+  const [item, setItem] = useState<{ message: string; tone: "success" | "error" } | null>(null)
+  useEffect(() => {
+    const onFlash = (event: Event) => {
+      const detail = (event as CustomEvent<{ message: string; tone: "success" | "error" }>).detail
+      if (detail?.message) setItem(detail)
+    }
+    window.addEventListener("skybench-flash", onFlash)
+    return () => window.removeEventListener("skybench-flash", onFlash)
+  }, [])
+  useEffect(() => {
+    if (!item) return
+    const timer = window.setTimeout(() => setItem(null), 6000)
+    return () => window.clearTimeout(timer)
+  }, [item])
+  if (!item) return null
+  const success = item.tone === "success"
+  const box = theme === "azure"
+    ? success ? "border-[#107c10] bg-[#dff6dd] text-[#0e700e]" : "border-[#a4262c] bg-[#fde7e9] text-[#a4262c]"
+    : theme === "do"
+      ? success ? "border-[#0e8a16] bg-[#eefbf1] text-[#031b4e]" : "border-[#d92d20] bg-[#fff4f2] text-[#d92d20]"
+      : success ? "border-[#1d8102] bg-[#f2fcf3] text-[#16191f]" : "border-[#d13212] bg-[#fdf3f1] text-[#16191f]"
   return (
-    <span className="px-1" aria-label="Amazon Web Services">
-      <svg viewBox="0 0 86 40" className="h-8 w-[78px]" aria-hidden>
-        <text x="6" y="22" fill="#ffffff" fontFamily="Arial, Helvetica, sans-serif" fontSize="22" fontWeight="700">aws</text>
-        <path d="M20 27c12 7 32 7 46 0" fill="none" stroke="#ff9900" strokeWidth="2.4" strokeLinecap="round" />
-        <path d="M62 24.6 70 29.4l-8.2.8z" fill="#ff9900" />
-      </svg>
-    </span>
+    <div role="status" className={cn("flex shrink-0 items-center gap-2 border-l-8 px-3 py-2 text-[14px]", box)}>
+      <span className="min-w-0 flex-1">{item.message}</span>
+      <button type="button" aria-label="Dismiss" onClick={() => setItem(null)} className="px-1">×</button>
+    </div>
   )
 }
 
@@ -636,10 +662,7 @@ function MicrosoftMark() {
 function DoLogo() {
   return (
     <span className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
-      <svg viewBox="0 0 24 24" className="size-6" aria-hidden>
-        <circle cx="12" cy="12" r="12" fill="#0080ff" />
-        <path fill="#fff" d="M12.5 6.2c2.2 0 3.9 1.2 4.7 3.2-1.5-.7-2.8-.4-3.7.5-.5.5-1 1.2-1.4 2 .8-.1 1.6.1 2.3.7 1.6 1.3 1.4 3.3-.2 4.5-1.3 1-3.1 1.2-4.7.4-2.4-1.2-3.2-3.8-2.2-6.4.8-2.1 2.6-4.9 5.2-4.9Z" />
-      </svg>
+      <DoMark className="size-6" color="#0080ff" />
       DigitalOcean
     </span>
   )

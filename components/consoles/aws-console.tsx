@@ -1,7 +1,8 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { toast } from "sonner"
+import { ConsoleSelect } from "@/components/console-select"
+import { flash } from "@/lib/flash"
 import { AccountForm, SignInCard } from "@/components/account-form"
 import { BrandGlyph } from "@/components/brand-marks"
 import { BillingPanel } from "@/components/billing-panel"
@@ -27,8 +28,8 @@ import { dispatch, useLabState } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import type { KeyMaterial, Vm } from "@/lib/types"
 
-const ORANGE = "inline-flex h-8 items-center justify-center rounded-sm bg-[#ec7211] px-3 text-[14px] font-bold text-white hover:bg-[#eb5f07] disabled:cursor-not-allowed disabled:opacity-50"
-const GHOST = "inline-flex h-8 items-center justify-center rounded-sm border border-[#8d9aa8] bg-white px-3 text-[14px] text-[#16191f] hover:bg-[#fafafa] disabled:cursor-not-allowed disabled:opacity-40"
+const ORANGE = "inline-flex h-8 items-center justify-center rounded-[2px] bg-[#ec7211] px-5 text-[14px] font-bold text-white hover:bg-[#eb5f07] disabled:cursor-not-allowed disabled:opacity-50"
+const GHOST = "inline-flex h-8 items-center justify-center rounded-[2px] border border-[#8d9aa8] bg-white px-3 text-[14px] text-[#16191f] hover:bg-[#fafafa] disabled:cursor-not-allowed disabled:opacity-40"
 
 export function AwsConsole() {
   const lab = useLabState()
@@ -72,7 +73,7 @@ export function AwsConsole() {
           options={AWS_REGIONS}
           onChange={(region) => {
             const outcome = dispatch({ type: "aws/region", region })
-            if (outcome.error) toast.error(outcome.error)
+            if (outcome.error) flash(outcome.error, "error")
           }}
         />
       }
@@ -140,7 +141,7 @@ export function AwsConsole() {
       ) : null}
       <ConnectDialog platform="aws" vm={connectVm} open={connectVm != null} onOpenChange={(open) => !open && setConnectId(null)} />
       <Dialog open={killVm != null} onOpenChange={(open) => !open && setKillId(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-[2px] border border-[#d5dbdb] bg-white text-[#16191f] shadow-xl sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Terminate instance {killVm?.id}?</DialogTitle>
             <DialogDescription>
@@ -176,8 +177,8 @@ function MenuAction({ children, disabled, onClick }: { children: React.ReactNode
 }
 
 function tell(outcome: { error?: string; message?: string }) {
-  if (outcome.error) toast.error(outcome.error)
-  else if (outcome.message) toast.success(outcome.message)
+  if (outcome.error) flash(outcome.error, "error")
+  else if (outcome.message) flash(outcome.message)
 }
 
 function regionName(region: string) {
@@ -422,7 +423,7 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
         const outcome = dispatch({ type: "aws/launch", name, imageId, sizeId, keyName, allowHttp: http })
         if (outcome.error) setError(outcome.error)
         else {
-          toast.success(outcome.message ?? "Launching.")
+          flash(outcome.message ?? "Successfully initiated launch of instance.")
           onDone()
         }
       }}
@@ -491,12 +492,8 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
             </div>
           </Card>
           <Card title="Instance type">
-            <Field id="aws-size" label="Instance type">
-              <select id="aws-size" value={sizeId} onChange={(event) => setSizeId(event.target.value)} className="h-8 w-full max-w-md rounded-sm border border-[#aab7b8] bg-white px-2">
-                {AWS_SIZES.map((item) => (
-                  <option key={item.id} value={item.id}>{item.id}</option>
-                ))}
-              </select>
+            <Field id="aws-size-label" label="Instance type">
+              <ConsoleSelect id="aws-size" label="Instance type" theme="aws" value={sizeId} onChange={setSizeId} options={AWS_SIZES.map((item) => ({ value: item.id, label: item.id }))} />
             </Field>
             {size ? (
               <div className="overflow-x-auto border border-[#eaeded]">
@@ -521,12 +518,7 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
           <Card title="Key pair (login)">
             <p className="text-[13px] leading-5 text-[#545b64]">Amazon EC2 uses public-key cryptography to encrypt and decrypt login information. You must specify a key pair when you launch the instance, and then provide the private key when you connect to it.</p>
             <Field id="aws-key-label" label="Key pair name">
-              <select id="aws-key" value={keyName} onChange={(event) => setKeyName(event.target.value)} className="h-8 w-full max-w-md rounded-sm border border-[#aab7b8] bg-white px-2">
-                <option value="">Select a key pair</option>
-                {aws.keyPairs.map((key) => (
-                  <option key={key.name} value={key.name}>{key.name}</option>
-                ))}
-              </select>
+              <ConsoleSelect id="aws-key" label="Key pair name" theme="aws" value={keyName} onChange={setKeyName} options={[{ value: "", label: "Select a key pair" }, ...aws.keyPairs.map((key) => ({ value: key.name, label: key.name }))]} />
             </Field>
             <div className="flex flex-wrap items-center gap-2">
               <Input aria-label="New key pair name" value={newKey} onChange={(event) => setNewKey(event.target.value)} className="h-8 max-w-52 rounded-sm" />
@@ -539,7 +531,7 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
                   else {
                     setKeyName(newKey.trim())
                     setError(null)
-                    toast.success(outcome.message ?? "Key created.")
+                    flash(outcome.message ?? "Successfully created key pair.")
                   }
                 }}
               >
@@ -651,7 +643,7 @@ function Buckets({ region, buckets }: { region: string; buckets: { name: string;
           if (outcome.error) setError(outcome.error)
           else {
             setError(null)
-            toast.success(outcome.message ?? "Bucket created.")
+            flash(outcome.message ?? "Successfully created bucket.")
           }
         }}
       >

@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { toast } from "sonner"
+import { ConsoleSelect } from "@/components/console-select"
+import { flash } from "@/lib/flash"
 import { AccountForm, SignInCard } from "@/components/account-form"
 import { BillingPanel } from "@/components/billing-panel"
 import { ConsoleFrame } from "@/components/console-frame"
@@ -26,8 +27,8 @@ import { dispatch, useLabState } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import type { Vm } from "@/lib/types"
 
-const PRIMARY = "inline-flex h-8 items-center justify-center rounded-sm bg-[#0078d4] px-4 text-[13px] font-semibold text-white hover:bg-[#106ebe] disabled:opacity-50"
-const COMMAND = "inline-flex h-8 items-center gap-1.5 px-2 text-[13px] text-[#323130] hover:bg-[#f3f2f1] disabled:opacity-40"
+const PRIMARY = "inline-flex h-8 items-center justify-center rounded-[2px] bg-[#0078d4] px-4 text-[14px] font-semibold text-white hover:bg-[#106ebe] disabled:opacity-50"
+const COMMAND = "inline-flex h-8 items-center gap-1.5 px-2 text-[14px] text-[#323130] hover:bg-[#f3f2f1] disabled:opacity-40"
 
 export function AzureConsole() {
   const lab = useLabState()
@@ -122,7 +123,7 @@ export function AzureConsole() {
       ) : null}
       <ConnectDialog platform="azure" vm={connectVm} open={connectVm != null} onOpenChange={(open) => !open && setConnectId(null)} />
       <Dialog open={groupToDelete != null} onOpenChange={(open) => !open && setGroupToDelete(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-[2px] border border-[#edebe9] bg-white text-[#323130] shadow-xl sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Delete {groupToDelete}?</DialogTitle>
             <DialogDescription>Deleting a resource group is irreversible. All resources in the group will be deleted.</DialogDescription>
@@ -138,8 +139,8 @@ export function AzureConsole() {
 }
 
 function tell(outcome: { error?: string; message?: string }) {
-  if (outcome.error) toast.error(outcome.error)
-  else if (outcome.message) toast.success(outcome.message)
+  if (outcome.error) flash(outcome.error, "error")
+  else if (outcome.message) flash(outcome.message)
 }
 
 const SERVICES = [
@@ -339,7 +340,7 @@ function CreateVm({ onDone }: { onDone: () => void }) {
     else {
       setError(null)
       setMakingGroup(false)
-      toast.success(outcome.message ?? "Resource group created.")
+      flash(outcome.message ?? "Resource group created.")
     }
   }
 
@@ -347,7 +348,7 @@ function CreateVm({ onDone }: { onDone: () => void }) {
     const outcome = dispatch({ type: "azure/launch", name, group, imageId, sizeId, keyName, username })
     if (outcome.error) setError(outcome.error)
     else {
-      toast.success(outcome.message ?? "Creating the VM.")
+      flash(outcome.message ?? "Creating the virtual machine.")
       onDone()
     }
   }
@@ -371,18 +372,14 @@ function CreateVm({ onDone }: { onDone: () => void }) {
             <BladeField label="Resource group" required>
               {azure.resourceGroups.length > 0 && !makingGroup ? (
                 <div className="flex flex-wrap items-center gap-3">
-                  <select id="az-existing-group" value={group} onChange={(event) => setGroup(event.target.value)} className="h-8 min-w-64 rounded-sm border border-[#8a8886] bg-white px-2">
-                    {azure.resourceGroups.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}
-                  </select>
+                  <ConsoleSelect id="az-existing-group" label="Resource group" theme="azure" value={group} onChange={setGroup} options={azure.resourceGroups.map((item) => ({ value: item.name, label: item.name }))} className="min-w-64" />
                   <button type="button" className="text-[13px] text-[#0078d4] hover:underline" onClick={() => setMakingGroup(true)}>Create new</button>
                 </div>
               ) : (
                 <div className="grid gap-2 rounded-sm border border-[#edebe9] bg-white p-3">
                   <p className="text-[13px] font-semibold">Create new resource group</p>
                   <Input id="az-group" value={group} onChange={(event) => setGroup(event.target.value)} className="h-8 max-w-sm rounded-sm" />
-                  <select id="az-location" value={location} onChange={(event) => setLocation(event.target.value)} className="h-8 max-w-sm rounded-sm border border-[#8a8886] bg-white px-2">
-                    {AZURE_LOCATIONS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-                  </select>
+                  <ConsoleSelect id="az-location" label="Region" theme="azure" value={location} onChange={setLocation} options={AZURE_LOCATIONS.map((item) => ({ value: item.id, label: item.label }))} />
                   <div className="flex gap-2">
                     <button type="button" className={PRIMARY} onClick={createGroup}>OK</button>
                     {azure.resourceGroups.length > 0 ? <button type="button" className="h-8 px-3 text-[13px]" onClick={() => setMakingGroup(false)}>Cancel</button> : null}
@@ -393,20 +390,13 @@ function CreateVm({ onDone }: { onDone: () => void }) {
             <h2 className="border-t border-[#edebe9] pt-3 text-[16px] font-semibold">Instance details</h2>
             <BladeField label="Virtual machine name" required><Input id="az-vm-name" value={name} onChange={(event) => setName(event.target.value)} className="h-8 max-w-md rounded-[2px]" /></BladeField>
             <BladeField label="Region" required>
-              <select value={location} onChange={(event) => setLocation(event.target.value)} className="h-8 max-w-sm rounded-sm border border-[#8a8886] bg-white px-2">
-                {AZURE_LOCATIONS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-              </select>
+              <ConsoleSelect label="Region" theme="azure" value={location} onChange={setLocation} options={AZURE_LOCATIONS.map((item) => ({ value: item.id, label: item.label }))} />
             </BladeField>
             <BladeField label="Availability options"><FakeSelect value="No infrastructure redundancy required" /></BladeField>
             <BladeField label="Security type"><FakeSelect value="Standard" /></BladeField>
             <BladeField label="Image" required>
               <div className="max-w-lg">
-                <div className="relative">
-                  <select id="az-image" value={imageId} onChange={(event) => setImageId(event.target.value)} className="h-8 w-full appearance-none rounded-[2px] border border-[#8a8886] bg-white pr-8 pl-2 text-[13px] outline-none focus:border-[#0078d4]">
-                    {AZURE_IMAGES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-                  </select>
-                  <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] text-[#605e5c]" aria-hidden>▼</span>
-                </div>
+                <ConsoleSelect id="az-image" label="Image" theme="azure" value={imageId} onChange={setImageId} options={AZURE_IMAGES.map((item) => ({ value: item.id, label: item.label }))} className="max-w-none" />
                 <button type="button" className="mt-1 text-left text-[13px] text-[#0078d4] hover:underline" onClick={() => setImagesOpen((open) => !open)}>See all images</button>
                 {imagesOpen ? (
                   <ul className="mt-2 border border-[#edebe9] bg-white">
@@ -421,12 +411,7 @@ function CreateVm({ onDone }: { onDone: () => void }) {
             </BladeField>
             <BladeField label="Size" required>
               <div className="max-w-lg">
-                <div className="relative">
-                  <select id="az-size" value={sizeId} onChange={(event) => setSizeId(event.target.value)} className="h-8 w-full appearance-none rounded-[2px] border border-[#8a8886] bg-white pr-8 pl-2 text-[13px] outline-none focus:border-[#0078d4]">
-                    {AZURE_SIZES.map((item) => <option key={item.id} value={item.id}>{item.id} - {item.vcpu} vcpu, {item.ram} memory</option>)}
-                  </select>
-                  <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] text-[#605e5c]" aria-hidden>▼</span>
-                </div>
+                <ConsoleSelect id="az-size" label="Size" theme="azure" value={sizeId} onChange={setSizeId} options={AZURE_SIZES.map((item) => ({ value: item.id, label: `${item.id} - ${item.vcpu} vcpu, ${item.ram} memory` }))} className="max-w-none" />
                 <button type="button" className="mt-1 text-left text-[13px] text-[#0078d4] hover:underline" onClick={() => setSizesOpen((open) => !open)}>See all sizes</button>
                 {sizesOpen ? (
                   <ul className="mt-2 border border-[#edebe9] bg-white">
@@ -456,7 +441,7 @@ function CreateVm({ onDone }: { onDone: () => void }) {
                     <button type="button" className="h-8 rounded-sm border border-[#8a8886] bg-white px-3 text-[13px]" onClick={() => {
                       const outcome = dispatch({ type: "azure/key", name: keyName })
                       if (outcome.error) setError(outcome.error)
-                      else { setError(null); toast.success(outcome.message ?? "Key created.") }
+                      else { setError(null); flash(outcome.message ?? "SSH key created.") }
                     }}>Create SSH key</button>
                     {azure.keyPairs.some((key) => key.name === keyName) ? <button type="button" className="h-8 px-2 text-[13px] text-[#0078d4]" onClick={() => downloadPem(keyName)}>Download</button> : null}
                   </div>
@@ -470,11 +455,7 @@ function CreateVm({ onDone }: { onDone: () => void }) {
                   <label className="flex items-center gap-2 text-[13px]"><input type="radio" checked readOnly /> Allow selected ports</label>
                 </BladeField>
                 <BladeField label="Select inbound ports">
-                  <select value={ports} onChange={(event) => setPorts(event.target.value)} className="h-8 max-w-sm rounded-sm border border-[#8a8886] bg-white px-2">
-                    <option>SSH (22)</option>
-                    <option>HTTP (80), SSH (22)</option>
-                    <option>None</option>
-                  </select>
+                  <ConsoleSelect label="Select inbound ports" theme="azure" value={ports} onChange={setPorts} options={["SSH (22)", "HTTP (80), SSH (22)", "None"].map((item) => ({ value: item, label: item }))} />
                 </BladeField>
               </div>
             </div>
@@ -558,7 +539,7 @@ function Groups({ onDelete }: { onDelete: (name: string) => void }) {
             else {
               setError(null)
               setOpen(false)
-              toast.success(outcome.message ?? "Resource group created.")
+              flash(outcome.message ?? "Resource group created.")
             }
           }}
         >
@@ -566,9 +547,7 @@ function Groups({ onDelete }: { onDelete: (name: string) => void }) {
           <BladeField label="Subscription"><FakeSelect value="Azure subscription 1" /></BladeField>
           <BladeField label="Resource group"><Input id="group-name" value={name} onChange={(event) => setName(event.target.value)} className="h-8 rounded-sm" /></BladeField>
           <BladeField label="Region">
-            <select id="group-location" value={location} onChange={(event) => setLocation(event.target.value)} className="h-8 rounded-sm border border-[#8a8886] bg-white px-2">
-              {AZURE_LOCATIONS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-            </select>
+            <ConsoleSelect id="group-location" label="Region" theme="azure" value={location} onChange={setLocation} options={AZURE_LOCATIONS.map((item) => ({ value: item.id, label: item.label }))} />
           </BladeField>
           <button type="submit" className={cn(PRIMARY, "w-fit")}>Review + create</button>
         </form>

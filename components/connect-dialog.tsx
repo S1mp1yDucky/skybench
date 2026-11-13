@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { toast } from "sonner"
+import { flash } from "@/lib/flash"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -57,8 +57,8 @@ export function ConnectDialog({
               onClick={() => {
                 const command = sshCommand(platform, vm)
                 navigator.clipboard?.writeText(command).then(
-                  () => toast.success("Command copied."),
-                  () => toast.error("Could not copy.")
+                  () => flash("Command copied."),
+                  () => flash("Could not copy.", "error")
                 )
               }}
             >

@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { toast } from "sonner"
+import { ConsoleSelect } from "@/components/console-select"
+import { flash } from "@/lib/flash"
 import { AccountForm, SignInCard } from "@/components/account-form"
 import { BrandGlyph } from "@/components/brand-marks"
 import { BillingPanel } from "@/components/billing-panel"
@@ -27,7 +28,7 @@ import { dispatch, useLabState } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import type { Vm } from "@/lib/types"
 
-const BLUE = "inline-flex h-9 items-center justify-center rounded-md bg-[#0069ff] px-4 text-[14px] font-medium text-white hover:bg-[#0058d6] disabled:opacity-50"
+const BLUE = "inline-flex h-8 items-center justify-center rounded-[3px] bg-[#0069ff] px-4 text-[14px] font-semibold text-white hover:bg-[#0058d6] disabled:opacity-50"
 
 const DISKS: Record<string, string> = {
   "s-1vcpu-512mb-10gb": "10 GB",
@@ -121,7 +122,7 @@ export function DoConsole() {
       ) : null}
       <ConnectDialog platform="do" vm={connectVm} open={connectVm != null} onOpenChange={(open) => !open && setConnectId(null)} />
       <Dialog open={destroyVm != null} onOpenChange={(open) => !open && setDestroyId(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-[4px] border border-[#e1e7f0] bg-white text-[#031b4e] shadow-xl sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Destroy {destroyVm?.name}?</DialogTitle>
             <DialogDescription>Destroy is the only action that stops DigitalOcean billing. Power off leaves the Droplet on the invoice.</DialogDescription>
@@ -137,8 +138,8 @@ export function DoConsole() {
 }
 
 function tell(outcome: { error?: string; message?: string }) {
-  if (outcome.error) toast.error(outcome.error)
-  else if (outcome.message) toast.success(outcome.message)
+  if (outcome.error) flash(outcome.error, "error")
+  else if (outcome.message) flash(outcome.message)
 }
 
 function DoWelcome({
@@ -249,6 +250,7 @@ function DropletList({
                         <span className="text-[#031b4e]">{vm.name}</span>
                       </p>
                       <p className="mt-1 text-[12px] text-[#5b6785]">{vm.imageLabel} · {vm.sizeLabel} · {regionCity(vm.region)}</p>
+                      {vm.state === "pending" ? <div className="mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-[#e5eaf2]"><div className="h-full w-2/3 animate-pulse bg-[#0069ff]" /></div> : null}
                       {vm.state === "stopped" ? <p className="mt-1 text-[12px] text-[#b54708]">Powered off. This Droplet is still billed until you destroy it.</p> : null}
                     </td>
                     <td className="px-4 py-3 font-mono">{vm.publicIp ?? "Assigning…"}</td>
@@ -300,7 +302,7 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
         const outcome = dispatch({ type: "do/launch", name, imageId, sizeId, keyName, region })
         if (outcome.error) setError(outcome.error)
         else {
-          toast.success(outcome.message ?? "Creating Droplet.")
+          flash(outcome.message ?? "Creating Droplet.")
           onDone()
         }
       }}
@@ -338,11 +340,7 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
         </div>
         <label className="grid max-w-sm gap-1 text-[13px] font-medium">
           Version
-          <select aria-label="Version" value={imageId} onChange={(event) => setImageId(event.target.value)} className="h-9 rounded-md border border-[#d5deea] bg-white px-2 font-normal">
-            {(DISTROS.find((distro) => distro.ids.includes(imageId)) ?? DISTROS[0]).ids.map((id) => (
-              <option key={id} value={id}>{DO_IMAGES.find((image) => image.id === id)?.label ?? id}</option>
-            ))}
-          </select>
+          <ConsoleSelect label="Version" theme="do" value={imageId} onChange={setImageId} options={(DISTROS.find((distro) => distro.ids.includes(imageId)) ?? DISTROS[0]).ids.map((id) => ({ value: id, label: DO_IMAGES.find((image) => image.id === id)?.label ?? id }))} />
         </label>
       </Section>
 
@@ -411,7 +409,7 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
           <button type="button" className="h-9 rounded-md border border-[#d5deea] bg-white px-3 text-[13px]" onClick={() => {
             const outcome = dispatch({ type: "do/key", name: keyName })
             if (outcome.error) setError(outcome.error)
-            else { setError(null); toast.success(outcome.message ?? "Key added.") }
+            else { setError(null); flash(outcome.message ?? "SSH key added.") }
           }}>Add an SSH Key</button>
         </div>
         {ocean.keys.length === 0 ? <p className="text-[13px] text-[#b54708]">Select an SSH Key to create this Droplet.</p> : (
@@ -480,7 +478,7 @@ function Keys() {
         event.preventDefault()
         const outcome = dispatch({ type: "do/key", name })
         if (outcome.error) setError(outcome.error)
-        else { setError(null); toast.success(outcome.message ?? "Key added.") }
+        else { setError(null); flash(outcome.message ?? "SSH key added.") }
       }}>
         <label className="grid gap-1 text-[13px]" htmlFor="key-name">Key name
           <Input id="key-name" value={name} onChange={(event) => setName(event.target.value)} className="h-9 w-56 rounded-md" />
@@ -522,7 +520,7 @@ function Spaces() {
         event.preventDefault()
         const outcome = dispatch({ type: "do/space", name })
         if (outcome.error) setError(outcome.error)
-        else { setError(null); toast.success(outcome.message ?? "Space created.") }
+        else { setError(null); flash(outcome.message ?? "Space created.") }
       }}>
         <label className="grid gap-1 text-[13px]" htmlFor="space-name">Space name
           <Input id="space-name" value={name} onChange={(event) => setName(event.target.value)} className="h-9 w-56 rounded-md" />
