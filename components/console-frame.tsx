@@ -348,10 +348,6 @@ function DoChrome({
           <button type="button" onClick={() => go("create")} className="ml-auto inline-flex h-8 items-center gap-1 rounded-md bg-[#0069ff] px-3 text-[13px] font-medium text-white hover:bg-[#0058d6]">
             Create <ChevronDown className="size-3.5" />
           </button>
-          <span className="hidden items-center gap-1.5 rounded-full bg-[#e8f8ef] px-2 py-1 text-[12px] font-medium text-[#067647] sm:inline-flex">
-            <span className="size-1.5 rounded-full bg-[#12b76a]" />
-            $5.00 credit
-          </span>
           <span className="hidden text-[13px] font-medium sm:inline">My Team</span>
           <AccountMenu theme="do" account={account} go={go} onSignOut={onSignOut} />
         </header>

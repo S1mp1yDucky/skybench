@@ -123,6 +123,9 @@ export interface ImageOption {
   label: string
   username: string
   os: string
+  amiTitle?: string
+  amiIds?: string
+  freeTier?: boolean
 }
 
 export interface SizeOption {

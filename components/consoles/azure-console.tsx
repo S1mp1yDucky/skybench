@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { AZURE_IMAGES, AZURE_LOCATIONS, AZURE_SIZES, STUDENT } from "@/lib/catalog"
-import { hourlyLabel, usd } from "@/lib/format"
+import { usd } from "@/lib/format"
 import { platformCost } from "@/lib/simulator"
 import { dispatch, useLabState } from "@/lib/store"
 import { cn } from "@/lib/utils"
@@ -319,6 +319,8 @@ function CreateVm({ onDone }: { onDone: () => void }) {
   const [username, setUsername] = useState("azureuser")
   const [keyName, setKeyName] = useState(azure.keyPairs[0]?.name ?? "")
   const [ports, setPorts] = useState("SSH (22)")
+  const [imagesOpen, setImagesOpen] = useState(false)
+  const [sizesOpen, setSizesOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const image = AZURE_IMAGES.find((item) => item.id === imageId)
 
@@ -355,8 +357,9 @@ function CreateVm({ onDone }: { onDone: () => void }) {
       <div className="grid flex-1 content-start gap-4 px-6 py-5">
         {tab === "Basics" ? (
           <div className="grid max-w-3xl gap-4">
-            <BladeField label="Subscription"><FakeSelect value="Azure subscription 1" /></BladeField>
-            <BladeField label="Resource group">
+            <h2 className="text-[16px] font-semibold">Project details</h2>
+            <BladeField label="Subscription" required><FakeSelect value="Azure subscription 1" /></BladeField>
+            <BladeField label="Resource group" required>
               {azure.resourceGroups.length > 0 && !makingGroup ? (
                 <div className="flex flex-wrap items-center gap-3">
                   <select id="az-existing-group" value={group} onChange={(event) => setGroup(event.target.value)} className="h-8 min-w-64 rounded-sm border border-[#8a8886] bg-white px-2">
@@ -378,23 +381,54 @@ function CreateVm({ onDone }: { onDone: () => void }) {
                 </div>
               )}
             </BladeField>
-            <BladeField label="Virtual machine name"><Input id="az-vm-name" value={name} onChange={(event) => setName(event.target.value)} className="h-8 max-w-sm rounded-sm" /></BladeField>
-            <BladeField label="Region">
+            <h2 className="border-t border-[#edebe9] pt-3 text-[16px] font-semibold">Instance details</h2>
+            <BladeField label="Virtual machine name" required><Input id="az-vm-name" value={name} onChange={(event) => setName(event.target.value)} className="h-8 max-w-md rounded-[2px]" /></BladeField>
+            <BladeField label="Region" required>
               <select value={location} onChange={(event) => setLocation(event.target.value)} className="h-8 max-w-sm rounded-sm border border-[#8a8886] bg-white px-2">
                 {AZURE_LOCATIONS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
               </select>
             </BladeField>
             <BladeField label="Availability options"><FakeSelect value="No infrastructure redundancy required" /></BladeField>
             <BladeField label="Security type"><FakeSelect value="Standard" /></BladeField>
-            <BladeField label="Image">
-              <select id="az-image" value={imageId} onChange={(event) => setImageId(event.target.value)} className="h-8 max-w-lg rounded-sm border border-[#8a8886] bg-white px-2">
-                {AZURE_IMAGES.map((item) => <option key={item.id} value={item.id}>{item.label} - x64 Gen2</option>)}
-              </select>
+            <BladeField label="Image" required>
+              <div className="max-w-lg">
+                <div className="relative">
+                  <select id="az-image" value={imageId} onChange={(event) => setImageId(event.target.value)} className="h-8 w-full appearance-none rounded-[2px] border border-[#8a8886] bg-white pr-8 pl-2 text-[13px] outline-none focus:border-[#0078d4]">
+                    {AZURE_IMAGES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                  </select>
+                  <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] text-[#605e5c]" aria-hidden>▼</span>
+                </div>
+                <button type="button" className="mt-1 text-left text-[13px] text-[#0078d4] hover:underline" onClick={() => setImagesOpen((open) => !open)}>See all images</button>
+                {imagesOpen ? (
+                  <ul className="mt-2 border border-[#edebe9] bg-white">
+                    {AZURE_IMAGES.map((item) => (
+                      <li key={item.id}>
+                        <button type="button" className="w-full px-3 py-2 text-left text-[13px] hover:bg-[#f3f2f1]" onClick={() => { setImageId(item.id); setImagesOpen(false) }}>{item.label}</button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
             </BladeField>
-            <BladeField label="Size">
-              <select id="az-size" value={sizeId} onChange={(event) => setSizeId(event.target.value)} className="h-8 max-w-lg rounded-sm border border-[#8a8886] bg-white px-2">
-                {AZURE_SIZES.map((item) => <option key={item.id} value={item.id}>{item.id} - {item.vcpu} vcpu, {item.ram} memory ({hourlyLabel(item.hourlyUsd)})</option>)}
-              </select>
+            <BladeField label="Size" required>
+              <div className="max-w-lg">
+                <div className="relative">
+                  <select id="az-size" value={sizeId} onChange={(event) => setSizeId(event.target.value)} className="h-8 w-full appearance-none rounded-[2px] border border-[#8a8886] bg-white pr-8 pl-2 text-[13px] outline-none focus:border-[#0078d4]">
+                    {AZURE_SIZES.map((item) => <option key={item.id} value={item.id}>{item.id} - {item.vcpu} vcpu, {item.ram} memory</option>)}
+                  </select>
+                  <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] text-[#605e5c]" aria-hidden>▼</span>
+                </div>
+                <button type="button" className="mt-1 text-left text-[13px] text-[#0078d4] hover:underline" onClick={() => setSizesOpen((open) => !open)}>See all sizes</button>
+                {sizesOpen ? (
+                  <ul className="mt-2 border border-[#edebe9] bg-white">
+                    {AZURE_SIZES.map((item) => (
+                      <li key={item.id}>
+                        <button type="button" className="w-full px-3 py-2 text-left text-[13px] hover:bg-[#f3f2f1]" onClick={() => { setSizeId(item.id); setSizesOpen(false) }}>{item.id} - {item.vcpu} vcpu, {item.ram} memory</button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
             </BladeField>
             <div className="border-t border-[#edebe9] pt-3">
               <h2 className="text-[16px] font-semibold">Administrator account</h2>
@@ -405,9 +439,9 @@ function CreateVm({ onDone }: { onDone: () => void }) {
                     <label className="flex items-center gap-2 text-[#a19f9d]"><input type="radio" disabled /> Password</label>
                   </div>
                 </BladeField>
-                <BladeField label="Username"><Input id="az-user" value={username} onChange={(event) => setUsername(event.target.value)} className="h-8 max-w-sm rounded-sm" /></BladeField>
+                <BladeField label="Username" required><Input id="az-user" value={username} onChange={(event) => setUsername(event.target.value)} className="h-8 max-w-md rounded-[2px]" /></BladeField>
                 <BladeField label="SSH public key source"><FakeSelect value="Generate new key pair" /></BladeField>
-                <BladeField label="Key pair name">
+                <BladeField label="Key pair name" required>
                   <div className="flex flex-wrap gap-2">
                     <Input aria-label="SSH key name" value={keyName} onChange={(event) => setKeyName(event.target.value)} className="h-8 max-w-sm rounded-sm" />
                     <button type="button" className="h-8 rounded-sm border border-[#8a8886] bg-white px-3 text-[13px]" onClick={() => {
@@ -445,7 +479,10 @@ function CreateVm({ onDone }: { onDone: () => void }) {
         {tab === "Tags" ? <StaticBlade title="Tags" rows={[]} /> : null}
         {tab === "Review + create" ? (
           <div className="max-w-3xl bg-white p-4">
-            <h2 className="text-[16px] font-semibold">Validation passed</h2>
+            <div className="flex items-center gap-2 bg-[#dff6dd] px-3 py-2 text-[13px] font-semibold text-[#0e700e]">
+              <span className="grid size-4 place-items-center rounded-full bg-[#107c10] text-[11px] text-white" aria-hidden>✓</span>
+              Validation passed
+            </div>
             <dl className="mt-4 grid gap-2 text-[13px] sm:grid-cols-2">
               {[
                 ["Subscription", "Azure subscription 1"],
@@ -551,12 +588,12 @@ function Groups({ onDelete }: { onDelete: (name: string) => void }) {
   )
 }
 
-function BladeField({ label, children }: { label: string; children: React.ReactNode }) {
+function BladeField({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <label className="grid gap-1 text-[13px]">
-      <span className="font-semibold">{label}</span>
-      {children}
-    </label>
+    <div className="grid items-start gap-1 text-[13px] sm:grid-cols-[210px_minmax(0,1fr)] sm:gap-4">
+      <span className="pt-1.5 text-[#323130]">{label}{required ? <span className="text-[#a4262c]"> *</span> : null}</span>
+      <div className="min-w-0">{children}</div>
+    </div>
   )
 }
 

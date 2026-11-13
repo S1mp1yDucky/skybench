@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { toast } from "sonner"
 import { AccountForm, SignInCard } from "@/components/account-form"
+import { BrandGlyph } from "@/components/brand-marks"
 import { BillingPanel } from "@/components/billing-panel"
 import { ConsoleFrame } from "@/components/console-frame"
 import { ConnectDialog, downloadPem } from "@/components/connect-dialog"
@@ -286,9 +287,9 @@ function MenuButton({ children, onClick, disabled }: { children: React.ReactNode
 
 function CreateDroplet({ onDone }: { onDone: () => void }) {
   const ocean = useLabState().do
-  const [name, setName] = useState("droplet-lab")
+  const [name, setName] = useState("ubuntu-s-1vcpu-1gb-blr1")
   const [region, setRegion] = useState(ocean.region)
-  const [imageId, setImageId] = useState(DO_IMAGES[0].id)
+  const [imageId, setImageId] = useState("ubuntu-26-04-x64")
   const [sizeId, setSizeId] = useState(DO_SIZES[1].id)
   const [keyName, setKeyName] = useState(ocean.keys[0]?.name ?? "MyKeyPair")
   const [auth, setAuth] = useState<"ssh" | "password">("ssh")
@@ -309,8 +310,7 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
         }
       }}
     >
-      <h1 className="text-[28px] font-semibold text-[#031b4e]">Create Droplet</h1>
-      <p className="mt-1 text-[13px] text-[#5b6785]">Choose a datacenter, image, and plan. root is the login.</p>
+      <h1 className="text-[28px] font-semibold text-[#031b4e]">Create Droplets</h1>
 
       <Section title="Choose Region">
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -325,29 +325,43 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
       </Section>
 
       <Section title="Choose an image">
-        <div className="flex gap-2 border-b border-[#e1e7f0] text-[13px]">
-          {["OS", "Marketplace", "Custom images", "Backups", "Snapshots"].map((tab, index) => (
-            <span key={tab} className={cn("px-3 py-2", index === 0 ? "border-b-2 border-[#0069ff] font-semibold text-[#0069ff]" : "text-[#5b6785]")}>{tab}</span>
+        <div className="flex gap-5 border-b border-[#e1e7f0] text-[13px]">
+          {["OS", "Solutions", "Agents", "Custom images"].map((tab, index) => (
+            <span key={tab} className={cn("pb-2", index === 0 ? "border-b-2 border-[#0069ff] font-semibold text-[#0069ff]" : "text-[#5b6785]")}>{tab}</span>
           ))}
         </div>
         <div className="flex flex-wrap gap-2">
-          {DO_IMAGES.map((image) => (
-            <button key={image.id} type="button" onClick={() => setImageId(image.id)} className={cn("rounded-md border bg-white px-4 py-3 text-left text-[13px]", imageId === image.id ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea]")}>
-              <span className="block font-semibold text-[#031b4e]">{image.os.split(" ")[0]}</span>
-              <span className="text-[#5b6785]">{image.label}</span>
-            </button>
-          ))}
+          {DISTROS.map((distro) => {
+            const selected = distro.ids.includes(imageId)
+            return (
+              <button key={distro.name} type="button" onClick={() => setImageId(distro.ids[0])} className={cn("grid h-[84px] w-[112px] content-center justify-items-center gap-1.5 rounded-md border bg-white text-[13px]", selected ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea] hover:border-[#0069ff]")}>
+                <BrandGlyph name={distro.glyph} className={cn("size-7", distro.color)} />
+                <span className="font-medium text-[#031b4e]">{distro.name}</span>
+              </button>
+            )
+          })}
         </div>
-        <p className="text-[12px] text-[#5b6785]">Version is pinned to the image above. 64-bit.</p>
+        <label className="grid max-w-sm gap-1 text-[13px] font-medium">
+          Version
+          <select aria-label="Version" value={imageId} onChange={(event) => setImageId(event.target.value)} className="h-9 rounded-md border border-[#d5deea] bg-white px-2 font-normal">
+            {(DISTROS.find((distro) => distro.ids.includes(imageId)) ?? DISTROS[0]).ids.map((id) => (
+              <option key={id} value={id}>{DO_IMAGES.find((image) => image.id === id)?.label ?? id}</option>
+            ))}
+          </select>
+        </label>
       </Section>
 
-      <Section title="Choose Size">
+      <Section title="Choose a Droplet Plan">
         <div className="flex flex-wrap gap-2 text-[13px]">
-          {["Basic", "CPU-Optimized", "General Purpose", "Memory-Optimized", "Storage-Optimized"].map((plan, index) => (
-            <span key={plan} className={cn("rounded-full px-3 py-1", index === 0 ? "bg-[#e8f1ff] font-semibold text-[#0069ff]" : "bg-white text-[#5b6785] ring-1 ring-[#d5deea]")}>{plan}</span>
-          ))}
+          <span className="rounded-full bg-[#e8f1ff] px-3 py-1 font-semibold text-[#0069ff]">Shared CPU</span>
+          <span className="rounded-full bg-white px-3 py-1 text-[#5b6785] ring-1 ring-[#d5deea]">Dedicated CPU</span>
         </div>
-        <p className="text-[13px] font-medium">Shared CPU · Regular</p>
+        <p className="text-[13px] font-semibold text-[#031b4e]">Basic</p>
+        <div className="flex gap-4 text-[13px]">
+          <span className="border-b-2 border-[#0069ff] pb-1 font-semibold text-[#0069ff]">Regular</span>
+          <span className="pb-1 text-[#5b6785]">Premium Intel</span>
+          <span className="pb-1 text-[#5b6785]">Premium AMD</span>
+        </div>
         <div className="overflow-x-auto rounded-md border border-[#e1e7f0] bg-white">
           <table className="w-full min-w-[680px] text-left text-[13px]">
             <thead className="text-[#5b6785]">
@@ -373,11 +387,9 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
         <div className="grid gap-2 sm:grid-cols-2">
           <button type="button" onClick={() => setAuth("ssh")} className={cn("rounded-md border bg-white p-3 text-left", auth === "ssh" ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea]")}>
             <span className="block font-semibold">SSH Key</span>
-            <span className="mt-1 block text-[12px] text-[#5b6785]">Recommended. Connect with a key pair instead of a password.</span>
           </button>
           <button type="button" onClick={() => setAuth("password")} className={cn("rounded-md border bg-white p-3 text-left", auth === "password" ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea]")}>
             <span className="block font-semibold">Password</span>
-            <span className="mt-1 block text-[12px] text-[#5b6785]">Create a root password. SSH keys are recommended.</span>
           </button>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -398,8 +410,8 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
       </Section>
 
       <Section title="We recommend these options">
-        <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" defaultChecked /> <span><span className="font-medium">Monitoring</span><span className="block text-[#5b6785]">Collect metrics for free with the DigitalOcean agent.</span></span></label>
-        <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" /> <span><span className="font-medium">Add backups</span><span className="block text-[#5b6785]">Weekly backups are billed at 20% of the Droplet price.</span></span></label>
+        <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" defaultChecked /> <span><span className="font-medium">Monitoring</span><span className="block text-[#5b6785]">Improved metrics and monitoring</span></span></label>
+        <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" /> <span><span className="font-medium">Backups</span><span className="block text-[#5b6785]">Automated backups</span></span></label>
       </Section>
 
       <Section title="Finalize Details">
@@ -517,6 +529,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     </section>
   )
 }
+
+const DISTROS: { name: string; glyph: string; color: string; ids: string[] }[] = [
+  { name: "Ubuntu", glyph: "ubuntu", color: "text-[#e95420]", ids: ["ubuntu-26-04-x64", "ubuntu-24-04-x64", "ubuntu-22-04-x64"] },
+  { name: "Debian", glyph: "debian", color: "text-[#a80030]", ids: ["debian-13-x64"] },
+  { name: "Fedora", glyph: "fedora", color: "text-[#51a2da]", ids: ["fedora-44-x64", "fedora-43-x64"] },
+  { name: "CentOS", glyph: "centos", color: "text-[#932279]", ids: ["centos-stream-10-x64", "centos-stream-9-x64"] },
+  { name: "AlmaLinux", glyph: "almalinux", color: "text-[#ff4649]", ids: ["almalinux-10-x64", "almalinux-9-x64", "almalinux-8-x64"] },
+  { name: "Rocky Linux", glyph: "rockylinux", color: "text-[#10b981]", ids: ["rockylinux-10-x64", "rockylinux-9-x64", "rockylinux-8-x64"] },
+]
 
 function regionCity(id: string) {
   const map: Record<string, string> = {

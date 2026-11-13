@@ -451,7 +451,7 @@ function launchDo(
   }
   const image = DO_IMAGES.find((item) => item.id === action.imageId)
   const size = DO_SIZES.find((item) => item.id === action.sizeId)
-  if (!image) return err("Unknown image. Use ubuntu-22-04-x64, ubuntu-24-04-x64, or debian-12-x64.")
+  if (!image) return err(`Unknown image ${action.imageId}.`)
   if (!size) return err("Unknown size.")
   const name = action.name.trim().toLowerCase()
   if (!/^[a-z0-9-]{1,32}$/.test(name)) {

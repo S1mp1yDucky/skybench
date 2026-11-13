@@ -44,12 +44,17 @@ export const AWS_IMAGES: ImageOption[] = [
     label: "Amazon Linux 2023",
     username: "ec2-user",
     os: "Amazon Linux 2023",
+    amiTitle: "Amazon Linux 2023 kernel-6.18 AMI",
+    amiIds: "ami-0e182bd8728384e40 (64-bit (x86), uefi-preferred) / ami-08c23cc60c24991ad (64-bit (Arm), uefi)",
+    freeTier: true,
   },
   {
     id: "ami-ubuntu2204",
     label: "Ubuntu Server 22.04 LTS",
     username: "ubuntu",
     os: "Ubuntu 22.04",
+    amiTitle: "Ubuntu Server 22.04 LTS (HVM), SSD Volume Type",
+    freeTier: true,
   },
 ]
 
@@ -86,13 +91,13 @@ export const AWS_SIZES: SizeOption[] = [
 export const AZURE_IMAGES: ImageOption[] = [
   {
     id: "Ubuntu2204",
-    label: "Ubuntu Server 22.04 LTS",
+    label: "Ubuntu Server 22.04 LTS - x64 Gen2",
     username: "azureuser",
     os: "Ubuntu 22.04",
   },
   {
     id: "Debian12",
-    label: "Debian 12",
+    label: "Debian 12 - x64 Gen2",
     username: "azureuser",
     os: "Debian 12",
   },
@@ -129,24 +134,21 @@ export const AZURE_SIZES: SizeOption[] = [
 ]
 
 export const DO_IMAGES: ImageOption[] = [
-  {
-    id: "ubuntu-22-04-x64",
-    label: "Ubuntu 22.04 LTS",
-    username: "root",
-    os: "Ubuntu 22.04",
-  },
-  {
-    id: "ubuntu-24-04-x64",
-    label: "Ubuntu 24.04 LTS",
-    username: "root",
-    os: "Ubuntu 24.04",
-  },
-  {
-    id: "debian-12-x64",
-    label: "Debian 12",
-    username: "root",
-    os: "Debian 12",
-  },
+  { id: "ubuntu-26-04-x64", label: "Ubuntu 26.04 (LTS) x64", username: "root", os: "Ubuntu 26.04" },
+  { id: "ubuntu-24-04-x64", label: "Ubuntu 24.04 (LTS) x64", username: "root", os: "Ubuntu 24.04" },
+  { id: "ubuntu-22-04-x64", label: "Ubuntu 22.04 (LTS) x64", username: "root", os: "Ubuntu 22.04" },
+  { id: "debian-13-x64", label: "Debian 13 x64", username: "root", os: "Debian 13" },
+  { id: "debian-12-x64", label: "Debian 12 x64", username: "root", os: "Debian 12" },
+  { id: "fedora-44-x64", label: "Fedora 44 x64", username: "root", os: "Fedora 44" },
+  { id: "fedora-43-x64", label: "Fedora 43 x64", username: "root", os: "Fedora 43" },
+  { id: "centos-stream-10-x64", label: "CentOS Stream 10 x64", username: "root", os: "CentOS Stream 10" },
+  { id: "centos-stream-9-x64", label: "CentOS Stream 9 x64", username: "root", os: "CentOS Stream 9" },
+  { id: "almalinux-10-x64", label: "AlmaLinux 10", username: "root", os: "AlmaLinux 10" },
+  { id: "almalinux-9-x64", label: "AlmaLinux 9", username: "root", os: "AlmaLinux 9" },
+  { id: "almalinux-8-x64", label: "AlmaLinux 8", username: "root", os: "AlmaLinux 8" },
+  { id: "rockylinux-10-x64", label: "Rocky Linux 10 x64", username: "root", os: "Rocky Linux 10" },
+  { id: "rockylinux-9-x64", label: "Rocky Linux 9 x64", username: "root", os: "Rocky Linux 9" },
+  { id: "rockylinux-8-x64", label: "Rocky Linux 8 x64", username: "root", os: "Rocky Linux 8" },
 ]
 
 export const DO_SIZES: SizeOption[] = [

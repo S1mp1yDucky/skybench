@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { AccountForm, SignInCard } from "@/components/account-form"
+import { BrandGlyph } from "@/components/brand-marks"
 import { BillingPanel } from "@/components/billing-panel"
 import { AwsRegionMenu, ConsoleFrame } from "@/components/console-frame"
 import { ConnectDialog, downloadPem } from "@/components/connect-dialog"
@@ -363,20 +364,18 @@ function InstanceTable({
 }
 
 const QUICK = [
-  { id: "ami-al2023", name: "Amazon Linux", free: true },
-  { id: "mac", name: "macOS", free: false },
-  { id: "ami-ubuntu2204", name: "Ubuntu", free: true },
-  { id: "win", name: "Windows", free: false },
-  { id: "rhel", name: "Red Hat", free: false },
-  { id: "suse", name: "SUSE Linux", free: false },
-  { id: "deb", name: "Debian", free: false },
+  { id: "ami-al2023", name: "Amazon Linux" },
+  { id: "mac", name: "macOS" },
+  { id: "ami-ubuntu2204", name: "Ubuntu" },
+  { id: "win", name: "Windows" },
+  { id: "rhel", name: "Red Hat" },
+  { id: "suse", name: "SUSE Linux" },
 ]
 
 function LaunchInstance({ onDone }: { onDone: () => void }) {
   const aws = useLabState().aws
   const [name, setName] = useState("web-1")
   const [imageId, setImageId] = useState(AWS_IMAGES[0].id)
-  const [osHint, setOsHint] = useState<string | null>(null)
   const [sizeId, setSizeId] = useState(AWS_SIZES[0].id)
   const [keyName, setKeyName] = useState(aws.keyPairs[0]?.name ?? "")
   const [newKey, setNewKey] = useState("MyKeyPair")
@@ -387,7 +386,7 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
   const image = AWS_IMAGES.find((item) => item.id === imageId)
   const summary = useMemo(() => [
     ["Name", name || "—"],
-    ["AMI", image?.label ?? "—"],
+    ["AMI", image?.amiTitle ?? image?.label ?? "—"],
     ["Instance type", sizeId],
     ["Key pair", keyName || "—"],
     ["Security group", http ? "launch-wizard-http" : "launch-wizard-1"],
@@ -419,42 +418,60 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
             <Field id="aws-name" label="Name">
               <Input id="aws-name" value={name} onChange={(event) => setName(event.target.value)} className="h-8 max-w-md rounded-sm" />
             </Field>
-            <p className="text-[12px] text-[#545b64]">The name is a tag. Key: Name. Value: the name you enter.</p>
+            <p className="text-[12px] text-[#545b64]">The name is a tag, where the key is Name, and the value is the name that you specify.</p>
           </Card>
           <Card title="Application and OS Images (Amazon Machine Image)">
-            <p className="text-[13px] font-bold">Quick Start</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {QUICK.map((os) => {
-                const known = AWS_IMAGES.some((item) => item.id === os.id)
-                const selected = known && imageId === os.id
-                return (
-                  <button
-                    key={os.name}
-                    type="button"
-                    onClick={() => {
-                      if (known) {
-                        setImageId(os.id)
-                        setOsHint(null)
-                      } else setOsHint(`${os.name} is not available for this account. Choose Amazon Linux or Ubuntu.`)
-                    }}
-                    className={cn("grid h-[72px] w-[104px] place-items-center rounded-sm border bg-white text-[13px]", selected ? "border-[#0073bb] ring-1 ring-[#0073bb]" : "border-[#d5dbdb] hover:border-[#0073bb]")}
-                  >
-                    <OsMark name={os.name} />
-                    <span>{os.name}</span>
-                    {os.free && known ? <span className="text-[10px] text-[#1d8102]">Free tier eligible</span> : null}
-                  </button>
-                )
-              })}
+            <div className="flex items-stretch gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="w-fit border-b-[3px] border-[#0073bb] pb-1.5 text-[14px] font-bold leading-none text-[#0073bb]">Quick Start</p>
+                <div className="relative mt-3">
+                  <div className="flex items-center gap-2 overflow-x-auto pr-5">
+                    {QUICK.map((os) => {
+                      const known = AWS_IMAGES.some((item) => item.id === os.id)
+                      const selected = known && imageId === os.id
+                      return (
+                        <button
+                          key={os.name}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => {
+                            if (known) setImageId(os.id)
+                          }}
+                          className={cn("grid h-[112px] w-[100px] shrink-0 place-items-center border bg-white px-1", selected ? "border-[#0073bb] bg-[#f2f8fd] shadow-[inset_0_0_0_1px_#0073bb]" : "border-[#eaeded] hover:border-[#0073bb]")}
+                        >
+                          <OsLockup name={os.name} />
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <span className="pointer-events-none absolute top-1/2 right-0 grid size-8 -translate-y-1/2 place-items-center rounded-full border border-[#d5dbdb] bg-[#f2f3f3] text-[18px] leading-none text-[#545b64] shadow-sm" aria-hidden>›</span>
+                </div>
+              </div>
+              <div className="hidden w-[168px] shrink-0 flex-col justify-center border-l border-[#eaeded] pl-4 sm:flex">
+                <svg viewBox="0 0 24 24" className="size-6 text-[#16191f]" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden><circle cx="11" cy="11" r="6.5" /><path d="m20 20-3.2-3.2" /></svg>
+                <p className="mt-2 text-[14px] font-bold leading-5 text-[#0073bb]">Browse more AMIs</p>
+                <p className="mt-1 text-[12px] leading-4 text-[#545b64]">Including AMIs from AWS, Marketplace and the Community</p>
+              </div>
             </div>
-            {osHint ? <p className="text-[13px] text-[#6a4b12]">{osHint}</p> : null}
-            <Field id="aws-ami" label="Amazon Machine Image (AMI)">
-              <select id="aws-image" value={imageId} onChange={(event) => setImageId(event.target.value)} className="h-8 w-full max-w-xl rounded-sm border border-[#aab7b8] bg-white px-2">
+            <div className="grid gap-1.5">
+              <p className="text-[13px] font-bold">Amazon Machine Image (AMI)</p>
+              <div className="flex items-center justify-between gap-4 border border-[#aab7b8] bg-[#fafafa] px-3 py-2">
+                <div className="min-w-0 text-[13px] leading-5 text-[#16191f]">
+                  <p>{image?.amiTitle}</p>
+                  {image?.amiIds ? <p className="text-[12px]">{image.amiIds}</p> : null}
+                  <p className="text-[12px]">Virtualization: hvm<span className="px-4">ENA enabled: true</span>Root device type: ebs</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-4 text-[13px] text-[#16191f]">
+                  {image?.freeTier ? <span>Free tier eligible</span> : null}
+                  <svg viewBox="0 0 16 16" className="size-3.5 text-[#0073bb]" aria-hidden><path fill="currentColor" d="M3.2 5.5 8 10.8 12.8 5.5z" /></svg>
+                </div>
+              </div>
+              <select id="aws-image" aria-label="Amazon Machine Image (AMI)" value={imageId} onChange={(event) => setImageId(event.target.value)} className="sr-only">
                 {AWS_IMAGES.map((item) => (
-                  <option key={item.id} value={item.id}>{item.label} AMI · user {item.username} · 64-bit (x86)</option>
+                  <option key={item.id} value={item.id}>{item.amiTitle}</option>
                 ))}
               </select>
-            </Field>
-            <p className="text-[12px] text-[#545b64]">Architecture: 64-bit (x86)</p>
+            </div>
           </Card>
           <Card title="Instance type">
             <Field id="aws-size" label="Instance type">
@@ -516,7 +533,7 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
           </Card>
           <Card title="Network settings">
             <dl className="grid gap-2 text-[13px] sm:grid-cols-2">
-              <div><dt className="text-[#545b64]">VPC</dt><dd>vpc-0a438202 (default)</dd></div>
+              <div><dt className="text-[#545b64]">VPC</dt><dd>vpc-08f2c1a04b7e93d21 (default)</dd></div>
               <div><dt className="text-[#545b64]">Subnet</dt><dd>No preference (default subnet in any AZ)</dd></div>
               <div><dt className="text-[#545b64]">Auto-assign public IP</dt><dd>Enable</dd></div>
               <div><dt className="text-[#545b64]">Firewall</dt><dd>Create security group</dd></div>
@@ -575,7 +592,7 @@ function KeyPairs({ keys }: { keys: KeyMaterial[] }) {
       <h1 className="mt-1 text-[28px] font-bold">Key pairs</h1>
       <div className="mt-3 border border-[#d5dbdb] bg-white">
         {keys.length === 0 ? (
-          <p className="px-4 py-8 text-[13px] text-[#545b64]">No key pairs to display. Create one from Launch an instance, or with aws ec2 create-key-pair in CloudShell.</p>
+          <p className="px-4 py-8 text-[13px] text-[#545b64]">No key pairs</p>
         ) : (
           <table className="w-full text-left text-[13px]">
             <thead className="bg-[#fafafa]"><tr>{["Name", "Type", "Fingerprint", "Created", ""].map((heading) => <th key={heading || "dl"} className="px-3 py-2 font-bold">{heading}</th>)}</tr></thead>
@@ -664,7 +681,58 @@ function Info() {
   return <span className="grid size-4 place-items-center rounded-full border border-[#545b64] text-[10px] font-bold text-[#545b64]" aria-hidden>i</span>
 }
 
-function OsMark({ name }: { name: string }) {
-  const letter = name.slice(0, 1)
-  return <span className="grid size-6 place-items-center rounded-sm bg-[#232f3e] text-[12px] font-bold text-white">{letter}</span>
+function OsLockup({ name }: { name: string }) {
+  if (name === "Amazon Linux") {
+    return (
+      <span className="grid justify-items-center text-[#232f3e]">
+        <span className="text-center text-[13px] font-semibold leading-[15px]">Amazon<br />Linux</span>
+        <span className="mt-1.5 text-[18px] font-bold leading-none tracking-tight">aws</span>
+        <svg viewBox="0 0 64 16" className="mt-0.5 h-[10px] w-11" aria-hidden>
+          <path d="M6 4c14 10 38 10 52 0" fill="none" stroke="#ff9900" strokeWidth="3" strokeLinecap="round" />
+          <path d="M52 2.2 62 6.2 53.2 9.2" fill="#ff9900" />
+        </svg>
+      </span>
+    )
+  }
+  if (name === "macOS") {
+    return (
+      <span className="grid h-[78px] w-[62px] justify-items-center rounded-[12px] border border-[#d2d2d7] bg-gradient-to-b from-white to-[#f5f5f7] pt-2.5 shadow-[0_1px_1px_rgba(0,0,0,.06)]">
+        <BrandGlyph name="apple" className="size-7 text-[#1d1d1f]" />
+        <span className="mt-1 text-[11px] font-medium text-[#1d1d1f]">Mac</span>
+      </span>
+    )
+  }
+  if (name === "Ubuntu") {
+    return (
+      <span className="grid justify-items-center">
+        <BrandGlyph name="ubuntu" className="size-8 text-[#e95420]" />
+        <span className="mt-1 text-[8px] leading-none tracking-wide text-[#666]">Canonical</span>
+        <span className="text-[12px] font-medium leading-4 text-[#e95420]">Ubuntu</span>
+      </span>
+    )
+  }
+  if (name === "Windows") {
+    return (
+      <svg viewBox="0 0 32 32" className="size-9" aria-hidden>
+        <rect x="2" y="2" width="13" height="13" fill="#f25022" />
+        <rect x="17" y="2" width="13" height="13" fill="#7fba00" />
+        <rect x="2" y="17" width="13" height="13" fill="#00a4ef" />
+        <rect x="17" y="17" width="13" height="13" fill="#ffb900" />
+      </svg>
+    )
+  }
+  if (name === "Red Hat") {
+    return (
+      <span className="grid justify-items-center gap-1">
+        <BrandGlyph name="redhat" className="h-8 w-10 text-[#ee0000]" />
+        <span className="text-[11px] font-bold leading-none text-[#111]">Red Hat</span>
+      </span>
+    )
+  }
+  return (
+    <span className="grid justify-items-center gap-0.5">
+      <BrandGlyph name="suse" className="size-9 text-[#30ba78]" />
+      <span className="text-[12px] font-bold tracking-[0.14em] text-[#173f35]">SUSE</span>
+    </span>
+  )
 }
