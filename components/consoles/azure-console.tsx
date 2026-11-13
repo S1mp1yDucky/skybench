@@ -316,29 +316,26 @@ function AzureHome({
         <section>
           <h2 className="text-[18px] font-semibold">Tools</h2>
           <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <Tool title="Microsoft Learn" body="Learn Azure with free online training from Microsoft" tone="#0078d4" />
-            <Tool title="Azure Monitor" body="Monitor your apps and infrastructure" tone="#0078d4" />
-            <Tool title="Microsoft Defender for Cloud" body="Secure your apps and infrastructure" tone="#107c10" />
-            <Tool title="Cost Management" body="Analyze and optimize your cloud spend for free" tone="#107c10" />
+            <Tool icon="learn" title="Microsoft Learn" body="Learn Azure with free online training from Microsoft" />
+            <Tool icon="monitor" title="Azure Monitor" body="Monitor your apps and infrastructure" />
+            <Tool icon="shield" title="Microsoft Defender for Cloud" body="Secure your apps and infrastructure" />
+            <Tool icon="cost" title="Cost Management" body="Analyze and optimize your cloud spend for free" />
           </div>
         </section>
-        <section className="grid gap-8 pb-8 lg:grid-cols-[1fr_240px]">
+        <section className="grid gap-8 pb-8 lg:grid-cols-[1fr_300px]">
           <div>
             <h2 className="text-[18px] font-semibold">Useful links</h2>
             <div className="mt-4 grid gap-x-8 gap-y-2 text-[13px] text-[#0078d4] sm:grid-cols-3">
-              <p>Technical Documentation</p>
-              <p>Azure Services</p>
-              <p>Recent Azure Updates</p>
-              <p>Azure Migration Tools</p>
-              <p>Find an Azure expert</p>
-              <p>Quickstart Center</p>
+              {["Technical Documentation", "Azure Services", "Recent Azure Updates", "Azure Migration Tools", "Find an Azure expert", "Quickstart Center"].map((label) => (
+                <p key={label} className="inline-flex items-center gap-1">{label} <ExternalMark /></p>
+              ))}
             </div>
           </div>
           <div>
             <h2 className="text-[18px] font-semibold">Azure mobile app</h2>
             <div className="mt-4 flex gap-2">
-              <span className="inline-flex h-10 items-center rounded-md bg-black px-3 text-[11px] font-semibold text-white">App Store</span>
-              <span className="inline-flex h-10 items-center rounded-md bg-black px-3 text-[11px] font-semibold text-white">Google Play</span>
+              <StoreBadge store="apple" />
+              <StoreBadge store="google" />
             </div>
           </div>
         </section>
@@ -1206,35 +1203,133 @@ function CubeMark() {
 
 function EmptyVm() {
   return (
-    <svg viewBox="0 0 96 72" className="h-16 w-24 text-[#c8c6c4]" aria-hidden>
-      <rect x="8" y="8" width="80" height="48" rx="3" fill="none" stroke="currentColor" strokeWidth="2" />
-      <path d="M36 64h24M48 56v8" stroke="currentColor" strokeWidth="2" />
-      <path d="M48 20 58 26v12L48 44 38 38V26Z" fill="none" stroke="currentColor" strokeWidth="1.6" />
+    <svg viewBox="0 0 96 80" className="h-20 w-24 text-[#c8c6c4]" aria-hidden>
+      <rect x="10" y="8" width="76" height="48" rx="4" fill="#f3f2f1" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M34 68h28M48 56v12" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M48 18 62 26v14L48 48 34 40V26Z" fill="#fff" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M48 32 62 26M48 32 34 26M48 32v16" fill="none" stroke="currentColor" strokeWidth="1.2" />
     </svg>
   )
 }
 
 function NavLink({ label, tone, onClick }: { label: string; tone: "gold" | "blue" | "green" | "teal"; onClick?: () => void }) {
-  const color = tone === "gold" ? "#c19c00" : tone === "green" ? "#107c10" : tone === "teal" ? "#038387" : "#0078d4"
   return (
     <button type="button" onClick={onClick} className="flex items-center gap-3 text-left text-[14px] hover:underline">
-      <span className="grid size-8 place-items-center rounded-sm" style={{ color }} aria-hidden>
-        {tone === "gold" ? "🔑" : tone === "green" ? "▦" : tone === "teal" ? "▣" : "▤"}
-      </span>
+      <NavGlyph tone={tone} />
       {label}
     </button>
   )
 }
 
-function Tool({ title, body, tone }: { title: string; body: string; tone: string }) {
+function NavGlyph({ tone }: { tone: "gold" | "blue" | "green" | "teal" }) {
+  if (tone === "gold") {
+    return (
+      <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
+        <circle cx="13" cy="16" r="4" fill="none" stroke="#c19c00" strokeWidth="1.6" />
+        <path d="M17 16h9l-2 2.2M23 16l-2 2.2" fill="none" stroke="#c19c00" strokeWidth="1.6" />
+      </svg>
+    )
+  }
+  if (tone === "green") {
+    return (
+      <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
+        <rect x="6" y="6" width="8" height="8" fill="#107c10" />
+        <rect x="18" y="6" width="8" height="8" fill="#107c10" />
+        <rect x="6" y="18" width="8" height="8" fill="#107c10" />
+        <rect x="18" y="18" width="8" height="8" fill="#107c10" />
+      </svg>
+    )
+  }
+  if (tone === "teal") {
+    return (
+      <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
+        <rect x="6" y="6" width="8" height="8" fill="#038387" />
+        <rect x="18" y="6" width="8" height="6" fill="#038387" />
+        <rect x="6" y="18" width="20" height="8" fill="#038387" />
+      </svg>
+    )
+  }
+  return (
+    <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
+      <path d="M6 12h8l2 2h10v10H6V12Z" fill="none" stroke="#0078d4" strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+function Tool({ icon, title, body }: { icon: "learn" | "monitor" | "shield" | "cost"; title: string; body: string }) {
   return (
     <div className="flex gap-3">
-      <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full text-[16px]" style={{ color: tone }} aria-hidden>●</span>
+      <ToolGlyph icon={icon} />
       <div>
-        <p className="text-[14px] font-semibold text-[#0078d4]">{title}</p>
+        <p className="inline-flex items-center gap-1 text-[14px] font-semibold text-[#0078d4]">{title} <ExternalMark /></p>
         <p className="text-[12px] leading-4 text-[#605e5c]">{body}</p>
       </div>
     </div>
+  )
+}
+
+function ToolGlyph({ icon }: { icon: "learn" | "monitor" | "shield" | "cost" }) {
+  if (icon === "learn") {
+    return (
+      <svg viewBox="0 0 32 32" className="size-8 shrink-0" aria-hidden>
+        <rect x="6" y="6" width="20" height="20" rx="3" fill="#0078d4" />
+        <path d="M11 12h10M11 16h10M11 20h6" stroke="white" strokeWidth="1.4" />
+      </svg>
+    )
+  }
+  if (icon === "monitor") {
+    return (
+      <svg viewBox="0 0 32 32" className="size-8 shrink-0" aria-hidden>
+        <circle cx="16" cy="16" r="9" fill="none" stroke="#0078d4" strokeWidth="1.6" />
+        <path d="M16 10v6l4 2" fill="none" stroke="#0078d4" strokeWidth="1.6" />
+      </svg>
+    )
+  }
+  if (icon === "shield") {
+    return (
+      <svg viewBox="0 0 32 32" className="size-8 shrink-0" aria-hidden>
+        <path d="M16 5 26 9v7c0 6-4.2 9.6-10 11-5.8-1.4-10-5-10-11V9Z" fill="none" stroke="#107c10" strokeWidth="1.6" />
+        <path d="M12 16.2 15 19l5-6" fill="none" stroke="#107c10" strokeWidth="1.6" />
+      </svg>
+    )
+  }
+  return (
+    <svg viewBox="0 0 32 32" className="size-8 shrink-0" aria-hidden>
+      <circle cx="16" cy="16" r="10" fill="#107c10" />
+      <text x="16" y="21" textAnchor="middle" fill="white" fontSize="15" fontFamily="Segoe UI, sans-serif">$</text>
+    </svg>
+  )
+}
+
+function ExternalMark() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-3 shrink-0" aria-hidden>
+      <path d="M5 11 11 5M7 5h4v4" fill="none" stroke="currentColor" strokeWidth="1.3" />
+    </svg>
+  )
+}
+
+function StoreBadge({ store }: { store: "apple" | "google" }) {
+  const apple = store === "apple"
+  return (
+    <span className="inline-flex h-9 items-center gap-1.5 rounded-[5px] bg-black px-2 text-white">
+      {apple ? (
+        <svg viewBox="0 0 16 16" className="size-5" aria-hidden>
+          <path fill="currentColor" d="M11.2 8.4c0-1.5 1.2-2.2 1.3-2.3-.7-1-1.8-1.2-2.2-1.2-1-.1-1.8.6-2.3.6s-1.2-.6-2-.6c-1 0-2 .6-2.5 1.5-1.1 1.9-.3 4.7.8 6.2.5.8 1.1 1.6 1.9 1.6.8 0 1-.5 2-.5s1.2.5 2 .5 1.3-.8 1.8-1.5c.6-.8.8-1.6.8-1.6s-1.6-.6-1.6-2.7ZM9.8 4.2c.4-.5.7-1.2.6-1.9-.6 0-1.3.4-1.7.9-.4.4-.7 1.1-.6 1.8.7.1 1.3-.3 1.7-.8Z" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 16 16" className="size-5" aria-hidden>
+          <path fill="#34a853" d="M2 2.2 9.2 8 2 13.8Z" />
+          <path fill="#fbbc04" d="M11.2 6.4 13.6 5c.7-.4 1.4.1 1.4.9v4.2c0 .8-.7 1.3-1.4.9l-2.4-1.4" />
+          <path fill="#4285f4" d="M2 2.2 11.2 6.4 9.2 8Z" />
+          <path fill="#ea4335" d="M2 13.8 9.2 8l2 1.6Z" />
+        </svg>
+      )}
+      <span className="leading-none">
+        <span className="block text-[7px] tracking-wide">{apple ? "Download on the" : "GET IT ON"}</span>
+        <span className="mt-0.5 block text-[11px] font-semibold">{apple ? "App Store" : "Google Play"}</span>
+      </span>
+    </span>
   )
 }
 
@@ -1242,8 +1337,7 @@ function ServiceGlyph({ kind }: { kind: string }) {
   if (kind === "plus") {
     return (
       <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
-        <rect x="4" y="4" width="24" height="24" rx="2" fill="#0078d4" />
-        <path d="M16 9v14M9 16h14" stroke="white" strokeWidth="2" />
+        <path d="M16 6v20M6 16h20" stroke="#0078d4" strokeWidth="2.4" strokeLinecap="round" />
       </svg>
     )
   }

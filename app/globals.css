@@ -183,7 +183,7 @@
 
 /* Cloudscape's reset sets summary { display: list-item } outside a layer,
    which beats Tailwind and pins the marker on the left or drops the caret. */
-summary {
+summary:not(.grid) {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;

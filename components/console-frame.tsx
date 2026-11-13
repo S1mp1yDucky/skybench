@@ -305,11 +305,11 @@ function AzureChrome({
           <input readOnly placeholder="Search resources, services, and docs (G+/)" className="h-8 w-full max-w-[560px] rounded-sm border-0 bg-white pr-3 pl-9 text-[13px] text-[#323130] outline-none placeholder:text-[#605e5c]" />
         </label>
         <div className="ml-auto flex items-center gap-0.5">
-          <button type="button" className="mr-1 hidden h-8 items-center gap-1 rounded-sm px-2 text-[13px] hover:bg-white/15 md:inline-flex" aria-label="Copilot">
+          <button type="button" className="mr-2 hidden h-8 items-center gap-1.5 rounded-sm bg-white px-2.5 text-[13px] font-semibold text-[#0078d4] hover:bg-[#f3f2f1] md:inline-flex" aria-label="Copilot">
             <SparkIcon />
             Copilot
           </button>
-          <HeaderIcon label="Cloud Shell" onClick={() => go("shell")}><span className="font-mono text-[14px] leading-none">&gt;_</span></HeaderIcon>
+          <HeaderIcon label="Cloud Shell" onClick={() => go("shell")}><PromptIcon /></HeaderIcon>
           <HeaderIcon label="Notifications" onClick={() => setNotesOpen((value) => !value)}><BellIcon /></HeaderIcon>
           <PortalMenu onDark label="Settings" items={["Appearance", "Language + region", "My permissions", "Default subscription"]}>
             <GearIcon />
@@ -351,12 +351,12 @@ function ComputeMenu({ go }: { go: (id: string) => void }) {
         <Search className="pointer-events-none absolute top-2 left-3 size-4 text-[#605e5c]" />
         <input readOnly placeholder="Search" className="h-8 w-full rounded-sm border border-[#8a8886] bg-white pr-2 pl-8 text-[13px]" />
       </label>
-      <button type="button" onClick={() => go("portal")} className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left hover:bg-[#f3f2f1]"><span className="text-[#605e5c]">⌂</span> Overview</button>
-      <button type="button" onClick={() => go("more")} className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left hover:bg-[#f3f2f1]"><span className="text-[#605e5c]">▦</span> All resources</button>
+      <button type="button" onClick={() => go("portal")} className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left hover:bg-[#f3f2f1]"><HomeGlyph /> Overview</button>
+      <button type="button" onClick={() => go("more")} className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left hover:bg-[#f3f2f1]"><GridGlyph /> All resources</button>
       <p className="px-2 pt-3 pb-1 text-[12px] font-semibold">Infrastructure</p>
       {items.map((item) => (
         <button key={item} type="button" onClick={() => item === "Virtual machines" && go("vms")} className={cn("flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left hover:bg-[#f3f2f1]", item === "Virtual machines" && "bg-[#f3f2f1] font-semibold")}>
-          <span className="text-[#605e5c]">›</span>
+          <svg viewBox="0 0 16 16" className="size-3 shrink-0 text-[#605e5c]" aria-hidden><path fill="currentColor" d="M6 3.2 11.2 8 6 12.8z" /></svg>
           <span className="truncate">{item}</span>
         </button>
       ))}
