@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { AwsConsole } from "@/components/consoles/aws-console"
 
 export const metadata: Metadata = {
-  title: "AWS console",
+  title: { absolute: "AWS Management Console" },
 }
 
 export default function AwsPage() {

@@ -40,11 +40,11 @@ export function BillingPanel({
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         <figure className="rounded-xl border border-black/10 bg-white p-4">
-          <figcaption className="text-xs tracking-wide text-[#6d6256] uppercase">Simulated spend</figcaption>
+          <figcaption className="text-xs tracking-wide text-[#6d6256] uppercase">Month-to-date</figcaption>
           <p className="mt-2 font-mono text-2xl">{spend == null ? "—" : usd(spend)}</p>
         </figure>
         <figure className="rounded-xl border border-black/10 bg-white p-4">
-          <figcaption className="text-xs tracking-wide text-[#6d6256] uppercase">Alert</figcaption>
+          <figcaption className="text-xs tracking-wide text-[#6d6256] uppercase">Budget</figcaption>
           <p className="mt-2 font-mono text-2xl">{usd(budget)}</p>
         </figure>
         <figure className="rounded-xl border border-black/10 bg-white p-4">
@@ -66,7 +66,7 @@ export function BillingPanel({
         }}
       >
         <div className="grid gap-1.5">
-          <Label htmlFor="budget">Alert when simulated spend passes</Label>
+          <Label htmlFor="budget">Budget amount</Label>
           <Input
             id="budget"
             inputMode="decimal"
@@ -86,7 +86,7 @@ export function BillingPanel({
             else toast.success(outcome.message ?? "Fast-forwarded.")
           }}
         >
-          Add 24 hours of meter time
+          Include the next 24 hours
         </Button>
       </form>
       {error ? (
@@ -95,11 +95,11 @@ export function BillingPanel({
         </p>
       ) : null}
       <p className="text-xs leading-5 text-[#6d6256]">
-        A minute of clicking will not move a real bill, so the 24-hour button exists for the recording. It only adds time to machines that are metering right now. Rates are illustrative, not live quotes.
+        Month-to-date cost includes running resources. Stopped EC2 instances stop compute charges. Azure virtual machines that are stopped (deallocated) stop compute charges. Droplets are billed until they are destroyed.
       </p>
       <div className="overflow-x-auto rounded-xl border border-black/10 bg-white">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <caption className="sr-only">Simulated charges by machine</caption>
+          <caption className="sr-only">Charges by resource</caption>
           <thead className="border-b text-xs tracking-wide text-[#6d6256] uppercase">
             <tr>
               <th className="px-3 py-2 font-medium">Name</th>

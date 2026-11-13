@@ -64,16 +64,23 @@ try {
   await clickText("Open AWS")
   await page.waitForFunction(() => document.body.innerText.includes("Amazon Web Services"))
   await settle()
-  await clickText("Continue to account setup")
-  await page.waitForFunction(() => document.body.innerText.includes("Create an AWS account"))
-  await page.type("#lab-password", "Testpass1")
-  await clickText("Send lab code")
-  await page.waitForFunction(() => /Your code is\s+\d{6}/.test(document.body.innerText))
-  const code = (await bodyText()).match(/Your code is\s+(\d{6})/)?.[1]
-  if (!code) throw new Error("Lab code did not appear")
+  await clickText("Create an AWS account")
+  await page.waitForFunction(() => document.body.innerText.includes("Sign up for AWS"))
+  await clickText("Verify email address")
+  await page.waitForFunction(() => /Your verification code is\s+\d{6}/.test(document.body.innerText))
+  const code = (await bodyText()).match(/Your verification code is\s+(\d{6})/)?.[1]
+  if (!code) throw new Error("Verification code did not appear")
+  await page.waitForSelector("#lab-code")
   await page.type("#lab-code", code)
-  await page.click('input[type="checkbox"]')
-  await clickText("Create lab account")
+  await clickText("Verify")
+  await page.waitForSelector("#lab-password")
+  await page.type("#lab-password", "Testpass1")
+  await clickText("Continue")
+  await page.waitForSelector("#lab-phone")
+  await clickText("Continue")
+  await page.waitForSelector("input[type='checkbox']")
+  await page.click("input[type='checkbox']")
+  await clickText("Create account")
   await page.waitForFunction(() => document.body.innerText.includes("Sign in"))
   await page.type("#signin-password", "Testpass1")
   await clickText("Sign in")
@@ -85,7 +92,7 @@ try {
   await clickSubmit()
   await page.waitForFunction(() => document.body.innerText.includes("does not exist"))
   await clickText("Create key pair")
-  await page.waitForFunction(() => document.querySelector("#aws-key option[value='skybench']"))
+  await page.waitForFunction(() => document.querySelector("#aws-key option[value='MyKeyPair']"))
   await clickSubmit()
   await page.waitForFunction(() => {
     if (!/203\.0\.113\.\d+/.test(document.body.innerText)) return false
@@ -105,32 +112,44 @@ try {
     const close = document.querySelector("[data-slot='dialog-content'] [data-slot='dialog-close']")
     if (close instanceof HTMLElement) close.click()
   })
-  await page.waitForFunction(() => !document.body.innerText.includes("SSH session inside Skybench"))
+  await page.waitForFunction(() => !document.querySelector("[data-slot='dialog-content']"))
 
   await clickText("Terminate")
-  await page.waitForFunction(() => document.body.innerText.includes("Keep it"))
+  await page.waitForFunction(() => document.body.innerText.includes("On termination"))
   await page.evaluate(() => {
     const dialogs = [...document.querySelectorAll("[data-slot='dialog-content']")]
-    const dialog = dialogs.find((item) => item.textContent?.includes("Keep it"))
+    const dialog = dialogs.find((item) => item.textContent?.includes("On termination"))
     const button = [...(dialog?.querySelectorAll("button") ?? [])].find((item) => item.textContent?.trim() === "Terminate")
     if (!(button instanceof HTMLElement)) throw new Error("Terminate confirmation was not found")
     button.click()
   })
   await page.waitForFunction(() => document.body.innerText.includes("No instances"), { timeout: 5000 })
 
-  await clickText("VMware shell")
-  await page.waitForFunction(() => document.body.innerText.includes("sudo apt install -y awscli"))
-  await clickText("Place in the shell")
+  const shellClick = await page.evaluate(() => {
+    const button = document.querySelector('button[aria-label="CloudShell"]')
+    if (!(button instanceof HTMLElement)) return "missing"
+    button.click()
+    return "clicked"
+  })
+  if (shellClick !== "clicked") throw new Error(`CloudShell button ${shellClick}`)
+  await new Promise((resolve) => setTimeout(resolve, 400))
+  const afterShell = await bodyText()
+  if (!afterShell.includes("sudo apt install -y awscli")) {
+    throw new Error(`CloudShell did not open. Page starts: ${afterShell.slice(0, 400).replaceAll("\n", " | ")}`)
+  }
   await page.evaluate(() => {
     const input = document.querySelector("input.font-mono")
     if (!(input instanceof HTMLInputElement) || !input.form) throw new Error("Shell input was not found")
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set
+    setter?.call(input, "sudo apt install -y awscli")
+    input.dispatchEvent(new Event("input", { bubbles: true }))
     input.form.requestSubmit()
   })
   await page.waitForFunction(() => document.body.innerText.includes("aws-cli/2"), { timeout: 5000 })
   await shot("05-aws-shell")
 
   await page.goto(`${base}/azure`, { waitUntil: "load" })
-  if (!(await bodyText()).includes("Continue to account setup")) throw new Error("Azure study page missing")
+  if (!(await bodyText()).includes("Start free")) throw new Error("Azure home missing")
   await page.goto(`${base}/digitalocean`, { waitUntil: "load" })
   if (!(await bodyText()).includes("DigitalOcean")) throw new Error("DigitalOcean page missing")
   await page.goto(`${base}/compare`, { waitUntil: "load" })

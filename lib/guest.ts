@@ -22,9 +22,8 @@ export function osRelease(platform: PlatformId, vm: Vm): string {
   return [
     `NAME="${name}"`,
     `ID=${vm.imageId}`,
-    `PRETTY_NAME="${vm.imageLabel} (Skybench guest)"`,
-    `SKYBENCH_PLATFORM=${platform}`,
-    `SKYBENCH_NOTE="kernel strings are illustrative"`,
+    `PRETTY_NAME="${vm.imageLabel}"`,
+    `VERSION_ID="${platform === "aws" && vm.imageId === "ami-al2023" ? "2023" : "22.04"}"`,
   ].join("\n")
 }
 
@@ -37,4 +36,4 @@ export function memFree(vm: Vm): string {
 }
 
 export const LOCAL_UNAME =
-  "Linux skybench 6.8.0-45-generic #45-Ubuntu SMP PREEMPT_DYNAMIC x86_64 GNU/Linux"
+  "Linux ubuntu 6.8.0-45-generic #45-Ubuntu SMP PREEMPT_DYNAMIC x86_64 GNU/Linux"

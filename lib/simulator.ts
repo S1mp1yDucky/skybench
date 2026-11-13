@@ -53,7 +53,7 @@ export const initialState: LabState = {
     sshVerified: false,
     budgetUsd: 1,
     launchedOnce: false,
-    subscription: "Skybench Student",
+    subscription: "Azure subscription 1",
   },
   do: {
     reviewedSite: false,
@@ -152,13 +152,13 @@ export function reduce(state: LabState, action: Action): ReduceResult {
       return ok(
         patchAws(state, { accountCreated: true, email }),
         "aws",
-        `AWS lab account created for ${email}.`,
+        `Account created for ${email}.`,
         now,
         "Account created. Sign in to open the console."
       )
     }
     case "aws/signin":
-      if (!state.aws.accountCreated) return err("Create the AWS lab account first.")
+      if (!state.aws.accountCreated) return err("Sign up before you sign in.")
       return ok(patchAws(state, { signedIn: true }), "aws", "Signed in to the AWS console.", now, "Signed in.")
     case "aws/signout":
       return ok(patchAws(state, { signedIn: false }), "aws", "Signed out of the AWS console.", now)
@@ -168,16 +168,15 @@ export function reduce(state: LabState, action: Action): ReduceResult {
       }
       return ok(patchAws(state, { region: action.region }), "aws", `Region set to ${action.region}.`, now)
     case "aws/install-cli":
-      return ok(patchAws(state, { cliInstalled: true }), "aws", "AWS CLI installed on the lab guest.", now)
+      return ok(patchAws(state, { cliInstalled: true }), "aws", "Setting up awscli (2.27.50) ...", now, "")
     case "aws/credential":
       if (!state.aws.cliInstalled) return err("Install the AWS CLI first.")
       return ok(
         patchAws(state, action.field === "access" ? { accessKeySet: true } : { secretSet: true }),
         "aws",
-        action.field === "access"
-          ? "Access key placeholder accepted and discarded."
-          : "Secret key placeholder accepted and discarded.",
-        now
+        action.field === "access" ? "Configured aws_access_key_id." : "Configured aws_secret_access_key.",
+        now,
+        ""
       )
     case "aws/configure": {
       if (!state.aws.cliInstalled) return err("Install the AWS CLI first.")
@@ -229,13 +228,13 @@ export function reduce(state: LabState, action: Action): ReduceResult {
       return ok(
         patchAzure(state, { accountCreated: true, email, studentOffer: action.student }),
         "azure",
-        `Azure lab account created for ${email}${action.student ? " with student credit" : ""}.`,
+        `Account created for ${email}.`,
         now,
         "Account created. Sign in to open the portal."
       )
     }
     case "azure/signin":
-      if (!state.azure.accountCreated) return err("Create the Azure lab account first.")
+      if (!state.azure.accountCreated) return err("Sign up before you sign in.")
       return ok(patchAzure(state, { signedIn: true }), "azure", "Signed in to the Azure portal.", now, "Signed in.")
     case "azure/signout":
       return ok(patchAzure(state, { signedIn: false }), "azure", "Signed out of the Azure portal.", now)
@@ -245,16 +244,16 @@ export function reduce(state: LabState, action: Action): ReduceResult {
       }
       return ok(patchAzure(state, { location: action.location }), "azure", `Location set to ${action.location}.`, now)
     case "azure/install-cli":
-      return ok(patchAzure(state, { cliInstalled: true }), "azure", "Azure CLI installed on the lab guest.", now)
+      return ok(patchAzure(state, { cliInstalled: true }), "azure", "Setting up azure-cli (2.67.0) ...", now, "")
     case "azure/login":
-      if (!state.azure.accountCreated) return err("Create the Azure lab account first.")
+      if (!state.azure.accountCreated) return err("Sign up before you sign in.")
       if (!state.azure.cliInstalled) return err("Install Azure CLI first.")
       return ok(
         patchAzure(state, { loggedIn: true, signedIn: true }),
         "azure",
-        "az login completed for the simulated subscription.",
+        "Signed in.",
         now,
-        "Signed in with Azure CLI."
+        ""
       )
     case "azure/group":
       return createGroup(state, action.name, action.location, now)
@@ -283,13 +282,13 @@ export function reduce(state: LabState, action: Action): ReduceResult {
       return ok(
         patchDo(state, { accountCreated: true, email, creditApplied: true }),
         "do",
-        `DigitalOcean lab account created for ${email}. Promo credit applied.`,
+        `Account created for ${email}.`,
         now,
         "Account created. Sign in to the control panel."
       )
     }
     case "do/signin":
-      if (!state.do.accountCreated) return err("Create the DigitalOcean lab account first.")
+      if (!state.do.accountCreated) return err("Sign up before you sign in.")
       return ok(patchDo(state, { signedIn: true }), "do", "Signed in to the DigitalOcean control panel.", now, "Signed in.")
     case "do/signout":
       return ok(patchDo(state, { signedIn: false }), "do", "Signed out of the control panel.", now)
@@ -299,11 +298,11 @@ export function reduce(state: LabState, action: Action): ReduceResult {
       }
       return ok(patchDo(state, { region: action.region }), "do", `Region set to ${action.region}.`, now)
     case "do/install-cli":
-      return ok(patchDo(state, { cliInstalled: true }), "do", "doctl installed on the lab guest.", now)
+      return ok(patchDo(state, { cliInstalled: true }), "do", "doctl 1.120.0-release installed.", now, "")
     case "do/auth":
-      if (!state.do.accountCreated) return err("Create the DigitalOcean lab account first.")
+      if (!state.do.accountCreated) return err("Sign up before you sign in.")
       if (!state.do.cliInstalled) return err("Install doctl first.")
-      return ok(patchDo(state, { authed: true }), "do", "doctl authenticated. The token was discarded.", now)
+      return ok(patchDo(state, { authed: true }), "do", "Validating token... OK", now, "")
     case "do/key":
       return addKey(state, "do", action.name, now)
     case "do/launch":
@@ -357,7 +356,7 @@ function launchAws(
   action: Extract<Action, { type: "aws/launch" }>,
   now: number
 ): ReduceResult {
-  if (!state.aws.accountCreated) return err("Create the AWS lab account first.")
+  if (!state.aws.accountCreated) return err("Sign up before you launch an instance.")
   if (!state.aws.signedIn && !awsConfigured(state)) {
     return err("Sign in to the console, or finish aws configure, before launching.")
   }
@@ -388,7 +387,7 @@ function launchAws(
     "aws",
     `Launching ${vm.id} (${vm.name}) in ${vm.region}.`,
     now,
-    `${vm.id} is launching. The address appears when the state is running.`
+    `Successfully initiated launch of instance ${vm.id}.`
   )
 }
 
@@ -397,7 +396,7 @@ function launchAzure(
   action: Extract<Action, { type: "azure/launch" }>,
   now: number
 ): ReduceResult {
-  if (!state.azure.accountCreated) return err("Create the Azure lab account first.")
+  if (!state.azure.accountCreated) return err("Sign up before you create a virtual machine.")
   if (!state.azure.signedIn && !state.azure.loggedIn) {
     return err("Sign in to the portal or run az login before creating a VM.")
   }
@@ -443,7 +442,7 @@ function launchDo(
   action: Extract<Action, { type: "do/launch" }>,
   now: number
 ): ReduceResult {
-  if (!state.do.accountCreated) return err("Create the DigitalOcean lab account first.")
+  if (!state.do.accountCreated) return err("Sign up before you create a Droplet.")
   if (!state.do.signedIn && !state.do.authed) {
     return err("Sign in to the control panel, or run doctl auth init, before creating a Droplet.")
   }
@@ -534,7 +533,7 @@ function createBucket(state: LabState, name: string, now: number): ReduceResult 
   if (!/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(bucket)) {
     return err("Bucket names are 3–63 characters, lowercase, and cannot be only punctuation.")
   }
-  if (state.aws.buckets.some((item) => item.name === bucket)) return err(`Bucket ${bucket} already exists in this lab.`)
+  if (state.aws.buckets.some((item) => item.name === bucket)) return err(`Bucket ${bucket} already exists.`)
   return ok(
     patchAws(state, {
       buckets: [{ name: bucket, region: state.aws.region, createdAt: now }, ...state.aws.buckets],
@@ -631,8 +630,8 @@ function addKey(state: LabState, platform: PlatformId, rawName: string, now: num
   if (list.some((item) => item.name === name)) return err(`Key ${name} already exists.`)
   const key: KeyMaterial = {
     name,
-    fingerprint: `SHA256:${hex(10)}sim`,
-    publicKey: `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI${hex(16)} skybench-${name}`,
+    fingerprint: `SHA256:${hex(16)}`,
+    publicKey: `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI${hex(16)} talal@ubuntu`,
     createdAt: now,
   }
   if (platform === "aws") return ok(patchAws(state, { keyPairs: [...state.aws.keyPairs, key] }), "aws", `Key pair ${name} created.`, now, `Key pair ${name} created.`)
@@ -644,15 +643,15 @@ function markSsh(state: LabState, platform: PlatformId, now: number): ReduceResu
   const running = vmsOf(state, platform).some((vm) => vm.state === "running")
   if (!running) return err("There is no running machine to verify.")
   if (platform === "aws") {
-    if (state.aws.sshVerified) return { state, message: "SSH was already verified." }
-    return ok(patchAws(state, { sshVerified: true }), "aws", "uname -a succeeded on the EC2 instance.", now)
+    if (state.aws.sshVerified) return { state }
+    return ok(patchAws(state, { sshVerified: true }), "aws", "uname -a succeeded on the EC2 instance.", now, "")
   }
   if (platform === "azure") {
-    if (state.azure.sshVerified) return { state, message: "SSH was already verified." }
-    return ok(patchAzure(state, { sshVerified: true }), "azure", "uname -a succeeded on the Azure VM.", now)
+    if (state.azure.sshVerified) return { state }
+    return ok(patchAzure(state, { sshVerified: true }), "azure", "uname -a succeeded on the Azure VM.", now, "")
   }
-  if (state.do.sshVerified) return { state, message: "SSH was already verified." }
-  return ok(patchDo(state, { sshVerified: true }), "do", "uname -a succeeded on the Droplet.", now)
+  if (state.do.sshVerified) return { state }
+  return ok(patchDo(state, { sshVerified: true }), "do", "uname -a succeeded on the Droplet.", now, "")
 }
 
 function setBudget(state: LabState, platform: PlatformId, amount: number, now: number): ReduceResult {
@@ -665,7 +664,7 @@ function setBudget(state: LabState, platform: PlatformId, amount: number, now: n
 
 function fastForward(state: LabState, platform: PlatformId, now: number): ReduceResult {
   const bump = (vm: Vm): Vm => (isMetering(vm) ? { ...vm, billedMs: vm.billedMs + DAY_MS } : vm)
-  const text = "Added 24 hours to everything that is currently metering."
+  const text = "Cost updated for the next 24 hours."
   if (platform === "aws") return ok(patchAws(state, { instances: state.aws.instances.map(bump) }), "aws", text, now, text)
   if (platform === "azure") return ok(patchAzure(state, { vms: state.azure.vms.map(bump) }), "azure", text, now, text)
   return ok(patchDo(state, { droplets: state.do.droplets.map(bump) }), "do", text, now, text)

@@ -24,7 +24,6 @@ import { AZURE_IMAGES, AZURE_LOCATIONS, AZURE_SIZES, STUDENT, STUDIES } from "@/
 import { hourlyLabel, usd } from "@/lib/format"
 import { platformCost } from "@/lib/simulator"
 import { dispatch, useLabState } from "@/lib/store"
-import { azureSteps } from "@/lib/steps"
 import { cn } from "@/lib/utils"
 import type { Vm } from "@/lib/types"
 
@@ -43,9 +42,23 @@ export function AzureConsole() {
   const spend = now == null ? 0 : platformCost(lab, "azure", now)
   const alert =
     now != null && spend > azure.budgetUsd
-      ? `Simulated spend is ${usd(spend)}, past the ${usd(azure.budgetUsd)} alert. Delete the resource group.`
+      ? `Your budget of ${usd(azure.budgetUsd)} has been exceeded. Month-to-date cost is ${usd(spend)}.`
       : null
   const connectVm = azure.vms.find((vm) => vm.id === connectId) ?? null
+
+  if (stage === "signup") {
+    return (
+      <AccountForm
+        accent="azure"
+        showStudent
+        emailDefault={STUDENT.email}
+        onCreate={({ email, student }) => dispatch({ type: "azure/signup", email, student })}
+      />
+    )
+  }
+  if (stage === "signin") {
+    return <SignInCard accent="azure" email={azure.email} onSignIn={() => dispatch({ type: "azure/signin" })} />
+  }
 
   return (
     <ConsoleFrame
@@ -58,41 +71,22 @@ export function AzureConsole() {
         { id: "create", label: "Create a resource" },
         { id: "vms", label: "Virtual machines" },
         { id: "groups", label: "Resource groups" },
-        { id: "shell", label: "VMware shell" },
+        { id: "shell", label: "Cloud Shell" },
         { id: "billing", label: "Cost Management" },
         { id: "study", label: "Products and pricing" },
       ]}
       active={stage}
       onNavigate={setView}
       locked={!azure.reviewedSite || !azure.accountCreated || !azure.signedIn}
-      steps={azureSteps(lab)}
       alert={alert}
     >
       {stage === "study" && !azure.reviewedSite ? (
-        <AzureHome account={azure.email || STUDENT.email} vms={azure.vms} onOpen={() => undefined} continueLabel="Continue to account setup" onContinue={() => dispatch({ type: "azure/review" })} />
+        <AzureHome account={azure.email || STUDENT.email} vms={azure.vms} onOpen={() => undefined} continueLabel="Start free" onContinue={() => dispatch({ type: "azure/review" })} />
       ) : null}
       {stage === "study" && azure.reviewedSite ? (
         <div className="p-6"><StudyView study={STUDIES.azure} continueLabel="Back to virtual machines" onContinue={() => setView("vms")} /></div>
       ) : null}
       {stage === "portal" ? <AzureHome account={azure.email} vms={azure.vms} onOpen={setView} /> : null}
-      {stage === "signup" ? (
-        <div className="bg-[#faf9f8] p-6">
-          <AccountForm
-            accent="azure"
-            heading="Create an Azure account"
-            lede="Azure for Students is the path that usually avoids a card. Skybench records that choice and never asks for one."
-            ack="I understand a standard Azure free account asks for a card, while Azure for Students normally does not. This lab collects neither a card nor a real SMS."
-            emailDefault={STUDENT.email}
-            showStudent
-            onCreate={({ email, student }) => dispatch({ type: "azure/signup", email, student })}
-          />
-        </div>
-      ) : null}
-      {stage === "signin" ? (
-        <div className="bg-[#faf9f8] p-6">
-          <SignInCard accent="azure" email={azure.email} onSignIn={() => dispatch({ type: "azure/signin" })} />
-        </div>
-      ) : null}
       {stage === "vms" ? (
         <VmList
           vms={azure.vms}
@@ -105,17 +99,16 @@ export function AzureConsole() {
       {stage === "create" ? <CreateVm onDone={() => setView("vms")} /> : null}
       {stage === "groups" ? <Groups onDelete={setGroupToDelete} /> : null}
       {stage === "shell" ? (
-        <div className="grid gap-3 bg-[#faf9f8] p-6">
-          <h1 className="text-[24px] font-semibold">Cloud Shell</h1>
-          <p className="max-w-2xl text-[13px] leading-5 text-[#605e5c]">Install Azure CLI on the Ubuntu guest, run az login, create the resource group and VM, then SSH. Deleting the group is the cleanup step.</p>
-          <Terminal platform="azure" />
+        <div className="grid h-full bg-[#012456]">
+          <div className="flex h-9 items-center bg-[#012456] px-3 text-[13px] text-white">Azure Cloud Shell</div>
+          <div className="p-3"><Terminal platform="azure" /></div>
         </div>
       ) : null}
       {stage === "billing" ? (
         <div className="bg-[#faf9f8] p-6">
           <BillingPanel
             title="Cost Management"
-            note="Compute in this model stops billing when the VM is stopped and deallocated. Disks on a real subscription can keep charging. Delete the resource group to remove the VM and the group together."
+            note="Compute charges stop when a virtual machine is stopped and deallocated. Managed disks can continue to incur charges. Deleting the resource group deletes the virtual machine and the other resources in that group."
             budget={azure.budgetUsd}
             vms={azure.vms}
             now={now}
@@ -129,10 +122,10 @@ export function AzureConsole() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete {groupToDelete}?</DialogTitle>
-            <DialogDescription>Every VM in the group is removed. This is the cleanup the practical asks for.</DialogDescription>
+            <DialogDescription>Deleting a resource group is irreversible. All resources in the group will be deleted.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setGroupToDelete(null)}>Keep it</Button>
+            <Button type="button" variant="outline" onClick={() => setGroupToDelete(null)}>Cancel</Button>
             <Button type="button" variant="destructive" onClick={() => { if (!groupToDelete) return; tell(dispatch({ type: "azure/delete-group", name: groupToDelete })); setGroupToDelete(null) }}>Delete resource group</Button>
           </DialogFooter>
         </DialogContent>
@@ -175,14 +168,11 @@ function AzureHome({
   const visible = vms.filter((vm) => vm.state !== "terminated")
   return (
     <div className="bg-white px-6 py-5">
-      {continueLabel && onContinue ? (
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border border-[#0078d4] bg-[#f3f9fd] px-3 py-2 text-[13px]">
-          <p>This is the Azure portal home. Review it, then continue. A real sign-up happens at azure.microsoft.com.</p>
-          <button type="button" className={PRIMARY} onClick={onContinue}>{continueLabel}</button>
-        </div>
-      ) : null}
       <section>
-        <h2 className="text-[20px] font-semibold">Azure services</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-[20px] font-semibold">Azure services</h2>
+          {continueLabel && onContinue ? <button type="button" className={PRIMARY} onClick={onContinue}>{continueLabel}</button> : null}
+        </div>
         <div className="mt-3 flex gap-1 overflow-x-auto pb-2">
           {SERVICES.map((service) => (
             <button key={service.label} type="button" onClick={() => onOpen(service.id)} className="grid w-[92px] shrink-0 justify-items-center gap-2 px-1 text-center text-[12px] leading-4 text-[#0078d4] hover:underline">

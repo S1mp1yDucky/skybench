@@ -24,7 +24,6 @@ import { DO_IMAGES, DO_REGIONS, DO_SIZES, STUDENT, STUDIES } from "@/lib/catalog
 import { usd } from "@/lib/format"
 import { isMetering, platformCost } from "@/lib/simulator"
 import { dispatch, useLabState } from "@/lib/store"
-import { doSteps } from "@/lib/steps"
 import { cn } from "@/lib/utils"
 import type { Vm } from "@/lib/types"
 
@@ -53,10 +52,17 @@ export function DoConsole() {
   const spend = now == null ? 0 : platformCost(lab, "do", now)
   const alert =
     now != null && spend > ocean.budgetUsd
-      ? `Simulated spend is ${usd(spend)}, past the ${usd(ocean.budgetUsd)} alert. Destroy the Droplet. Powering it off does not stop the meter.`
+      ? `Your budget of ${usd(ocean.budgetUsd)} has been exceeded. Month-to-date cost is ${usd(spend)}.`
       : null
   const connectVm = ocean.droplets.find((vm) => vm.id === connectId) ?? null
   const destroyVm = ocean.droplets.find((vm) => vm.id === destroyId) ?? null
+
+  if (stage === "signup") {
+    return <AccountForm accent="do" emailDefault={STUDENT.email} onCreate={({ email }) => dispatch({ type: "do/signup", email })} />
+  }
+  if (stage === "signin") {
+    return <SignInCard accent="do" email={ocean.email} onSignIn={() => dispatch({ type: "do/signin" })} />
+  }
 
   return (
     <ConsoleFrame
@@ -70,38 +76,22 @@ export function DoConsole() {
         { id: "create", label: "Create Droplet" },
         { id: "keys", label: "Settings" },
         { id: "spaces", label: "Spaces Object Storage" },
-        { id: "shell", label: "VMware shell" },
+        { id: "shell", label: "Console" },
         { id: "billing", label: "Billing" },
         { id: "study", label: "Products and pricing" },
       ]}
       active={stage}
       onNavigate={setView}
       locked={!ocean.reviewedSite || !ocean.accountCreated || !ocean.signedIn}
-      steps={doSteps(lab)}
       alert={alert}
     >
       {stage === "study" && !ocean.reviewedSite ? (
-        <DoWelcome onCreate={() => undefined} continueLabel="Continue to account setup" onContinue={() => dispatch({ type: "do/review" })} />
+        <DoWelcome onCreate={() => undefined} continueLabel="Sign up" onContinue={() => dispatch({ type: "do/review" })} />
       ) : null}
       {stage === "study" && ocean.reviewedSite ? (
         <div className="p-6"><StudyView study={STUDIES.do} continueLabel="Back to Droplets" onContinue={() => setView("droplets")} /></div>
       ) : null}
       {stage === "home" ? <DoWelcome onCreate={() => setView("create")} droplets={ocean.droplets} onOpen={() => setView("droplets")} /> : null}
-      {stage === "signup" ? (
-        <div className="p-6">
-          <AccountForm
-            accent="do"
-            heading="Create a DigitalOcean account"
-            lede="A real account verifies email and then asks for a card or PayPal. Skybench applies a simulated promo credit instead."
-            ack="I understand DigitalOcean requires a card or PayPal, and that a powered-off Droplet still bills until it is destroyed. This lab takes no payment method."
-            emailDefault={STUDENT.email}
-            onCreate={({ email }) => dispatch({ type: "do/signup", email })}
-          />
-        </div>
-      ) : null}
-      {stage === "signin" ? (
-        <div className="p-6"><SignInCard accent="do" email={ocean.email} onSignIn={() => dispatch({ type: "do/signin" })} /></div>
-      ) : null}
       {stage === "droplets" ? (
         <DropletList
           droplets={ocean.droplets}
@@ -116,8 +106,7 @@ export function DoConsole() {
       {stage === "spaces" ? <Spaces /> : null}
       {stage === "shell" ? (
         <div className="grid gap-3 p-6">
-          <h1 className="text-[24px] font-semibold">Local shell</h1>
-          <p className="max-w-2xl text-[13px] leading-5 text-[#5b6785]">Generate a key, install doctl, authenticate, create the Droplet, then ssh root@the address. Destroy it before you close the recording.</p>
+          <h1 className="text-[20px] font-semibold text-[#031b4e]">Console</h1>
           <Terminal platform="do" />
         </div>
       ) : null}
@@ -125,7 +114,7 @@ export function DoConsole() {
         <div className="p-6">
           <BillingPanel
             title="Billing"
-            note="DigitalOcean bills a Droplet until it is destroyed, including while it is powered off. The meter here does the same, so you can see the difference from AWS and Azure."
+            note="Droplets are billed until they are destroyed, including while they are powered off."
             budget={ocean.budgetUsd}
             vms={ocean.droplets}
             now={now}
@@ -142,7 +131,7 @@ export function DoConsole() {
             <DialogDescription>Destroy is the only action that stops DigitalOcean billing. Power off leaves the Droplet on the invoice.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDestroyId(null)}>Keep it</Button>
+            <Button type="button" variant="outline" onClick={() => setDestroyId(null)}>Cancel</Button>
             <Button type="button" variant="destructive" onClick={() => { if (!destroyVm) return; tell(dispatch({ type: "do/destroy", id: destroyVm.id })); setDestroyId(null) }}>Destroy</Button>
           </DialogFooter>
         </DialogContent>
@@ -174,16 +163,13 @@ function DoWelcome({
   const visible = droplets.filter((vm) => vm.state !== "terminated")
   return (
     <div className="grid gap-5 p-6">
-      {continueLabel && onContinue ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[#b9d4ff] bg-[#f3f8ff] px-4 py-3 text-[13px]">
-          <p>This is the DigitalOcean control panel. Review it, then continue. A real account is created at cloud.digitalocean.com.</p>
-          <button type="button" className={BLUE} onClick={onContinue}>{continueLabel}</button>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-[13px] text-[#5b6785]">{today}</p>
+          <h1 className="mt-1 text-[28px] font-semibold tracking-tight text-[#031b4e]">Welcome, Talal</h1>
+          <p className="mt-1 text-[13px] text-[#5b6785]">My Team</p>
         </div>
-      ) : null}
-      <div>
-        <p className="text-[13px] text-[#5b6785]">{today}</p>
-        <h1 className="mt-1 text-[28px] font-semibold tracking-tight text-[#031b4e]">Welcome, Talal</h1>
-        <p className="mt-1 text-[13px] text-[#5b6785]">My Team</p>
+        {continueLabel && onContinue ? <button type="button" className={BLUE} onClick={onContinue}>{continueLabel}</button> : null}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-[#0069ff] px-5 py-4 text-white">
         <div>
@@ -316,7 +302,7 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
   const [region, setRegion] = useState(ocean.region)
   const [imageId, setImageId] = useState(DO_IMAGES[0].id)
   const [sizeId, setSizeId] = useState(DO_SIZES[1].id)
-  const [keyName, setKeyName] = useState(ocean.keys[0]?.name ?? "skybench")
+  const [keyName, setKeyName] = useState(ocean.keys[0]?.name ?? "MyKeyPair")
   const [auth, setAuth] = useState<"ssh" | "password">("ssh")
   const [error, setError] = useState<string | null>(null)
   const size = DO_SIZES.find((item) => item.id === sizeId)
@@ -404,7 +390,7 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
           </button>
           <button type="button" onClick={() => setAuth("password")} className={cn("rounded-md border bg-white p-3 text-left", auth === "password" ? "border-[#0069ff] ring-1 ring-[#0069ff]" : "border-[#d5deea]")}>
             <span className="block font-semibold">Password</span>
-            <span className="mt-1 block text-[12px] text-[#5b6785]">A real panel emails a root password. This lab uses SSH keys.</span>
+            <span className="mt-1 block text-[12px] text-[#5b6785]">Create a root password. SSH keys are recommended.</span>
           </button>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -426,7 +412,7 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
 
       <Section title="We recommend these options">
         <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" defaultChecked /> <span><span className="font-medium">Monitoring</span><span className="block text-[#5b6785]">Collect metrics for free with the DigitalOcean agent.</span></span></label>
-        <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" /> <span><span className="font-medium">Add backups</span><span className="block text-[#5b6785]">Weekly backups at 20% of the Droplet price. Left off so the lab bill stays on the Droplet only.</span></span></label>
+        <label className="flex items-start gap-2 text-[13px]"><input type="checkbox" /> <span><span className="font-medium">Add backups</span><span className="block text-[#5b6785]">Weekly backups are billed at 20% of the Droplet price.</span></span></label>
       </Section>
 
       <Section title="Finalize Details">
@@ -454,7 +440,7 @@ function CreateDroplet({ onDone }: { onDone: () => void }) {
 
 function Keys() {
   const keys = useLabState().do.keys
-  const [name, setName] = useState("skybench")
+  const [name, setName] = useState("web")
   const [error, setError] = useState<string | null>(null)
   return (
     <div className="p-6">
@@ -465,7 +451,7 @@ function Keys() {
         <span className="pb-2 text-[#5b6785]">Profile</span>
       </div>
       <h2 className="mt-4 text-[16px] font-semibold">SSH keys</h2>
-      <p className="mt-1 max-w-xl text-[13px] text-[#5b6785]">Add a public key to connect as root. The download is a lab prop, not a private key.</p>
+      <p className="mt-1 max-w-xl text-[13px] text-[#5b6785]">Add an SSH public key to connect to Droplets as root.</p>
       <form className="mt-3 flex flex-wrap items-end gap-2" onSubmit={(event) => {
         event.preventDefault()
         const outcome = dispatch({ type: "do/key", name })
@@ -507,7 +493,7 @@ function Spaces() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-[24px] font-semibold text-[#031b4e]">Spaces</h1>
       </div>
-      <p className="mt-1 text-[13px] text-[#5b6785]">Object storage. Names stay in this browser.</p>
+      <p className="mt-1 text-[13px] text-[#5b6785]">Object storage for files and static assets.</p>
       <form className="mt-4 flex flex-wrap items-end gap-2" onSubmit={(event) => {
         event.preventDefault()
         const outcome = dispatch({ type: "do/space", name })

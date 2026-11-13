@@ -171,9 +171,9 @@ export function shellHint(state: LabState, platform: PlatformId): string {
   if (platform === "aws") {
     if (!state.aws.cliInstalled) return "sudo apt install -y awscli"
     if (!awsConfigured(state)) return "aws configure"
-    if (state.aws.keyPairs.length === 0) return "aws ec2 create-key-pair --key-name skybench"
+    if (state.aws.keyPairs.length === 0) return "aws ec2 create-key-pair --key-name MyKeyPair"
     if (!state.aws.launchedOnce) {
-      return "aws ec2 run-instances --image-id ami-al2023 --instance-type t2.micro --key-name skybench"
+      return "aws ec2 run-instances --image-id ami-al2023 --instance-type t2.micro --key-name MyKeyPair"
     }
     const running = state.aws.instances.find((vm) => vm.state === "running")
     if (running && !state.aws.sshVerified && running.publicIp) {
@@ -187,7 +187,7 @@ export function shellHint(state: LabState, platform: PlatformId): string {
     if (!state.azure.cliInstalled) return "sudo apt install -y azure-cli"
     if (!state.azure.loggedIn) return "az login"
     if (state.azure.resourceGroups.length === 0) return "az group create --name lab-rg --location centralindia"
-    if (state.azure.keyPairs.length === 0) return "ssh-keygen -t ed25519 -f ~/.ssh/skybench -N \"\""
+    if (state.azure.keyPairs.length === 0) return "ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N \"\""
     if (!state.azure.launchedOnce) {
       return "az vm create --resource-group lab-rg --name vm-lab --image Ubuntu2204 --size Standard_B1s --admin-username azureuser --generate-ssh-keys"
     }
@@ -201,10 +201,10 @@ export function shellHint(state: LabState, platform: PlatformId): string {
   }
   if (!state.do.cliInstalled) return "sudo snap install doctl"
   if (!state.do.authed) return "doctl auth init"
-  if (state.do.keys.length === 0) return "ssh-keygen -t ed25519 -f ~/.ssh/skybench -N \"\""
+  if (state.do.keys.length === 0) return "ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N \"\""
   if (!state.do.launchedOnce) {
-    const key = state.do.keys[0]?.name ?? "skybench"
-    return `doctl compute droplet create droplet-lab --image ubuntu-22-04-x64 --size s-1vcpu-1gb --region blr1 --ssh-keys ${key}`
+    const key = state.do.keys[0]?.name ?? "MyKeyPair"
+    return `doctl compute droplet create web --image ubuntu-22-04-x64 --size s-1vcpu-1gb --region blr1 --ssh-keys ${key}`
   }
   const running = state.do.droplets.find((vm) => vm.state === "running")
   if (running && !state.do.sshVerified && running.publicIp) return `ssh root@${running.publicIp}`

@@ -69,19 +69,18 @@ export function runCommand(platform: PlatformId, state: LabState, raw: string): 
   if (head === "ssh-keygen") return sshKeygen(platform, argv)
   if (head === "ssh") return ssh(platform, state, argv)
   if (["curl", "wget", "ping"].includes(head)) {
-    return {
-      lines: [err("This guest only reaches the simulated cloud APIs. Use aws, az, or doctl.")],
-      actions: [],
-    }
+    const host = argv.find((part) => part.includes(".") && !part.startsWith("-")) ?? "host"
+    const text = head === "ping" ? `ping: ${host}: Name or service not known` : `${head}: (6) Could not resolve host`
+    return { lines: [err(text)], actions: [] }
   }
   if (head === "apt" || head === "apt-get" || (head === "sudo" && (argv[1] === "apt" || argv[1] === "apt-get"))) {
     return {
-      lines: [info("Package lists are simulated. Install awscli, azure-cli, or doctl with the commands in help.")],
+      lines: [out("Reading package lists..."), out("Building dependency tree..."), out("0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.")],
       actions: [],
     }
   }
   if (head === "snap" || (head === "sudo" && argv[1] === "snap")) {
-    return { lines: [err("snap: nothing to do. Try: sudo snap install doctl")], actions: [] }
+    return { lines: [err("error: a snap name is required")], actions: [] }
   }
 
   const local = localCommand(argv)
@@ -103,10 +102,7 @@ function localCommand(argv: string[]): ShellResult | null {
   if (cmd === "echo") return { lines: [out(rest.join(" "))], actions: [] }
   if (cmd === "uname") {
     return {
-      lines: [
-        out(LOCAL_UNAME),
-        info("This is the local VMware guest, not the cloud VM. SSH over, then run uname -a there."),
-      ],
+      lines: [out(LOCAL_UNAME)],
       actions: [],
     }
   }
@@ -124,7 +120,6 @@ function install(platform: PlatformId, line: string): ShellResult {
         out("Reading package lists..."),
         out("Installing awscli..."),
         out("aws-cli/2.27.50 Python/3.12.3 Linux/6.8.0 source/x86_64"),
-        info("The binary is simulated. Nothing was downloaded."),
       ],
       actions: [{ type: "aws/install-cli" }],
     }
@@ -136,7 +131,6 @@ function install(platform: PlatformId, line: string): ShellResult {
         out("Reading package lists..."),
         out("Installing azure-cli..."),
         out("azure-cli 2.67.0"),
-        info("The binary is simulated. Nothing was downloaded."),
       ],
       actions: [{ type: "azure/install-cli" }],
     }
@@ -146,12 +140,11 @@ function install(platform: PlatformId, line: string): ShellResult {
     return {
       lines: [
         out("doctl 1.120.0-release installed"),
-        info("The binary is simulated. Nothing was downloaded."),
       ],
       actions: [{ type: "do/install-cli" }],
     }
   }
-  return { lines: [err("This lab can install awscli, azure-cli, or doctl.")], actions: [] }
+  return { lines: [err("E: Unable to locate package")], actions: [] }
 }
 
 function sshKeygen(platform: PlatformId, argv: string[]): ShellResult {
@@ -163,7 +156,7 @@ function sshKeygen(platform: PlatformId, argv: string[]): ShellResult {
       out("Generating public/private ed25519 key pair."),
       out(`Your identification has been saved in /home/ubuntu/${file.replace("~/", "")}`),
       out(`Your public key has been saved in /home/ubuntu/${file.replace("~/", "")}.pub`),
-      info("The private key was not stored. Skybench only keeps a public key placeholder."),
+      out("The key fingerprint is: SHA256:n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg"),
     ],
     actions: [keyAction(platform, name)],
   }
@@ -205,8 +198,7 @@ function ssh(platform: PlatformId, state: LabState, argv: string[]): ShellResult
   }
   return {
     lines: [
-      info(`Connected to ${vm.username}@${vm.publicIp}.`),
-      info("You are on the cloud guest now. Run uname -a, then exit."),
+      out(`Welcome to ${vm.imageLabel}`),
     ],
     actions: [],
     connect: vm.id,
@@ -222,7 +214,7 @@ function awsCommand(platform: PlatformId, state: LabState, argv: string[]): Shel
     return { lines: [out("aws-cli/2.27.50 Python/3.12.3 Linux/6.8.0 source/x86_64 Ubuntu")], actions: [] }
   }
   if (sub === "configure" && (argv[2] === undefined)) {
-    return { lines: [info("Keys you type next are discarded. Any placeholder is enough.")], actions: [], wizard: "aws-configure" }
+    return { lines: [], actions: [], wizard: "aws-configure" }
   }
   if (sub === "configure" && argv[2] === "list") return { lines: configureList(state), actions: [] }
   if (sub === "configure" && argv[2] === "set") return configureSet(state, argv)
@@ -231,14 +223,14 @@ function awsCommand(platform: PlatformId, state: LabState, argv: string[]): Shel
   }
   if (sub === "sts" && argv[2] === "get-caller-identity") {
     return {
-      lines: [out(JSON.stringify({ Account: "000000000000", Arn: "arn:aws:iam::000000000000:user/skybench", UserId: "SIMULATED" }, null, 2))],
+      lines: [out(JSON.stringify({ UserId: "438202302102", Account: "438202302102", Arn: "arn:aws:iam::438202302102:root" }, null, 2))],
       actions: [],
     }
   }
   if (sub === "s3" && argv[2] === "ls") {
     const lines = state.aws.buckets.length
       ? state.aws.buckets.map((bucket) => out(`s3://${bucket.name}`))
-      : [info("No buckets in this lab.")]
+      : []
     return { lines, actions: [] }
   }
   if (sub === "s3" && argv[2] === "mb") {
@@ -255,9 +247,7 @@ function awsCommand(platform: PlatformId, state: LabState, argv: string[]): Shel
     const name = typeof flags["key-name"] === "string" ? flags["key-name"] : ""
     return {
       lines: [
-        out(`Simulated key pair ${name || "(unnamed)"}.`),
-        out("No private key is printed. A real CLI would show key material here."),
-        info("Download the prop file from Key pairs if a recording needs a file. It will not open a real server."),
+        out(JSON.stringify({ KeyName: name || "(unnamed)", KeyPairId: `key-${name || "pair"}` }, null, 2)),
       ],
       actions: [{ type: "aws/key", name }],
     }
@@ -296,9 +286,7 @@ function azureCommand(platform: PlatformId, state: LabState, argv: string[]): Sh
   if (sub === "login") {
     return {
       lines: [
-        info("A real az login opens https://microsoft.com/devicelogin and waits for a device code."),
-        out(`Signed in as ${state.azure.email || "the lab account"}.`),
-        out(`Subscription: ${state.azure.subscription} (simulated)`),
+        out(JSON.stringify([{ cloudName: "AzureCloud", name: state.azure.subscription, state: "Enabled", user: { name: state.azure.email, type: "user" }, isDefault: true }], null, 2)),
       ],
       actions: [{ type: "azure/login" }],
     }
@@ -342,29 +330,29 @@ function doCommand(platform: PlatformId, state: LabState, argv: string[]): Shell
   if (!state.do.cliInstalled) return missing("doctl", "sudo snap install doctl")
   const sub = argv[1] ?? ""
   if (!sub || sub === "help") return { lines: help("do"), actions: [] }
-  if (sub === "version") return { lines: [out("doctl version 1.120.0-release (simulated)")], actions: [] }
+  if (sub === "version") return { lines: [out("doctl version 1.120.0-release")], actions: [] }
   if (sub === "auth" && argv[2] === "init") {
     const flags = flagMap(argv.slice(3))
     if (typeof flags["access-token"] === "string") {
       return {
-        lines: [info("Token discarded."), out("doctl is authenticated for this lab.")],
+        lines: [out("Validating token... OK")],
         actions: [{ type: "do/auth" }],
       }
     }
-    return { lines: [info("Paste any placeholder token. It is discarded and never stored.")], actions: [], wizard: "do-token" }
+    return { lines: [out("Using token for context default")], actions: [], wizard: "do-token" }
   }
   if (!state.do.authed && !(sub === "auth")) {
     return { lines: [err("Error: access token is required. (hint: run doctl auth init)")], actions: [] }
   }
   if (sub === "account" && argv[2] === "get") {
-    return { lines: [out(`Email: ${state.do.email}`), out("Status: active (simulated credit)")], actions: [] }
+    return { lines: [out(`Email: ${state.do.email}`), out("Status: active"), out("Email Verified: true")], actions: [] }
   }
   if (sub === "compute" && argv[2] === "ssh-key" && argv[3] === "list") {
     if (state.do.keys.length === 0) return { lines: [info("No SSH keys.")], actions: [] }
     return { lines: state.do.keys.map((key) => out(`${key.name.padEnd(20)} ${key.fingerprint}`)), actions: [] }
   }
   if (sub === "compute" && argv[2] === "ssh-key" && argv[3] === "create") {
-    const name = argv[4] && !argv[4].startsWith("--") ? argv[4] : "skybench"
+    const name = argv[4] && !argv[4].startsWith("--") ? argv[4] : "MyKeyPair"
     return { lines: [out(`Added SSH key ${name}.`)], actions: [{ type: "do/key", name }] }
   }
   if (sub === "compute" && argv[2] === "droplet" && argv[3] === "list") {
@@ -405,7 +393,7 @@ function runInstances(state: LabState, argv: string[]): ShellResult {
   const name = stringFlag(flags, ["name"]) || "lab-vm"
   if (!keyName) return { lines: [err("--key-name is required. Create a key pair first.")], actions: [] }
   if (flags.count && flags.count !== "1" && flags.count !== true) {
-    return { lines: [err("This lab launches one instance at a time.")], actions: [] }
+    return { lines: [err("An error occurred (InstanceLimitExceeded) when calling the RunInstances operation: Your quota allows for 0 more running instance(s).")], actions: [] }
   }
   return {
     lines: [out(`Pending ${name} (${imageId}, ${sizeId}) in ${state.aws.region}.`)],
@@ -447,11 +435,11 @@ function configureSet(state: LabState, argv: string[]): ShellResult {
   const value = argv[4] ?? ""
   if (key === "aws_access_key_id") {
     if (!value) return { lines: [err("Missing value.")], actions: [] }
-    return { lines: [info("Access key discarded.")], actions: [{ type: "aws/credential", field: "access" }] }
+    return { lines: [], actions: [{ type: "aws/credential", field: "access" }] }
   }
   if (key === "aws_secret_access_key") {
     if (!value) return { lines: [err("Missing value.")], actions: [] }
-    return { lines: [info("Secret discarded.")], actions: [{ type: "aws/credential", field: "secret" }] }
+    return { lines: [], actions: [{ type: "aws/credential", field: "secret" }] }
   }
   if (key === "region" || key === "default.region") {
     if (!AWS_REGIONS.some((region) => region.id === value)) {
@@ -475,8 +463,8 @@ function configureList(state: LabState): ShellLine[] {
   const set = awsConfigured(state)
   return [
     out(`${"NAME".padEnd(14)} ${"VALUE".padEnd(18)} TYPE`),
-    out(`${"access_key".padEnd(14)} ${set ? "****************" : "<not set>".padEnd(18)} simulated`),
-    out(`${"secret_key".padEnd(14)} ${set ? "****************" : "<not set>".padEnd(18)} simulated`),
+    out(`${"access_key".padEnd(14)} ${set ? "****************" : "<not set>".padEnd(18)} shared-credentials-file`),
+    out(`${"secret_key".padEnd(14)} ${set ? "****************" : "<not set>".padEnd(18)} shared-credentials-file`),
     out(`${"region".padEnd(14)} ${state.aws.region.padEnd(18)} config`),
     out(`${"output".padEnd(14)} ${state.aws.outputFormat.padEnd(18)} config`),
   ]
@@ -498,8 +486,7 @@ function idAction(argv: string[], make: (id: string) => Action[], label: string)
 
 function help(platform: PlatformId): ShellLine[] {
   const common = [
-    "Local guest: help, uname -a, whoami, pwd, ls, ssh, ssh-keygen, clear",
-    "Install only works for this console's CLI.",
+    "help, uname -a, whoami, pwd, ls, ssh, ssh-keygen, clear",
   ]
   if (platform === "aws") {
     return [
@@ -507,11 +494,11 @@ function help(platform: PlatformId): ShellLine[] {
       out("sudo apt install -y awscli"),
       out("aws --version"),
       out("aws configure"),
-      out("aws ec2 create-key-pair --key-name skybench"),
-      out("aws ec2 run-instances --image-id ami-al2023 --instance-type t2.micro --key-name skybench"),
+      out("aws ec2 create-key-pair --key-name MyKeyPair"),
+      out("aws ec2 run-instances --image-id ami-al2023 --instance-type t2.micro --key-name MyKeyPair"),
       out("aws ec2 describe-instances"),
       out("aws ec2 terminate-instances --instance-ids i-..."),
-      out("ssh -i skybench.pem ec2-user@203.0.113.x"),
+      out("ssh -i MyKeyPair.pem ec2-user@203.0.113.x"),
       info(`Regions: ${AWS_REGIONS.map((region) => region.id).join(", ")}`),
       info(`Types: ${AWS_SIZES.map((size) => size.id).join(", ")}`),
     ]
@@ -522,10 +509,10 @@ function help(platform: PlatformId): ShellLine[] {
       out("sudo apt install -y azure-cli"),
       out("az version"),
       out("az login"),
-      out("az group create --name lab-rg --location centralindia"),
-      out("az vm create -g lab-rg -n vm-lab --image Ubuntu2204 --size Standard_B1s --admin-username azureuser --generate-ssh-keys"),
+      out("az group create --name rg-web --location centralindia"),
+      out("az vm create -g rg-web -n vm-web --image Ubuntu2204 --size Standard_B1s --admin-username azureuser --generate-ssh-keys"),
       out("az vm list --output table"),
-      out("az group delete --name lab-rg --yes"),
+      out("az group delete --name rg-web --yes"),
       out("ssh azureuser@198.51.100.x"),
       info(`Locations: ${AZURE_LOCATIONS.map((location) => location.id).join(", ")}`),
     ]
@@ -535,13 +522,13 @@ function help(platform: PlatformId): ShellLine[] {
     out("sudo snap install doctl"),
     out("doctl version"),
     out("doctl auth init"),
-    out('ssh-keygen -t ed25519 -f ~/.ssh/skybench -N ""'),
-    out("doctl compute droplet create droplet-lab --image ubuntu-22-04-x64 --size s-1vcpu-1gb --region blr1 --ssh-keys skybench"),
+    out('ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""'),
+    out("doctl compute droplet create web --image ubuntu-22-04-x64 --size s-1vcpu-1gb --region blr1 --ssh-keys MyKeyPair"),
     out("doctl compute droplet list"),
     out("doctl compute droplet delete ID --force"),
     out("ssh root@192.0.2.x"),
     info(`Regions: ${DO_REGIONS.map((region) => region.id).join(", ")}`),
-    info("Power-off keeps the meter running. Destroy the Droplet to stop it."),
+    info("A powered-off Droplet is still billed. Destroy it to stop charges."),
   ]
 }
 
@@ -552,9 +539,9 @@ function isInstall(line: string): boolean {
     || /^install\s+(aws|azure-cli|az|doctl)$/.test(line)
 }
 
-function wrongGuest(platform: PlatformId, tool: string): ShellResult {
-  const where = platform === "aws" ? "AWS" : platform === "azure" ? "Azure" : "DigitalOcean"
-  return { lines: [err(`${tool} belongs on the ${where} guest. Switch consoles.`)], actions: [] }
+function wrongGuest(_platform: PlatformId, tool: string): ShellResult {
+  const bin = tool === "AWS CLI" ? "aws" : tool === "Azure CLI" ? "az" : tool === "doctl" ? "doctl" : tool.toLowerCase()
+  return { lines: [err(`bash: ${bin}: command not found`)], actions: [] }
 }
 
 function missing(bin: string, hint: string): ShellResult {

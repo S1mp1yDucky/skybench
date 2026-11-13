@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { DoConsole } from "@/components/consoles/do-console"
 
 export const metadata: Metadata = {
-  title: "DigitalOcean",
+  title: { absolute: "DigitalOcean" },
 }
 
 export default function DigitalOceanPage() {

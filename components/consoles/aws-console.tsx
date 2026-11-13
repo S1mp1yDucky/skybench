@@ -24,7 +24,6 @@ import { AWS_IMAGES, AWS_REGIONS, AWS_SIZES, STUDENT, STUDIES } from "@/lib/cata
 import { hourlyLabel, usd } from "@/lib/format"
 import { platformCost } from "@/lib/simulator"
 import { dispatch, useLabState } from "@/lib/store"
-import { awsSteps } from "@/lib/steps"
 import { cn } from "@/lib/utils"
 import type { KeyMaterial, Vm } from "@/lib/types"
 
@@ -43,10 +42,23 @@ export function AwsConsole() {
   const spend = now == null ? 0 : platformCost(lab, "aws", now)
   const alert =
     now != null && spend > aws.budgetUsd
-      ? `Simulated spend is ${usd(spend)}, past the ${usd(aws.budgetUsd)} alert. Terminate unused instances.`
+      ? `Your budget of ${usd(aws.budgetUsd)} has been exceeded. Month-to-date cost is ${usd(spend)}.`
       : null
   const connectVm = aws.instances.find((vm) => vm.id === connectId) ?? null
   const killVm = aws.instances.find((vm) => vm.id === killId) ?? null
+
+  if (stage === "signup") {
+    return (
+      <AccountForm
+        accent="aws"
+        emailDefault={STUDENT.email}
+        onCreate={({ email }) => dispatch({ type: "aws/signup", email })}
+      />
+    )
+  }
+  if (stage === "signin") {
+    return <SignInCard accent="aws" email={aws.email} onSignIn={() => dispatch({ type: "aws/signin" })} />
+  }
 
   return (
     <ConsoleFrame
@@ -70,14 +82,13 @@ export function AwsConsole() {
         { id: "launch", label: "Launch instance" },
         { id: "keys", label: "Key Pairs" },
         { id: "s3", label: "S3" },
-        { id: "shell", label: "VMware shell" },
+        { id: "shell", label: "CloudShell" },
         { id: "billing", label: "Billing and Cost Management" },
         { id: "study", label: "Products and pricing" },
       ]}
       active={stage}
       onNavigate={setView}
       locked={!aws.reviewedSite || !aws.accountCreated || !aws.signedIn}
-      steps={awsSteps(lab)}
       alert={alert}
     >
       {stage === "study" && !aws.reviewedSite ? (
@@ -86,7 +97,7 @@ export function AwsConsole() {
           instances={aws.instances}
           onLaunch={() => undefined}
           onOpenInstances={() => undefined}
-          continueLabel="Continue to account setup"
+          continueLabel="Create an AWS account"
           onContinue={() => dispatch({ type: "aws/review" })}
         />
       ) : null}
@@ -97,23 +108,6 @@ export function AwsConsole() {
       ) : null}
       {stage === "home" ? (
         <Ec2Home region={aws.region} instances={aws.instances} onLaunch={() => setView("launch")} onOpenInstances={() => setView("ec2")} />
-      ) : null}
-      {stage === "signup" ? (
-        <div className="p-6">
-          <AccountForm
-            accent="aws"
-            heading="Create an AWS account"
-            lede="A real account asks for a card after this form. Skybench stops before that and keeps the rest of the practical on this machine."
-            ack="I understand a real AWS account requires a debit or credit card. This lab does not collect one, does not send SMS, and discards the password and verification code."
-            emailDefault={STUDENT.email}
-            onCreate={({ email }) => dispatch({ type: "aws/signup", email })}
-          />
-        </div>
-      ) : null}
-      {stage === "signin" ? (
-        <div className="p-6">
-          <SignInCard accent="aws" email={aws.email} onSignIn={() => dispatch({ type: "aws/signin" })} />
-        </div>
       ) : null}
       {stage === "ec2" ? (
         <InstanceTable
@@ -130,11 +124,9 @@ export function AwsConsole() {
       {stage === "keys" ? <KeyPairs keys={aws.keyPairs} /> : null}
       {stage === "s3" ? <Buckets region={aws.region} buckets={aws.buckets} /> : null}
       {stage === "shell" ? (
-        <div className="grid gap-3 p-6">
-          <h1 className="text-[28px] font-bold">CloudShell</h1>
-          <p className="max-w-2xl text-[13px] leading-5 text-[#545b64]">
-            The practical installs AWS CLI on the local Ubuntu guest, then connects to the instance. This is that guest. The cloud VM is a second prompt after ssh.
-          </p>
+        <div className="grid gap-3 bg-[#0f1b2d] p-4 text-white">
+          <h1 className="text-[16px] font-semibold">CloudShell</h1>
+          <p className="text-[13px] text-[#d5dbdb]">ap-south-1</p>
           <Terminal platform="aws" />
         </div>
       ) : null}
@@ -142,7 +134,7 @@ export function AwsConsole() {
         <div className="p-6">
           <BillingPanel
             title="Billing and Cost Management"
-            note="EC2 compute in this model bills only while the instance is running. On a real account, an EBS volume can keep costing money after you stop it. Termination is the cleanup the practical asks for."
+            note="EC2 On-Demand usage is billed per second while an instance is running. EBS volumes can continue to incur charges after an instance is stopped. Terminate the instance to delete it."
             budget={aws.budgetUsd}
             vms={aws.instances}
             now={now}
@@ -157,11 +149,11 @@ export function AwsConsole() {
           <DialogHeader>
             <DialogTitle>Terminate instance {killVm?.id}?</DialogTitle>
             <DialogDescription>
-              On termination, the instance and its root volume are deleted. This stops the simulated meter. A real account deletes the instance unless you kept the volume on purpose.
+              On termination, the instance and its root volume are deleted.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setKillId(null)}>Keep it</Button>
+            <Button type="button" variant="outline" onClick={() => setKillId(null)}>Cancel</Button>
             <Button
               type="button"
               variant="destructive"
@@ -222,18 +214,16 @@ function Ec2Home({
   ]
   return (
     <div className="px-5 py-4">
-      {continueLabel && onContinue ? (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border border-[#0073bb] bg-[#f2f8fd] px-3 py-2">
-          <p>Review the EC2 console. A real account is created on aws.amazon.com. This lab records that you reviewed it.</p>
-          <button type="button" className={ORANGE} onClick={onContinue}>{continueLabel}</button>
-        </div>
-      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="flex items-center gap-2 text-[28px] leading-9 font-bold">
           EC2 Dashboard
           <Info />
         </h1>
-        <button type="button" className={ORANGE} onClick={onLaunch}>Launch instance</button>
+        {onContinue && continueLabel ? (
+          <button type="button" className={ORANGE} onClick={onContinue}>{continueLabel}</button>
+        ) : (
+          <button type="button" className={ORANGE} onClick={onLaunch}>Launch instance</button>
+        )}
       </div>
       <div className="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
         <div className="grid gap-4">
@@ -260,7 +250,7 @@ function Ec2Home({
             <section className="border border-[#d5dbdb] bg-white p-4">
               <h2 className="text-[18px] font-bold">Launch instance</h2>
               <p className="mt-2 text-[13px] leading-5 text-[#545b64]">To get started, launch an Amazon EC2 instance, which is a virtual server in the cloud.</p>
-              <button type="button" className={cn(ORANGE, "mt-3")} onClick={onLaunch}>Launch instance</button>
+              {onContinue ? null : <button type="button" className={cn(ORANGE, "mt-3")} onClick={onLaunch}>Launch instance</button>}
             </section>
             <section className="border border-[#d5dbdb] bg-white p-4">
               <h2 className="text-[18px] font-bold">Service health</h2>
@@ -393,7 +383,7 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
   const [osHint, setOsHint] = useState<string | null>(null)
   const [sizeId, setSizeId] = useState(AWS_SIZES[0].id)
   const [keyName, setKeyName] = useState(aws.keyPairs[0]?.name ?? "")
-  const [newKey, setNewKey] = useState("skybench")
+  const [newKey, setNewKey] = useState("MyKeyPair")
   const [http, setHttp] = useState(false)
   const [count, setCount] = useState(1)
   const [error, setError] = useState<string | null>(null)
@@ -414,7 +404,7 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
       onSubmit={(event) => {
         event.preventDefault()
         if (count !== 1) {
-          setError("This lab launches one instance at a time.")
+          setError("You can launch 1 instance at a time from this page.")
           return
         }
         const outcome = dispatch({ type: "aws/launch", name, imageId, sizeId, keyName, allowHttp: http })
@@ -449,7 +439,7 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
                       if (known) {
                         setImageId(os.id)
                         setOsHint(null)
-                      } else setOsHint(`${os.name} is listed in Quick Start. This practical uses Amazon Linux 2023 or Ubuntu Server 22.04 LTS.`)
+                      } else setOsHint(`${os.name} is not available for this account. Choose Amazon Linux or Ubuntu.`)
                     }}
                     className={cn("grid h-[72px] w-[104px] place-items-center rounded-sm border bg-white text-[13px]", selected ? "border-[#0073bb] ring-1 ring-[#0073bb]" : "border-[#d5dbdb] hover:border-[#0073bb]")}
                   >
@@ -527,7 +517,7 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
                 Create key pair
               </button>
             </div>
-            <p className="text-[12px] text-[#545b64]">Key pair type RSA, private key file format .pem. The download on the Key Pairs page is a lab prop, not a private key.</p>
+            <p className="text-[12px] text-[#545b64]">Key pair type: RSA. Private key file format: .pem.</p>
           </Card>
           <Card title="Network settings">
             <dl className="grid gap-2 text-[13px] sm:grid-cols-2">
@@ -561,7 +551,7 @@ function LaunchInstance({ onDone }: { onDone: () => void }) {
           </Card>
           <details className="border border-[#d5dbdb] bg-white px-4 py-3">
             <summary className="cursor-pointer text-[18px] font-bold">Advanced details</summary>
-            <p className="mt-2 text-[13px] text-[#545b64]">Tenancy: Shared. IAM instance profile: None. Metadata version: V2 only. Credit specification: standard. These stay at the console defaults for this practical.</p>
+            <p className="mt-2 text-[13px] text-[#545b64]">Tenancy: Shared. IAM instance profile: None. Metadata version: V2 only. Credit specification: standard.</p>
           </details>
           {error ? <p role="alert" className="border border-[#d13212] bg-[#fdf3f1] px-3 py-2 text-[13px] text-[#d13212]">{error}</p> : null}
         </div>
@@ -618,7 +608,7 @@ function Buckets({ region, buckets }: { region: string; buckets: { name: string;
   return (
     <div className="px-5 py-4">
       <h1 className="text-[28px] font-bold">Buckets</h1>
-      <p className="mt-1 text-[13px] text-[#545b64]">Amazon S3 · {region}. Names in this lab stay in the browser. They are not the real global S3 namespace.</p>
+      <p className="mt-1 text-[13px] text-[#545b64]">Amazon S3 · {region}. General purpose buckets.</p>
       <form
         className="mt-3 flex flex-wrap items-end gap-2"
         onSubmit={(event) => {

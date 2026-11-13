@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useId, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
 import { runCommand, runRemote, redact } from "@/lib/shell"
 import { findVm } from "@/lib/simulator"
 import { dispatch, useLabState } from "@/lib/store"
@@ -52,7 +51,7 @@ export function Terminal({
   const inputId = useId()
   const scroller = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const [lines, setLines] = useState<Row[]>(() => welcome(platform, Boolean(lockedVmId)).map((text) => row("info", text)))
+  const [lines, setLines] = useState<Row[]>(() => welcome().map((text) => row("info", text)))
   const [mode, setMode] = useState<Mode>(lockedVmId ? { kind: "remote", vmId: lockedVmId } : { kind: "local" })
   const [value, setValue] = useState("")
   const [history, setHistory] = useState<string[]>([])
@@ -62,7 +61,7 @@ export function Terminal({
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight })
   }, [lines, mode])
 
-  const prompt = promptFor(mode, lab, platform)
+  const prompt = promptFor(mode, lab)
   const secret = mode.kind === "aws-secret" || mode.kind === "do-token" || mode.kind === "aws-key"
   const hint = mode.kind === "local" && !lockedVmId ? shellHint(lab, platform) : null
 
@@ -99,7 +98,7 @@ export function Terminal({
       }
       push([row("cmd", `${prompt} ****`)])
       if (!trimmed) {
-        push([row("err", "Type any placeholder. It is discarded and not stored. Type cancel to stop.")])
+        push([row("err", "The value cannot be empty. Type cancel to stop.")])
         return
       }
       if (mode.kind === "aws-key") setMode({ kind: "aws-secret" })
@@ -217,19 +216,11 @@ export function Terminal({
 
   return (
     <div className={cn("grid gap-2", className)}>
-      {hint ? (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-[#4d463c]">
-          <span>Next command</span>
-          <code className="rounded bg-[#f4efe4] px-1.5 py-0.5 font-mono text-[12px]">{hint}</code>
-          <Button type="button" variant="outline" size="sm" onClick={() => setValue(hint)}>
-            Place in the shell
-          </Button>
-        </div>
-      ) : null}
+      {hint ? <p className="font-mono text-[12px] text-[#9db0a2]">{hint}</p> : null}
       <div className="overflow-hidden rounded-xl border border-[#1c2420] bg-[#121816] text-[#d7e4d8] shadow-sm">
-        <div className="flex items-center gap-2 border-b border-white/10 px-3 py-2 text-[11px] tracking-wide text-[#9db0a2] uppercase">
-          <span className="size-2 rounded-full bg-[#c4622d]" aria-hidden />
-          VMware Ubuntu guest
+        <div className="flex items-center gap-2 border-b border-white/10 px-3 py-2 font-mono text-[12px] text-[#9db0a2]">
+          <span className="size-2 rounded-full bg-[#3dd68c]" aria-hidden />
+          {prompt}
         </div>
         <div
           ref={scroller}
@@ -278,22 +269,16 @@ export function Terminal({
   )
 }
 
-function welcome(platform: PlatformId, locked: boolean): string[] {
-  if (locked) {
-    return [
-      "SSH session inside Skybench.",
-      "Run uname -a to finish the connection step. Type exit to close.",
-    ]
-  }
-  const tool = platform === "aws" ? "AWS CLI" : platform === "azure" ? "Azure CLI" : "doctl"
+function welcome(): string[] {
   return [
-    "Ubuntu 24.04 LTS — VMware Workstation guest (simulated).",
-    `This is where the practical installs ${tool} and opens SSH.`,
-    "Type help. Secrets you enter are discarded.",
+    "Welcome to Ubuntu 24.04.3 LTS (GNU/Linux 6.8.0-45-generic x86_64)",
+    "",
+    " * Documentation:  https://help.ubuntu.com",
+    "",
   ]
 }
 
-function promptFor(mode: Mode, lab: ReturnType<typeof useLabState>, platform: PlatformId): string {
+function promptFor(mode: Mode, lab: ReturnType<typeof useLabState>): string {
   if (mode.kind === "remote") {
     const found = findVm(lab, mode.vmId)
     if (!found?.vm.publicIp) return "guest:~$"
@@ -304,5 +289,5 @@ function promptFor(mode: Mode, lab: ReturnType<typeof useLabState>, platform: Pl
   if (mode.kind === "aws-region") return `Default region name [${lab.aws.region}]:`
   if (mode.kind === "aws-format") return "Default output format [json]:"
   if (mode.kind === "do-token") return "DigitalOcean access token:"
-  return platform === "do" ? "ubuntu@vmware:~$" : "ubuntu@vmware:~$"
+  return "ubuntu@ubuntu:~$"
 }

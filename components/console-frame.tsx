@@ -1,9 +1,7 @@
 "use client"
 
-import Link from "next/link"
 import { useState } from "react"
 import { Bell, ChevronDown, CircleHelp, Globe, Menu, Search, Settings, TerminalSquare, X } from "lucide-react"
-import type { LabStep } from "@/lib/steps"
 import { cn } from "@/lib/utils"
 
 export interface ConsoleNavItem {
@@ -21,7 +19,6 @@ export function ConsoleFrame({
   active,
   onNavigate,
   locked,
-  steps,
   alert,
   children,
 }: {
@@ -34,7 +31,6 @@ export function ConsoleFrame({
   active: string
   onNavigate: (id: string) => void
   locked: boolean
-  steps: LabStep[]
   alert?: string | null
   children: React.ReactNode
 }) {
@@ -51,17 +47,17 @@ export function ConsoleFrame({
   return (
     <div className={cn("flex h-dvh flex-col overflow-hidden font-[family-name:var(--font-console)] text-[13px]", theme === "aws" && "bg-[#f2f3f3] text-[#16191f]", theme === "azure" && "bg-[#faf9f8] text-[#323130]", theme === "do" && "bg-[#f4f7fb] text-[#031b4e]")}>
       {theme === "aws" ? (
-        <AwsChrome account={account} region={region} nav={nav} active={active} open={open} setOpen={setOpen} services={services} setServices={setServices} go={go} onSignOut={onSignOut} steps={steps} alert={alert}>
+        <AwsChrome account={account} region={region} nav={nav} active={active} open={open} setOpen={setOpen} services={services} setServices={setServices} go={go} onSignOut={onSignOut} alert={alert}>
           {children}
         </AwsChrome>
       ) : null}
       {theme === "azure" ? (
-        <AzureChrome account={account} nav={nav} active={active} open={open} setOpen={setOpen} go={go} onSignOut={onSignOut} steps={steps} alert={alert}>
+        <AzureChrome account={account} active={active} open={open} setOpen={setOpen} go={go} onSignOut={onSignOut} alert={alert}>
           {children}
         </AzureChrome>
       ) : null}
       {theme === "do" ? (
-        <DoChrome account={account} nav={nav} active={active} open={open} setOpen={setOpen} go={go} onSignOut={onSignOut} steps={steps} alert={alert}>
+        <DoChrome account={account} active={active} open={open} setOpen={setOpen} go={go} onSignOut={onSignOut} alert={alert}>
           {children}
         </DoChrome>
       ) : null}
@@ -80,7 +76,6 @@ function AwsChrome({
   setServices,
   go,
   onSignOut,
-  steps,
   alert,
   children,
 }: {
@@ -94,7 +89,6 @@ function AwsChrome({
   setServices: (value: boolean | ((value: boolean) => boolean)) => void
   go: (id: string) => void
   onSignOut?: () => void
-  steps: LabStep[]
   alert?: string | null
   children: React.ReactNode
 }) {
@@ -122,7 +116,7 @@ function AwsChrome({
           <HeaderIcon label="Help"><CircleHelp className="size-4" /></HeaderIcon>
           <HeaderIcon label="Settings"><Settings className="size-4" /></HeaderIcon>
           {region}
-          <AccountMenu theme="aws" account={account} nav={nav} go={go} onSignOut={onSignOut} steps={steps} />
+          <AccountMenu theme="aws" account={account} go={go} onSignOut={onSignOut} />
         </div>
       </header>
       {services ? <ServicesFlyout onClose={() => setServices(false)} go={go} nav={nav} /> : null}
@@ -192,7 +186,7 @@ function ServicesFlyout({ onClose, go, nav }: { onClose: () => void; go: (id: st
     ["Compute", [["EC2", "home"]]],
     ["Storage", [["S3", "s3"]]],
     ["Management & Governance", [["Billing and Cost Management", "billing"]]],
-    ["Developer tools", [["CloudShell", "shell"], ["VMware shell", "shell"]]],
+    ["Developer tools", [["CloudShell", "shell"]]],
   ] as const
   return (
     <div className="absolute top-12 left-0 z-40 max-h-[70vh] w-[320px] overflow-auto border border-[#d5dbdb] bg-white p-3 text-[#16191f] shadow-2xl">
@@ -216,24 +210,20 @@ function ServicesFlyout({ onClose, go, nav }: { onClose: () => void; go: (id: st
 
 function AzureChrome({
   account,
-  nav,
   active,
   open,
   setOpen,
   go,
   onSignOut,
-  steps,
   alert,
   children,
 }: {
   account: string
-  nav: ConsoleNavItem[]
   active: string
   open: boolean
   setOpen: (value: boolean | ((value: boolean) => boolean)) => void
   go: (id: string) => void
   onSignOut?: () => void
-  steps: LabStep[]
   alert?: string | null
   children: React.ReactNode
 }) {
@@ -255,7 +245,7 @@ function AzureChrome({
           <HeaderIcon label="Notifications" dark={false}><Bell className="size-4" /></HeaderIcon>
           <HeaderIcon label="Settings" dark={false}><Settings className="size-4" /></HeaderIcon>
           <HeaderIcon label="Help" dark={false}><CircleHelp className="size-4" /></HeaderIcon>
-          <AccountMenu theme="azure" account={account} nav={nav} go={go} onSignOut={onSignOut} steps={steps} />
+          <AccountMenu theme="azure" account={account} go={go} onSignOut={onSignOut} />
         </div>
       </header>
       {alert ? <p role="alert" className="shrink-0 border-l-4 border-[#a4262c] bg-[#fdf6f6] px-4 py-2 text-[13px]">{alert}</p> : null}
@@ -301,24 +291,20 @@ function AzureMenu({ active, go }: { active: string; go: (id: string) => void })
 
 function DoChrome({
   account,
-  nav,
   active,
   open,
   setOpen,
   go,
   onSignOut,
-  steps,
   alert,
   children,
 }: {
   account: string
-  nav: ConsoleNavItem[]
   active: string
   open: boolean
   setOpen: (value: boolean | ((value: boolean) => boolean)) => void
   go: (id: string) => void
   onSignOut?: () => void
-  steps: LabStep[]
   alert?: string | null
   children: React.ReactNode
 }) {
@@ -367,7 +353,7 @@ function DoChrome({
             $5.00 credit
           </span>
           <span className="hidden text-[13px] font-medium sm:inline">My Team</span>
-          <AccountMenu theme="do" account={account} nav={nav} go={go} onSignOut={onSignOut} steps={steps} />
+          <AccountMenu theme="do" account={account} go={go} onSignOut={onSignOut} />
         </header>
         {alert ? <p role="alert" className="border-l-4 border-[#d92d20] bg-[#fff4f2] px-4 py-2 text-[13px]">{alert}</p> : null}
         <main id="main" className="min-h-0 flex-1 overflow-auto">{children}</main>
@@ -379,77 +365,75 @@ function DoChrome({
 function AccountMenu({
   theme,
   account,
-  nav,
   go,
   onSignOut,
-  steps,
 }: {
   theme: "aws" | "azure" | "do"
   account: string
-  nav: ConsoleNavItem[]
   go: (id: string) => void
   onSignOut?: () => void
-  steps: LabStep[]
 }) {
   const letter = (account.replace(/[^a-zA-Z]/g, "").slice(0, 1) || "T").toUpperCase()
   const initials = account.toLowerCase().startsWith("033") || account.includes("talal") ? "TM" : letter
-  const done = steps.filter((step) => step.done).length
-  const lab = nav.filter((item) => ["shell", "billing", "study", "s3", "spaces"].includes(item.id))
   return (
     <details className="relative">
       <summary className={cn("flex cursor-pointer list-none items-center gap-2 rounded-sm px-2 py-1 [&::-webkit-details-marker]:hidden", theme === "aws" ? "hover:bg-white/10" : "hover:bg-black/5")} aria-label="Account">
         <span className={cn("grid size-7 place-items-center rounded-full text-[11px] font-semibold", theme === "aws" && "bg-[#ff9900] text-[#232f3e]", theme === "azure" && "bg-[#0078d4] text-white", theme === "do" && "bg-[#0069ff] text-white")}>{theme === "aws" ? letter : initials}</span>
-        {theme === "aws" ? <span className="hidden max-w-[140px] truncate text-[13px] sm:inline">{account.includes("@") ? "talal" : account}</span> : null}
+        {theme === "aws" ? <span className="hidden max-w-[120px] truncate text-[13px] sm:inline">Talal</span> : null}
         {theme !== "azure" ? <ChevronDown className="size-3 opacity-80" /> : null}
       </summary>
-      <div className={cn("absolute top-10 right-0 z-50 w-80 border bg-white p-3 text-[#16191f] shadow-2xl", theme === "azure" ? "border-[#edebe9] text-[#323130]" : "border-[#d5dbdb]")}>
-        {theme === "aws" ? (
-          <>
-            <p className="text-[12px] text-[#545b64]">Account ID</p>
-            <p className="font-mono text-[13px]">4382-0230-2102</p>
-            <p className="mt-2 truncate text-[13px]">{account}</p>
-          </>
-        ) : null}
-        {theme === "azure" ? (
-          <>
-            <p className="text-[14px] font-semibold">Talal Majid</p>
-            <p className="truncate text-[12px] text-[#605e5c]">{account}</p>
-            <p className="mt-2 text-[12px] text-[#605e5c]">Directory: Default Directory</p>
-            <p className="text-[12px] text-[#605e5c]">Subscription: Azure subscription 1</p>
-          </>
-        ) : null}
-        {theme === "do" ? (
-          <>
-            <p className="text-[14px] font-semibold">Talal Majid</p>
+      {theme === "aws" ? (
+        <div className="absolute top-10 right-0 z-50 w-[280px] border border-[#d5dbdb] bg-white py-2 text-[13px] text-[#16191f] shadow-2xl">
+          <div className="px-4 py-2">
+            <p className="font-bold">Talal</p>
+            <p className="text-[#545b64]">Account ID: <span className="font-mono text-[#16191f]">4382-0230-2102</span></p>
+          </div>
+          <MenuRow>Account</MenuRow>
+          <MenuRow>Organization</MenuRow>
+          <MenuRow>Service Quotas</MenuRow>
+          <MenuRow onClick={() => go("billing")}>Billing and Cost Management</MenuRow>
+          <MenuRow>Security credentials</MenuRow>
+          {onSignOut ? <MenuRow onClick={onSignOut}>Sign out</MenuRow> : null}
+        </div>
+      ) : null}
+      {theme === "azure" ? (
+        <div className="absolute top-10 right-0 z-50 w-[320px] border border-[#edebe9] bg-white p-4 text-[13px] text-[#323130] shadow-2xl">
+          <div className="flex items-center gap-3">
+            <span className="grid size-10 place-items-center rounded-full bg-[#0078d4] text-[14px] font-semibold text-white">{initials}</span>
+            <div className="min-w-0">
+              <p className="text-[14px] font-semibold">Talal Majid</p>
+              <p className="truncate text-[12px] text-[#605e5c]">{account}</p>
+            </div>
+          </div>
+          {onSignOut ? <button type="button" onClick={onSignOut} className="mt-4 block text-left text-[13px] text-[#323130] hover:underline">Sign out</button> : null}
+          <div className="mt-4 border-t border-[#edebe9] pt-3">
+            <p className="text-[12px] text-[#605e5c]">Directory</p>
+            <p className="mt-1 font-semibold">Default Directory</p>
+            <button type="button" className="mt-2 text-[13px] text-[#0078d4] hover:underline">Switch directory</button>
+          </div>
+        </div>
+      ) : null}
+      {theme === "do" ? (
+        <div className="absolute top-10 right-0 z-50 w-[260px] rounded-md border border-[#e1e7f0] bg-white py-2 text-[13px] text-[#031b4e] shadow-xl">
+          <div className="px-3 py-2">
+            <p className="font-semibold">Talal Majid</p>
             <p className="truncate text-[12px] text-[#5b6785]">{account}</p>
-            <p className="mt-2 text-[12px]">Team: My Team</p>
-          </>
-        ) : null}
-        <div className="my-2 h-px bg-[#e6e6e6]" />
-        {lab.map((item) => (
-          <button key={item.id} type="button" onClick={() => go(item.id)} className="block w-full rounded-sm px-2 py-1.5 text-left hover:bg-[#f2f3f3]">
-            {item.label}
-          </button>
-        ))}
-        <Link href="/" className="block rounded-sm px-2 py-1.5 hover:bg-[#f2f3f3]">Back to lab bench</Link>
-        {onSignOut ? (
-          <button type="button" onClick={onSignOut} className="block w-full rounded-sm px-2 py-1.5 text-left hover:bg-[#f2f3f3]">Sign out</button>
-        ) : null}
-        <div className="my-2 h-px bg-[#e6e6e6]" />
-        <p className="px-2 text-[12px] font-semibold">{done} of 7 lab steps</p>
-        <ol className="mt-2 grid max-h-48 gap-2 overflow-auto px-2">
-          {steps.map((step) => (
-            <li key={step.n} className="grid grid-cols-[1.1rem_1fr] gap-2 text-[12px]">
-              <span className={cn("mt-0.5 grid size-4 place-items-center rounded-full text-[9px]", step.done ? "bg-[#1d8102] text-white" : "bg-[#e6e6e6]")}>{step.done ? "✓" : step.n}</span>
-              <span>
-                <span className="font-medium">{step.title}</span>
-                <span className="block text-[#545b64]">{step.detail}</span>
-              </span>
-            </li>
-          ))}
-        </ol>
-      </div>
+          </div>
+          <MenuRow onClick={() => go("keys")}>Settings</MenuRow>
+          <MenuRow onClick={() => go("billing")}>Billing</MenuRow>
+          <MenuRow>API</MenuRow>
+          {onSignOut ? <MenuRow onClick={onSignOut}>Sign out</MenuRow> : null}
+        </div>
+      ) : null}
     </details>
+  )
+}
+
+function MenuRow({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="block w-full px-4 py-1.5 text-left hover:bg-[#f2f3f3]">
+      {children}
+    </button>
   )
 }
 
